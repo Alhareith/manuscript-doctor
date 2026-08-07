@@ -1,0 +1,1 @@
+# → تنظيم Smart Pipeline
