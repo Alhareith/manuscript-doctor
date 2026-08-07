@@ -1,0 +1,69 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Runtime images
+storage/uploads/*
+!storage/uploads/.gitkeep
+!storage/uploads/README.md
+storage/results/*
+!storage/results/.gitkeep
+!storage/results/README.md
+
+# Editor and operating system
+.vscode/
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+.env.*
+
+# Keep example environment files if added later
+!.env.example
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Runtime uploads and generated results
+storage/uploads/*
+storage/results/*
+
+# Keep the runtime directories in Git
+!storage/uploads/.gitkeep
+!storage/results/.gitkeep
+
+# Python test / tooling caches
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
