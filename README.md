@@ -1,29 +1,82 @@
+
 # Manuscript Doctor
 
-Manuscript Doctor is a web application for analyzing and improving digital manuscript images using classical image processing techniques.
+نظام ذكي لمعالجة وتحليل المخطوطات والوثائق التاريخية باستخدام تقنيات معالجة الصور والتعلم الآلي.
 
-## Current Status
+---
 
-The project is currently in the initial development phase.
+## 📁 هيكلية المشروع (Project Structure)
 
-## Planned MVP Flow
+```text
+manuscript-doctor/
+│
+├── .venv/               # بيئة Python الافتراضية (محلية فقط)
+├── processing/          # خوارزميات معالجة الصور (OpenCV & NumPy)
+├── templates/           # واجهات المستخدم (HTML Templates)
+├── static/              # الملفات الثابتة (CSS / JS / Images)
+├── storage/             # مخزن المخطوطات والنتائج
+├── tests/               # الاختبارات التلقائية (pytest)
+├── docs/                # التوثيق والقرارات المعمارية
+├── app.py               # نقطة انطلاق تطبيق Flask
+├── requirements.txt     # الاعتماديات المعتمدة للمشروع
+└── README.md            # دليل الإعداد والتشغيل
 
-Upload → Validate → Analyze → Process → Compare → Download
+```
 
-## Main Technologies
+---
 
-- Python
-- Flask
-- OpenCV
-- NumPy
-- HTML
-- CSS
-- JavaScript
+## 📋 المتطلبات الأساسية (Prerequisites)
 
-## Documentation
+* **Python:** `3.12.x`
 
-Project planning and engineering decisions are maintained in the `docs/` directory.
+---
 
-## Status
+## 🚀 دليل إعداد بيئة التطوير (Development Setup)
 
-MVP under development.
+### 1. إنشاء البيئة الافتراضية
+
+من جذر المشروع داخل الـ Terminal:
+
+```cmd
+py -3.12 -m venv .venv
+```
+
+### 2. تفعيل البيئة الافتراضية
+
+على نظام Windows (CMD):
+
+```cmd
+.venv\Scripts\activate
+```
+
+*تأكد من ظهور `(.venv)` في بداية السطر.*
+
+### 3. تحديث مدير الحزم pip
+
+```cmd
+python -m pip install --upgrade pip
+```
+
+### 4. تثبيت مكتبات المشروع
+
+```cmd
+python -m pip install -r requirements.txt
+```
+
+---
+
+## ✅ التحقق من صحة البيئة (Environment Verification)
+
+لتأكيد سلامة البيئة واستيراد جميع المكتبات الأساسية بنجاح، نفّذ:
+
+```cmd
+python -c "import flask, cv2, numpy; print('Environment OK')"
+```
+
+للتحقق من أداة الاختبارات `pytest`:
+
+```cmd
+python -m pytest --version
+```
+
+---
