@@ -205,3 +205,31 @@ def test_uploaded_bytes_are_preserved(app, client):
 
     assert len(stored_files) == 1
     assert stored_files[0].read_bytes() == original_bytes
+
+def test_reject_unsupported_image_depth(client):
+    image = np.full(
+        (100, 100),
+        1000,
+        dtype=np.uint16
+    )
+
+    success, encoded = cv2.imencode(".png", image)
+
+    assert success
+
+    response = client.post(
+        "/api/images",
+        data={
+            "image": (
+                BytesIO(encoded.tobytes()),
+                "depth16.png"
+            )
+        },
+        content_type="multipart/form-data"
+    )
+
+    payload = response.get_json()
+
+    assert response.status_code == 400
+    assert payload["error"]["code"] == "UNSUPPORTED_IMAGE_DEPTH"
+

@@ -135,6 +135,12 @@ def create_app(test_config=None):
                 400
             )
 
+        if image.dtype != np.uint8:
+            return error_response(
+                "UNSUPPORTED_IMAGE_DEPTH",
+                "عمق الصورة غير مدعوم. استخدم صورة JPG أو PNG بعمق 8-bit.",
+                400
+            )
         height, width = image.shape[:2]
 
         total_pixels = width * height
