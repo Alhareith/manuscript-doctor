@@ -164,3 +164,148 @@ def test_empty_image_raises_error():
 
     with pytest.raises(ValueError):
         analyze_image(image)
+
+def test_noise_metric_structure():
+    image = np.full(
+        (200, 200),
+        180,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    noise = result[
+        "metrics"
+    ]["noise"]
+
+    assert "value" in noise
+    assert "p90" in noise
+    assert "affected_ratio" in noise
+    assert "unit" in noise
+
+    assert noise["value"] >= 0
+    assert noise["p90"] >= 0
+
+    assert (
+        0
+        <= noise["affected_ratio"]
+        <= 1
+    )
+
+
+def test_added_noise_increases_noise_metric():
+    rng = np.random.default_rng(
+        42
+    )
+
+    clean = np.full(
+        (300, 300),
+        180,
+        dtype=np.uint8
+    )
+
+    noisy = clean.copy()
+
+    noise = rng.normal(
+        0,
+        20,
+        noisy.shape
+    )
+
+    noisy = np.clip(
+        noisy.astype(
+            np.float32
+        )
+        + noise,
+        0,
+        255
+    ).astype(
+        np.uint8
+    )
+
+    clean_result = analyze_image(
+        clean
+    )
+
+    noisy_result = analyze_image(
+        noisy
+    )
+
+    clean_noise = (
+        clean_result[
+            "metrics"
+        ]["noise"]["value"]
+    )
+
+    noisy_noise = (
+        noisy_result[
+            "metrics"
+        ]["noise"]["value"]
+    )
+
+    assert noisy_noise > clean_noise
+
+
+def test_impulse_noise_increases_noise_metric():
+    rng = np.random.default_rng(
+        7
+    )
+
+    clean = np.full(
+        (300, 300),
+        180,
+        dtype=np.uint8
+    )
+
+    noisy = clean.copy()
+
+    mask = rng.random(
+        noisy.shape
+    )
+
+    noisy[
+        mask < 0.03
+    ] = 0
+
+    noisy[
+        mask > 0.97
+    ] = 255
+
+    clean_result = analyze_image(
+        clean
+    )
+
+    noisy_result = analyze_image(
+        noisy
+    )
+
+    assert (
+        noisy_result[
+            "metrics"
+        ]["noise"]["value"]
+        >
+        clean_result[
+            "metrics"
+        ]["noise"]["value"]
+    )
+
+
+def test_clean_flat_image_has_low_noise():
+    image = np.full(
+        (250, 250),
+        160,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    assert (
+        result[
+            "metrics"
+        ]["noise"]["value"]
+        < 1.0
+    )
