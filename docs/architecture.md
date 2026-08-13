@@ -231,79 +231,60 @@ Reason:
 
 ---
 
-## 4.4 `processing/operations.py` — Image Processing Operations
+## 4.4 `processing/operations.py` ## Processing Operations
 
-### المسؤولية
+`processing/operations.py` يحتوي على عمليات معالجة صور مستقلة.
 
-توفير عمليات معالجة مستقلة وقابلة للاختبار.
+تستقبل العمليات صورة OpenCV موجودة في الذاكرة وتعيد صورة جديدة دون تعديل الصورة الأصلية أو التعامل مع الملفات أو HTTP.
 
-من أمثلتها:
+### Core Operations
 
-* Grayscale
-* Median Filter
-* Gaussian Filter
-* Histogram Equalization
-* CLAHE
-* Sharpening
-* Canny
-* Otsu Threshold
-* Adaptive Threshold
-* Morphological Opening
-* Morphological Closing
+#### CLAHE
+تحسين التباين المحلي مع الحد من التضخيم المفرط للتباين.
 
-كل Operation يجب أن:
+في الصور الملونة يتم تعديل قناة الإضاءة فقط للمحافظة على المعلومات اللونية قدر الإمكان.
 
-```text
-تستقبل Image
-      ↓
-تنفذ عملية محددة
-      ↓
-تعيد Result
-```
+#### Histogram Equalization
+تحسين عالمي للتباين يستخدم أساسًا كعملية مقارنة مع طرق التحسين المحلي.
 
-ولا تتعامل مع:
+#### Median Denoising
+تقليل بعض أنواع التغيرات النقطية مع محافظة نسبية على الحواف.
 
-* HTTP
-* File Paths من المستخدم
-* Diagnosis
-* Recommendations
-* UI
+#### Sharpening
+تعزيز التفاصيل باستخدام Unsharp Masking بمعامل شدة قابل للتحكم.
 
----
+#### Global Threshold
+تحويل الصورة إلى تمثيل ثنائي باستخدام قيمة Threshold محددة.
 
-# 5. Operation Registry
+#### Otsu Threshold
+اختيار Threshold عالمي تلقائيًا اعتمادًا على توزيع شدة الصورة.
 
-لا يرسل المستخدم اسم Python Function.
+#### Adaptive Threshold
+استخدام Thresholds محلية، ويستهدف بصورة خاصة الحالات التي تتغير فيها الإضاءة عبر الصفحة.
 
-يرسل فقط معرفًا ثابتًا مثل:
+#### Morphological Opening
+عملية بنيوية قد تساعد على إزالة مكونات صغيرة، ويجب استخدامها بحذر بسبب احتمال فقد التفاصيل.
 
-```json
-{
-  "operation": "clahe"
-}
-```
+#### Morphological Closing
+عملية بنيوية قد تسد فجوات صغيرة، ويجب استخدامها بحذر بسبب احتمال دمج تفاصيل متجاورة.
 
-ويتم الربط داخليًا:
+### Operation Registry
 
-```text
-"clahe"
-   ↓
-Operation Registry
-   ↓
-clahe function
-```
+لا يرسل Frontend أسماء دوال Python.
 
-مثال مفاهيمي:
+يستخدم النظام معرفات ثابتة مثل:
 
-```python
-OPERATIONS = {
-    "grayscale": ...,
-    "median": ...,
-    "clahe": ...,
-    "otsu": ...
-}
-```
+- `clahe`
+- `median_denoise`
+- `adaptive_threshold`
 
+ويقوم Backend لاحقًا بربط المعرف بالدالة المسموح بها عبر Operation Registry.
+
+### Parameter Status
+
+القيم الافتراضية الحالية هي Initial Defaults فقط.
+
+لا تعتبر Parameters نهائية أو مثلى للمخطوطات قبل مرحلة Operation Evaluation & Parameter Tuning.
 ## الهدف
 
 * منع استدعاء دوال عشوائية.

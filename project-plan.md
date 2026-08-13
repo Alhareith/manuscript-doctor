@@ -465,6 +465,38 @@ flowchart LR
 * [ ] إنشاء Release Tag.
 * [ ] تجهيز النسخة النهائية للتسليم.
 
+## Phase 7 — Image Processing Operations
+
+- [x] مراجعة نجاح المرحلة 6
+- [x] تحديد العمليات الأساسية
+- [x] توحيد دعم الصور على 8-bit
+- [x] إنشاء `processing/operations.py`
+- [x] إنشاء Image Validation داخلي
+- [x] إنشاء Grayscale Conversion مساعد
+- [x] تنفيذ CLAHE
+- [x] تنفيذ Histogram Equalization
+- [x] تنفيذ Median Denoising
+- [x] تنفيذ Sharpening
+- [x] تنفيذ Global Threshold
+- [x] تنفيذ Otsu Threshold
+- [x] تنفيذ Adaptive Threshold
+- [x] تنفيذ Morphological Opening
+- [x] تنفيذ Morphological Closing
+- [x] إنشاء Operation Registry
+- [x] إضافة Metadata للعمليات
+- [x] التحقق من Parameters
+- [x] اختبار عدم تعديل Original
+- [x] اختبار الصور Grayscale
+- [x] اختبار الصور الملونة
+- [x] اختبار BGRA عند الحاجة
+- [x] اختبار Binary Operations
+- [x] اختبار Operation Registry
+- [x] اختبار المدخلات غير الصالحة
+- [x] إجراء Smoke Tests على صور حقيقية
+- [x] توثيق العمليات وحدودها
+- [ ] تقييم جودة كل عملية على مجموعة الصور
+- [ ] معايرة Parameters
+- [ ] تحديد العمليات المناسبة لـSmart Pipeline
 ---
 
 # قاعدة إغلاق أي مرحلة
