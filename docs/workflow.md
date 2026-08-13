@@ -820,6 +820,45 @@ flowchart TD
 فلا يتم إدخالها مباشرة إلى الـMVP.
 
 ---
+## Runtime Backend Workflow
+
+### Upload
+
+Client
+→ POST `/api/images`
+→ Validate
+→ Decode
+→ Analyze
+→ Diagnose
+→ Preservation Profile
+→ Recommend
+→ Save Original
+→ Return Image ID
+
+### Manual Treatment
+
+Image ID
+→ Operation ID + Parameters
+→ Validate
+→ Load Original
+→ Apply Operation
+→ Preservation Verification
+→ Save PNG Result
+→ Return Result ID
+
+### Smart Treatment
+
+Image ID
+→ Load Original
+→ Analyze
+→ Recommend
+→ Smart Pipeline
+→ Candidate Verification
+→ Final Verification
+→ Save Result
+→ Save Binary Candidates
+→ Return Decision and Result IDs
+---
 
 <div align="center">
 

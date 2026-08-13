@@ -544,6 +544,73 @@ Error
 
 يجب أن تكون Pipeline Rule-Based وقابلة للتفسير.
 ---
+
+## Backend Processing Integration
+
+Flask هو طبقة Orchestration بين التخزين المؤقت ووحدات معالجة الصور.
+
+### Upload Flow
+
+POST `/api/images`
+
+1. Validate request.
+2. Decode image.
+3. Validate depth and dimensions.
+4. Analyze original.
+5. Generate recommendations.
+6. Save original bytes unchanged.
+7. Return analysis and recommendation data.
+
+### Manual Processing Flow
+
+POST `/api/images/<image_id>/operations`
+
+1. Validate image ID.
+2. Load original.
+3. Validate operation ID and parameters.
+4. Execute one registered operation.
+5. Run Preservation Verification.
+6. Save result as PNG.
+7. Return result metadata and preservation data.
+
+Manual processing does not automatically reject a result because the user explicitly requested the operation. Preservation information is returned for review.
+
+### Smart Pipeline Flow
+
+POST `/api/images/<image_id>/pipeline`
+
+1. Load original.
+2. Analyze original.
+3. Run Preservation-Aware Smart Pipeline.
+4. Save primary result as PNG.
+5. Save any Binarization Candidates separately.
+6. Return decisions, steps, preservation data and result IDs.
+
+### Storage
+
+Original uploads are stored temporarily in:
+
+`storage/uploads/`
+
+Processed results are stored temporarily in:
+
+`storage/results/`
+
+Result images are encoded as PNG.
+
+### Separation of Responsibilities
+
+`app.py` does not contain image-processing algorithms, diagnosis thresholds, recommendation rules, preservation rules or pipeline policies.
+
+It is responsible only for:
+
+- HTTP
+- request validation
+- resource resolution
+- orchestration
+- temporary storage
+- response construction
+---
 # 10. المتطلبات غير الوظيفية — Non-Functional Requirements
 
 | المعرف     | المتطلب             | التفاصيل                                                               |

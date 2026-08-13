@@ -624,6 +624,53 @@ flowchart LR
 - [ ] معايرة Preservation Thresholds على Dataset أوسع
 - [ ] تقييم Multi-operation combinations قبل أي Candidate Search
 ---
+
+## Phase 12 — Backend Integration
+
+- [x] مراجعة Processing Contracts قبل Integration
+- [x] توحيد Provisional Defaults
+- [x] توحيد `excluded_from_automatic`
+- [x] منع Infinity في Preservation JSON
+- [x] منع Pipeline Acceptance عند فشل Final Verification
+- [x] تحديث `app.py`
+- [x] ربط Upload بـAnalyzer
+- [x] ربط Upload بـRecommendation Engine
+- [x] إرجاع Diagnoses بعد Upload
+- [x] إرجاع Preservation Profile بعد Upload
+- [x] إرجاع Recommendations بعد Upload
+- [x] تنفيذ Manual Operation Route
+- [x] التحقق من Operation Registry
+- [x] التحقق من Manual Parameters
+- [x] تنفيذ Preservation Verification للعمليات اليدوية
+- [x] حفظ Manual Results بصيغة PNG
+- [x] تنفيذ Smart Pipeline Route
+- [x] حفظ Smart Pipeline Result
+- [x] حفظ Binarization Candidates بصورة مستقلة
+- [x] تنفيذ Result Display Route
+- [x] تنفيذ Result Download Route
+- [x] منع Filesystem Paths من Client
+- [x] استخدام UUID Resources
+- [x] الحفاظ على Original Bytes
+- [x] منع NumPy Arrays من JSON
+- [x] إنشاء `tests/test_backend_integration.py`
+- [x] اختبار Upload Integration
+- [x] اختبار Manual Operation Integration
+- [x] اختبار Preservation Response
+- [x] اختبار Invalid Operation
+- [x] اختبار Invalid Parameters
+- [x] اختبار Smart Pipeline Integration
+- [x] اختبار Result Retrieval
+- [x] اختبار Result Download
+- [x] اختبار Invalid IDs
+- [x] تشغيل Full Test Suite
+- [x] تنفيذ Real HTTP Smoke Tests
+- [x] التحقق من Runtime Git Ignore
+- [x] تحديث Architecture
+- [x] تحديث Requirements
+- [x] تحديث Decisions
+- [x] تحديث Workflow
+---
+
 # قاعدة إغلاق أي مرحلة
 
 لا يتم تحويل:

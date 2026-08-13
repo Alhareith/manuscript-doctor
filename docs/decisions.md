@@ -2046,6 +2046,58 @@ Parameters الموجودة في عمليات المرحلة 7 توفر سلوك
 
 القواعد الحالية Heuristic وتحتاج معايرة لاحقة.
 ---
+
+## DEC — Flask كطبقة Orchestration فقط
+
+**الحالة:** معتمد
+
+### القرار
+
+لن يحتوي `app.py` على خوارزميات معالجة أو Thresholds تشخيصية أو Recommendation Rules.
+
+---
+
+## DEC — Processed Results بصيغة PNG
+
+**الحالة:** معتمد
+
+### القرار
+
+يتم حفظ نتائج المعالجة بصيغة PNG لتجنب إضافة JPEG Compression جديد إلى نتائج المعالجة.
+
+---
+
+## DEC — Manual Processing لا يرفض النتيجة تلقائيًا
+
+**الحالة:** معتمد
+
+### القرار
+
+عند طلب المستخدم Operation يدويًا يتم إنشاء النتيجة وإرجاع Preservation Assessment معها.
+
+إذا فشل Preservation Verification تبقى النتيجة متاحة مع حالة Verification غير متاحة.
+
+---
+
+## DEC — Binarization Results مستقلة
+
+**الحالة:** معتمد
+
+### القرار
+
+يتم تخزين Binarization Candidates كResults مستقلة ولا تستبدل Enhanced Result الأساسية تلقائيًا.
+
+---
+
+## DEC — Final Verification شرط للقبول التلقائي
+
+**الحالة:** معتمد
+
+### القرار
+
+لا يجوز أن تعيد Smart Pipeline حالة `accepted` أو `accepted_with_caution` إذا تعذر Final Preservation Verification المطلوب.
+---
+
 <div align="center">
 
 ### Diagnose → Treat → Preserve → Verify
