@@ -110,7 +110,7 @@ def _apply_to_luminance(image, operation):
 
 def clahe(
     image,
-    clip_limit=2.0,
+    clip_limit=1.5,
     tile_grid_size=8
 ):
     _validate_image(image)
@@ -171,7 +171,7 @@ def median_denoise(
 
 def sharpen(
     image,
-    amount=0.5,
+    amount=0.25,
     kernel_size=3
 ):
     _validate_image(image)

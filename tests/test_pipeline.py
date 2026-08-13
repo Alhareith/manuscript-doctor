@@ -555,4 +555,82 @@ def test_invalid_image_is_rejected():
             None,
             make_analysis()
         )
-        
+
+def test_final_verification_failure_prevents_automatic_acceptance(
+    monkeypatch
+):
+    image = make_image()
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": [
+                {
+                    "operation_id": "clahe",
+                    "parameters": {},
+                    "reason": "contrast",
+                    "risk": "medium",
+                    "mode": "enhancement"
+                }
+            ],
+            "excluded_from_automatic": [],
+            "summary": {
+                "needs_treatment": True
+            }
+        }
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        lambda operation_id, image, params: (
+            image.copy()
+        )
+    )
+
+    calls = {
+        "count": 0
+    }
+
+    def verification_behavior(
+        original,
+        processed
+    ):
+        calls["count"] += 1
+
+        if calls["count"] == 1:
+            return acceptable_preservation()
+
+        raise RuntimeError(
+            "final verification failed"
+        )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        verification_behavior
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
+        make_analysis()
+    )
+
+    assert (
+        result["steps"][0][
+            "execution_status"
+        ]
+        == "accepted"
+    )
+
+    assert (
+        result["preservation"]
+        is None
+    )
+
+    assert (
+        result["decision"]["status"]
+        == "review_required"
+    )
+    

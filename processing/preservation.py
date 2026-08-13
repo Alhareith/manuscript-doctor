@@ -167,7 +167,7 @@ def _edge_inflation(
         if processed_count == 0:
             return 1.0
 
-        return float("inf")
+        return float(processed_count)
 
     return float(
         processed_count / original_count
@@ -503,8 +503,13 @@ def verify_preservation(
     )
 
     return {
-        "metrics": metrics,
-        "warnings": warnings,
-        "assessment": assessment,
-        "interpretation": "heuristic_structural_assessment"
-    }
+    "metrics": metrics,
+    "warnings": warnings,
+    "assessment": assessment,
+    "interpretation": "heuristic_structural_assessment",
+    "limitations": [
+        "The assessment measures visual structure, not textual meaning.",
+        "Large appearance changes such as binarization may reduce similarity even when the result is useful.",
+        "Thresholds are provisional and require evaluation on real manuscript images."
+    ]
+}

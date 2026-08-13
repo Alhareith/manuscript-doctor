@@ -37,7 +37,7 @@ def operation_ids(result):
 def avoided_ids(result):
     return {
         item["operation_id"]
-        for item in result["avoid"]
+        for item in result["excluded_from_automatic"]
     }
 
 

@@ -222,3 +222,30 @@ def test_preservation_does_not_modify_images():
         processed,
         processed_copy
     )
+
+
+def test_edge_inflation_is_finite_when_original_has_no_edges():
+    original = np.full(
+        (100, 100),
+        255,
+        dtype=np.uint8
+    )
+
+    processed = original.copy()
+
+    cv2.line(
+        processed,
+        (10, 50),
+        (90, 50),
+        0,
+        2
+    )
+
+    result = verify_preservation(
+        original,
+        processed
+    )
+
+    assert np.isfinite(
+        result["metrics"]["edge_inflation"]
+    )

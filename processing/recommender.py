@@ -413,7 +413,7 @@ def recommend_treatment(analysis):
 
     return {
         "recommendations": recommendations,
-        "avoid": avoided,
+        "excluded_from_automatic": avoided,
         "summary": _build_summary(
             recommendations,
             avoided

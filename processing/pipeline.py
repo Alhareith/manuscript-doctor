@@ -541,21 +541,34 @@ def run_smart_pipeline(
         "image"
     ]
 
+    final_verification_available = True
+
     try:
         final_preservation = (
             verify_preservation(
                 original,
                 final_image
-            )
         )
+    )
     except Exception:
         final_preservation = None
+        final_verification_available = False
 
     decision = _final_decision(
         recommendation_result,
         enhancement_result,
         binarization_candidates
-    )
+    )   
+
+    if (not final_verification_available and decision["status"] in { "accepted","accepted_with_caution"}):
+        decision = {
+            "status": "review_required",
+            "message": (
+                "تم تنفيذ المعالجة، لكن تعذر إجراء "
+                "Final Preservation Verification، "
+                "لذلك لا يمكن اعتماد النتيجة تلقائيًا."
+            )
+        }
 
     return {
         "image": final_image,

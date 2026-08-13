@@ -337,3 +337,37 @@ def test_params_must_be_dictionary():
             image,
             "invalid"
         )
+
+def test_clahe_default_matches_evaluated_default():
+    image = make_color_image()
+
+    default_result = clahe(image)
+
+    explicit_result = clahe(
+        image,
+        clip_limit=1.5,
+        tile_grid_size=8
+    )
+
+    assert np.array_equal(
+        default_result,
+        explicit_result
+    )
+
+
+def test_sharpen_default_matches_evaluated_default():
+    image = make_color_image()
+
+    default_result = sharpen(image)
+
+    explicit_result = sharpen(
+        image,
+        amount=0.25,
+        kernel_size=3
+    )
+
+    assert np.array_equal(
+        default_result,
+        explicit_result
+    )
+    
