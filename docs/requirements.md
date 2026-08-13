@@ -470,7 +470,80 @@ Error
 
 يجب ألا تعتبر العمليات المستبعدة من الاستخدام التلقائي غير صالحة للاستخدام اليدوي بالضرورة.
 ---
+## Smart Pipeline Requirements
 
+### SPR-01
+
+يجب أن يعمل Smart Pipeline على نسخة من الصورة الأصلية وألا يعدل الأصل.
+
+### SPR-02
+
+يجب تنفيذ العمليات المؤهلة تلقائيًا فقط.
+
+### SPR-03
+
+يجب أن تستند العمليات إلى Recommendation Engine.
+
+### SPR-04
+
+يجب إجراء Preservation Verification بعد كل Candidate Enhancement.
+
+### SPR-05
+
+يجب مقارنة كل Candidate بالصورة الأصلية.
+
+### SPR-06
+
+يجب رفض Candidate ذي `high_risk`.
+
+### SPR-07
+
+يجب رفض `caution` تلقائيًا عندما يكون Preservation Profile مرتفعًا.
+
+### SPR-08
+
+يجب ألا يؤدي فشل Preservation Verification إلى اعتماد النتيجة تلقائيًا.
+
+### SPR-09
+
+يجب تسجيل كل خطوة وParameters والسبب ونتيجة التنفيذ وPreservation Decision.
+
+### SPR-10
+
+يجب ألا يدخل Median Denoising إلى Smart Pipeline تلقائيًا قبل تحسين Noise Diagnosis.
+
+### SPR-11
+
+يجب التعامل مع Binarization كمسار مستقل.
+
+### SPR-12
+
+يجب إنشاء Adaptive Threshold Candidate من Original ضمن MVP الحالي.
+
+### SPR-13
+
+يجب ألا تستخدم Histogram Equalization أو Global Threshold أو Morphology تلقائيًا في MVP.
+
+### SPR-14
+
+يجب ألا يقوم Pipeline بحفظ الملفات.
+
+### SPR-15
+
+يجب ألا يعتمد Pipeline على Flask أو HTTP.
+
+### SPR-16
+
+يجب عدم استخدام Preservation Percentage أو Quality Score غير مثبت علميًا.
+
+### SPR-17
+
+يجب ألا يتم البحث التلقائي عن Parameters مختلفة في MVP الحالي.
+
+### SPR-18
+
+يجب أن تكون Pipeline Rule-Based وقابلة للتفسير.
+---
 # 10. المتطلبات غير الوظيفية — Non-Functional Requirements
 
 | المعرف     | المتطلب             | التفاصيل                                                               |

@@ -317,66 +317,71 @@ Recommendation Engine هو Rule-Based Decision Support وليس نموذج AI أ
 
 
 # 6. `processing/pipeline.py` — Preservation-Aware Smart Pipeline
+## Preservation-Aware Smart Pipeline
 
-### المسؤولية
+`processing/pipeline.py` ينسق التنفيذ التلقائي المحافظ للعمليات المؤهلة فقط.
 
-تنفيذ سلسلة معالجة تلقائية بناءً على حالة الصورة.
+### Pipeline Flow
 
-الـPipeline ليست:
+Original Image
+→ Recommendation Engine
+→ Automatic Eligibility Gate
+→ Candidate Operation
+→ Preservation Verification
+→ Accept / Reject
+→ Next Candidate
+→ Final Verification
 
-```text
-Filter A
-→ Filter B
-→ Filter C
-```
+### Original Reference
 
-ثابتة لجميع الصور.
+تتم مقارنة كل Candidate بالصورة الأصلية، وليس فقط بنتيجة الخطوة السابقة.
 
-بل:
+يمنع ذلك إخفاء التغير التراكمي الناتج من عدة عمليات متتالية.
 
-```text
-Diagnosis
-+
-Recommendation
-+
-Preservation Profile
-       ↓
-Treatment Plan
-       ↓
-Pipeline Execution
-```
+### Automatic Enhancement Operations
 
-### النسخة الأساسية
+في الـMVP الحالي:
 
-```text
-Original
-   ↓
-Treatment Plan
-   ↓
-Step 1
-   ↓
-Step 2
-   ↓
-Result
-   ↓
-Preservation Verification
-```
+- CLAHE
+- Sharpening بصورة مشروطة
 
-### يجب أن تعيد
+### Deferred Automatic Operation
 
-* الخطوات المنفذة.
-* ترتيبها.
-* سبب كل خطوة.
-* Result.
-* Preservation Assessment عند توفره.
+Median Denoising لا ينفذ تلقائيًا حاليًا بسبب محدودية Noise Indicator الحالية.
 
-### لا يجب أن
+يبقى متاحًا للتوصية والمراجعة اليدوية.
 
-* تستخدم نتيجة Manual Operation سابقة كمدخل.
-* تعتبر Result مقبولة تلقائيًا دون التحقق.
-* تخفي خطواتها عن المستخدم.
+### Binarization Path
 
----
+لا يتم دمج Adaptive Threshold داخل Enhancement Chain.
+
+يتم إنشاؤه كـBinarization Candidate مستقل من الصورة الأصلية وتصنيفه `review_required`.
+
+### Preservation Acceptance Policy
+
+#### Low / Moderate Preservation Sensitivity
+
+- acceptable → accept
+- caution → accept with caution
+- high_risk → reject
+
+#### High Preservation Sensitivity
+
+- acceptable → accept
+- caution → reject automatically
+- high_risk → reject automatically
+
+هذه السياسة Provisional وHeuristic وتحتاج معايرة مستقبلية.
+
+### Verification Failure
+
+إذا نجحت عملية المعالجة وفشل Preservation Verification، لا يعتمد Smart Pipeline النتيجة تلقائيًا.
+
+### No Dynamic Re-analysis
+
+يتم تحليل الصورة الأصلية وإنشاء التوصيات مرة واحدة فقط في MVP.
+
+لا يعاد تشغيل Analyzer بين خطوات Pipeline.
 
 # 7. `processing/preservation.py` — Preservation Verification Engine
 

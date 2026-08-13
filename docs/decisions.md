@@ -1970,7 +1970,82 @@ Parameters الموجودة في عمليات المرحلة 7 توفر سلوك
 تغير Binarization طبيعة تمثيل الصورة بصورة جوهرية.
 
 ---
+## DEC — Preservation Verification بعد كل خطوة تلقائية
 
+**الحالة:** معتمد
+
+### القرار
+
+لا تنتظر Smart Pipeline حتى نهاية سلسلة المعالجة لإجراء Preservation Verification.
+
+يتم تقييم كل Candidate قبل اعتماده.
+
+### السبب
+
+يسمح ذلك بتحديد الخطوة التي بدأت بإحداث تغير بنيوي غير مقبول ومنع تراكم الضرر.
+
+---
+
+## DEC — مقارنة Candidates بالصورة الأصلية
+
+**الحالة:** معتمد
+
+### القرار
+
+يقارن كل Candidate بالصورة الأصلية وليس فقط بنتيجة الخطوة السابقة.
+
+### السبب
+
+قد تبدو التغيرات الصغيرة مقبولة بين خطوتين بينما يصبح أثرها التراكمي كبيرًا مقارنة بالأصل.
+
+---
+
+## DEC — تأجيل Median من التنفيذ التلقائي
+
+**الحالة:** معتمد مؤقتًا
+
+### القرار
+
+لن ينفذ Median Denoising تلقائيًا في Smart Pipeline حاليًا.
+
+### السبب
+
+أثبتت Phase 8 أن Noise Indicator الحالية قد لا تعكس كمية الضوضاء المرئية بصورة موثوقة.
+
+يبقى Median متاحًا Manual وبإعداد محافظ kernel=3.
+
+---
+
+## DEC — فصل Binarization عن Enhancement Pipeline
+
+**الحالة:** معتمد
+
+### القرار
+
+لا تدخل Adaptive Threshold ضمن سلسلة Enhancement الأساسية.
+
+يتم إنشاء Binarization Candidate مستقل من Original.
+
+### السبب
+
+لم يتم تقييم تراكيب متعددة مثل CLAHE ثم Adaptive Threshold، كما أن Binarization تغير تمثيل الصورة جذريًا.
+
+---
+
+## DEC — Conservative Preservation Gate
+
+**الحالة:** معتمد مبدئيًا
+
+### القرار
+
+الصورة ذات Preservation Profile مرتفع لا تقبل تلقائيًا Candidate يحمل Assessment من نوع caution.
+
+### السبب
+
+تحتاج الصور الأكثر حساسية إلى سياسة معالجة أكثر تحفظًا.
+
+القواعد الحالية Heuristic وتحتاج معايرة لاحقة.
+---
 <div align="center">
 
 ### Diagnose → Treat → Preserve → Verify

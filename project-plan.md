@@ -580,6 +580,50 @@ flowchart LR
 - [x] تحديث الوثائق
 - [ ] تحسين Noise Diagnosis قبل الاعتماد القوي على Automatic Denoising
   ---
+
+
+  ## Phase 11 — Preservation-Aware Smart Pipeline
+
+- [x] إنشاء `processing/pipeline.py`
+- [x] الحفاظ على Original immutable
+- [x] استخدام Recommendation Engine
+- [x] تعريف Automatic Eligibility Gate
+- [x] اعتماد CLAHE تلقائيًا بصورة مشروطة
+- [x] اعتماد Sharpen تلقائيًا بصورة مشروطة
+- [x] تأجيل Automatic Median
+- [x] فصل Adaptive Threshold عن Enhancement
+- [x] إنشاء Binarization Candidate مستقل
+- [x] تنفيذ Enhancement بصورة تراكمية على النتائج المقبولة
+- [x] مقارنة كل Candidate بالأصل
+- [x] تنفيذ Preservation Verification بعد كل خطوة
+- [x] رفض high_risk
+- [x] تطبيق سياسة خاصة لـHigh Preservation Sensitivity
+- [x] رفض النتيجة عند فشل Preservation Verification
+- [x] تسجيل Accepted Steps
+- [x] تسجيل Rejected Steps
+- [x] تسجيل Deferred Steps
+- [x] تسجيل أسباب القرارات
+- [x] تنفيذ Final Preservation Verification
+- [x] دعم no_treatment
+- [x] دعم accepted
+- [x] دعم accepted_with_caution
+- [x] دعم unchanged_due_to_risk
+- [x] دعم review_required
+- [x] إنشاء `tests/test_pipeline.py`
+- [x] اختبار Original immutability
+- [x] اختبار Candidate acceptance
+- [x] اختبار High Risk rejection
+- [x] اختبار Caution مع Low Sensitivity
+- [x] اختبار Caution مع High Sensitivity
+- [x] اختبار Median deferral
+- [x] اختبار Binarization separation
+- [x] اختبار Verification failure
+- [x] تشغيل Full Test Suite
+- [x] تحديث الوثائق
+- [ ] تحسين Noise Indicator قبل Automatic Denoising
+- [ ] معايرة Preservation Thresholds على Dataset أوسع
+- [ ] تقييم Multi-operation combinations قبل أي Candidate Search
+---
 # قاعدة إغلاق أي مرحلة
 
 لا يتم تحويل:
