@@ -545,71 +545,88 @@ Error
 يجب أن تكون Pipeline Rule-Based وقابلة للتفسير.
 ---
 
-## Backend Processing Integration
+## Frontend Requirements
 
-Flask هو طبقة Orchestration بين التخزين المؤقت ووحدات معالجة الصور.
+### FER-01
 
-### Upload Flow
+يجب أن تدعم الواجهة اتجاه RTL.
 
-POST `/api/images`
+### FER-02
 
-1. Validate request.
-2. Decode image.
-3. Validate depth and dimensions.
-4. Analyze original.
-5. Generate recommendations.
-6. Save original bytes unchanged.
-7. Return analysis and recommendation data.
+يجب أن تعمل الواجهة على Desktop وMobile.
 
-### Manual Processing Flow
+### FER-03
 
-POST `/api/images/<image_id>/operations`
+يجب أن تعرض الصورة الأصلية بوضوح.
 
-1. Validate image ID.
-2. Load original.
-3. Validate operation ID and parameters.
-4. Execute one registered operation.
-5. Run Preservation Verification.
-6. Save result as PNG.
-7. Return result metadata and preservation data.
+### FER-04
 
-Manual processing does not automatically reject a result because the user explicitly requested the operation. Preservation information is returned for review.
+يجب أن تعرض Metrics دون تفسيرها من جانب Frontend.
 
-### Smart Pipeline Flow
+### FER-05
 
-POST `/api/images/<image_id>/pipeline`
+يجب أن تعرض Diagnoses القادمة من Backend.
 
-1. Load original.
-2. Analyze original.
-3. Run Preservation-Aware Smart Pipeline.
-4. Save primary result as PNG.
-5. Save any Binarization Candidates separately.
-6. Return decisions, steps, preservation data and result IDs.
+### FER-06
 
-### Storage
+يجب أن تعرض Preservation Profile دون تحويله إلى نسبة مئوية.
 
-Original uploads are stored temporarily in:
+### FER-07
 
-`storage/uploads/`
+يجب عرض Reasons الخاصة بالتوصيات.
 
-Processed results are stored temporarily in:
+### FER-08
 
-`storage/results/`
+يجب فصل Manual Treatment عن Smart Treatment.
 
-Result images are encoded as PNG.
+### FER-09
 
-### Separation of Responsibilities
+يجب أن تستخدم الواجهة Operation IDs فقط عند إرسال العمليات.
 
-`app.py` does not contain image-processing algorithms, diagnosis thresholds, recommendation rules, preservation rules or pipeline policies.
+### FER-10
 
-It is responsible only for:
+يجب أن تعرض Preservation Metrics وWarnings بعد المعالجة.
 
-- HTTP
-- request validation
-- resource resolution
-- orchestration
-- temporary storage
-- response construction
+### FER-11
+
+يجب أن تعرض Decision Status ورسالتها.
+
+### FER-12
+
+يجب توفير Original / Result Comparison.
+
+### FER-13
+
+يجب عرض Binarization Results بصورة منفصلة.
+
+### FER-14
+
+يجب توفير Loading State.
+
+### FER-15
+
+يجب توفير Error State مفهوم للمستخدم.
+
+### FER-16
+
+لا يجوز وضع Diagnostic Thresholds داخل JavaScript.
+
+### FER-17
+
+لا يجوز وضع Recommendation Rules داخل JavaScript.
+
+### FER-18
+
+لا يجوز اعتبار Frontend مصدر الحقيقة لأي Processing Decision.
+
+### FER-19
+
+لا يجوز عرض Preservation Percentage غير مثبت علميًا.
+
+### FER-20
+
+يجب ألا تستخدم الواجهة نتائج وهمية أثناء Runtime الحقيقي.
+
 ---
 # 10. المتطلبات غير الوظيفية — Non-Functional Requirements
 

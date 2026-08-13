@@ -2097,7 +2097,54 @@ Parameters الموجودة في عمليات المرحلة 7 توفر سلوك
 
 لا يجوز أن تعيد Smart Pipeline حالة `accepted` أو `accepted_with_caution` إذا تعذر Final Preservation Verification المطلوب.
 ---
+## DEC — Conservation Workspace UI
 
+**الحالة:** معتمد
+
+### القرار
+
+تصمم واجهة Manuscript Doctor كمساحة فحص ومعالجة للوثائق وليست كمحرر صور عام.
+
+---
+
+## DEC — Backend Source of Truth
+
+**الحالة:** معتمد
+
+### القرار
+
+لا تحتوي Frontend على Diagnostic Thresholds أو Recommendation Rules أو Preservation Decisions.
+
+---
+
+## DEC — Manual and Smart Treatment Separation
+
+**الحالة:** معتمد
+
+### القرار
+
+تعرض المعالجة اليدوية والمعالجة الذكية كمسارين واضحين منفصلين.
+
+---
+
+## DEC — Binarization Display Separation
+
+**الحالة:** معتمد
+
+### القرار
+
+تعرض نتائج Binarization بصورة مستقلة عن Enhanced Result الأساسية.
+
+---
+
+## DEC — No Fake Scientific Scores
+
+**الحالة:** معتمد
+
+### القرار
+
+لا تعرض الواجهة نسب جودة أو Preservation Percentages غير مثبتة علميًا.
+---
 <div align="center">
 
 ### Diagnose → Treat → Preserve → Verify

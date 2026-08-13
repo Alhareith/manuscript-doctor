@@ -692,7 +692,47 @@ Documentation Update
 ```
 
 ---
+## Phase 13 — Full Frontend
 
+- [x] إنشاء Final Workspace Layout
+- [x] تصميم Header وهوية الواجهة
+- [x] إنشاء Upload Area
+- [x] دعم Click File Selection
+- [x] دعم Drag and Drop
+- [x] إنشاء Local Original Preview
+- [x] إنشاء Examination Section
+- [x] إنشاء Metrics Cards
+- [x] إنشاء Diagnosis Section
+- [x] إنشاء Preservation Profile Section
+- [x] إنشاء Treatment Plan Section
+- [x] إنشاء Automatic Exclusion UI
+- [x] إنشاء Smart Treatment UI
+- [x] إنشاء Manual Treatment UI
+- [x] إنشاء Dynamic Parameter Controls
+- [x] استخدام Phase 8 Provisional Defaults
+- [x] إنشاء Processing State
+- [x] إنشاء Preservation Verification Section
+- [x] إنشاء Decision Section
+- [x] إنشاء Original / Result Comparison
+- [x] إنشاء Binarization Results Section
+- [x] إنشاء Download Section
+- [x] إنشاء Error State
+- [x] دعم RTL
+- [x] دعم Responsive Layout
+- [x] اختبار Mobile Layout
+- [x] اختبار Desktop Layout
+- [x] منع Fake Metrics
+- [x] منع Scientific Scores غير المثبتة
+- [x] الحفاظ على Backend كSource of Truth
+- [x] تحديث Architecture
+- [x] تحديث Requirements
+- [x] تحديث Decisions
+- [ ] ربط Upload API
+- [ ] ربط Manual Processing API
+- [ ] ربط Smart Pipeline API
+- [ ] ربط Results API
+- [ ] ربط Download API
+---
 # قاعدة الأولوية
 
 إذا تعارض الوقت مع عدد الميزات:
