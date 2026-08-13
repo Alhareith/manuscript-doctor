@@ -293,7 +293,24 @@ Reason:
 * عدم إنشاء Route جديد لكل خوارزمية.
 
 ---
+## Operation Qualification
 
+تمر عملية المعالجة بثلاث درجات قبل الاستخدام التلقائي:
+
+1. Implementation Validation
+   - تتم في Phase 7.
+   - تثبت أن العملية تعمل برمجيًا.
+
+2. Operation Evaluation
+   - تتم في Phase 8.
+   - تحدد الاستخدام المناسب والParameters والمخاطر الأولية.
+
+3. Preservation Verification
+   - تبدأ في Phase 9.
+   - تقيس تغير البنية بين الأصل والنتيجة.
+
+لا يجوز اعتبار العملية Auto-Safe قبل اكتمال المراحل اللازمة.
+---
 # 6. `processing/pipeline.py` — Preservation-Aware Smart Pipeline
 
 ### المسؤولية

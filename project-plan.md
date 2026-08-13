@@ -498,7 +498,34 @@ flowchart LR
 - [ ] معايرة Parameters
 - [ ] تحديد العمليات المناسبة لـSmart Pipeline
 ---
+## Phase 8 — Operation Evaluation & Parameter Tuning
 
+- [x] إنشاء مجموعة صور تقييم ممثلة
+- [x] فصل بيانات التقييم عن Runtime storage
+- [x] منع ملفات التقييم من Git
+- [x] إنشاء `tools/evaluate_operations.py`
+- [x] تعريف Candidate Parameters
+- [x] توليد نتائج العمليات آليًا
+- [x] تسجيل Metrics قبل وبعد
+- [x] تقييم CLAHE
+- [x] تقييم Histogram Equalization
+- [x] تقييم Median Denoising
+- [x] تقييم Sharpening
+- [x] تقييم Global Threshold
+- [x] تقييم Otsu
+- [x] تقييم Adaptive Threshold
+- [x] تقييم Morphological Opening
+- [x] تقييم Morphological Closing
+- [x] توثيق Failure Cases
+- [x] اختيار Provisional Defaults
+- [x] تصنيف كل عملية
+- [x] إنشاء Final Operation Matrix
+- [x] تحديث `operations.py` عند الحاجة
+- [x] تشغيل جميع الاختبارات
+- [x] تحديث الوثائق
+  
+  ---
+  
 # قاعدة إغلاق أي مرحلة
 
 لا يتم تحويل:
