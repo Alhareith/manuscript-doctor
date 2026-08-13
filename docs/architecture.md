@@ -184,51 +184,54 @@ Preservation Profile
 ---
 
 ## 4.3 `processing/recommender.py` — Recommendation Engine
+## Recommendation Engine
 
-### المسؤولية
+`processing/recommender.py` يحول نتائج Examination Engine إلى توصيات معالجة قابلة للتفسير.
 
-تحويل نتائج التحليل إلى **خطة معالجة قابلة للتفسير**.
+لا يقوم الملف بتنفيذ عمليات معالجة الصور.
 
-### المدخلات
+### Inputs
 
-```text
-Analysis
-+
-Diagnoses
-+
-Preservation Profile
-```
+- diagnoses
+- preservation profile
 
-### المخرجات
+### Outputs
 
-* Operation مقترحة.
-* سبب الاختيار.
-* Priority.
-* تحذير عند وجود حساسية مرتفعة.
-* خطة أولية يمكن للـPipeline استخدامها.
+- recommended operations
+- provisional parameters
+- recommendation reasons
+- processing mode
+- operation risk
+- operations excluded from automatic use
+- summary
 
-### مثال منطقي
+### Recommendation Policy
 
-```text
-Low Contrast
-+
-Uneven Illumination
-+
-Moderate Preservation Sensitivity
-        ↓
-Recommend CLAHE
-        ↓
-Reason:
-تحسين التباين المحلي مع تجنب معالجة عالمية قوية
-```
+قواعد التوصية مبنية على نتائج Operation Evaluation وليس على أسماء الخوارزميات فقط.
 
-### لا يجب أن يقوم بـ
+لا تصبح أي عملية مؤهلة للاستخدام التلقائي إذا كانت مصنفة `manual_only` أو `reject`.
 
-* تنفيذ الخوارزمية.
-* قراءة الملفات.
-* حفظ النتائج.
-* اتخاذ قرار Preservation بعد المعالجة.
+### Processing Modes
 
+#### Enhancement
+
+عمليات تنتج نسخة محسنة مع المحافظة على طبيعة الصورة العامة، مثل:
+
+- CLAHE
+- Median Denoising
+- Sharpening
+
+#### Binarization
+
+عمليات تنتج تمثيلًا ثنائيًا منفصلًا، مثل:
+
+- Adaptive Threshold
+
+لا يعامل Binarization كنتيجة Enhancement عادية.
+
+### Important Limitation
+
+Recommendation Engine هو Rule-Based Decision Support وليس نموذج AI أو Machine Learning.
 ---
 
 ## 4.4 `processing/operations.py` ## Processing Operations
@@ -311,6 +314,8 @@ Reason:
 
 لا يجوز اعتبار العملية Auto-Safe قبل اكتمال المراحل اللازمة.
 ---
+
+
 # 6. `processing/pipeline.py` — Preservation-Aware Smart Pipeline
 
 ### المسؤولية
@@ -375,56 +380,43 @@ Preservation Verification
 
 # 7. `processing/preservation.py` — Preservation Verification Engine
 
-هذا المكوّن من أهم أجزاء معمارية Manuscript Doctor.
+## Preservation Verification Engine
 
-### المسؤولية
+`processing/preservation.py` يقارن الصورة الأصلية بالصورة المعالجة بعد تنفيذ العملية.
 
-مقارنة:
+لا يحاول فهم النص لغويًا ولا يستخدم OCR.
 
-```text
-Original
-+
-Processed Result
-```
+### Initial Preservation Metrics
 
-للبحث عن مؤشرات بنيوية على أن المعالجة قد تكون أثرت في التفاصيل الأصلية.
+#### Edge Retention
+يقيس النسبة التقريبية من الحواف الأصلية التي ما زالت تظهر بالقرب من مواقعها بعد المعالجة.
 
-### يمكن أن يشمل مستقبلًا
+#### Component Retention
+يقارن عدد المكونات البنيوية الصغيرة في تمثيل ثنائي مشتق من الأصل والنتيجة.
 
-* Edge Retention.
-* Small Detail Retention.
-* Component Changes.
-* Stroke Continuity Indicators.
-* Component Merging Indicators.
-* Structural Change Indicators.
+لا تعتبر Connected Components حروفًا بشكل تلقائي.
 
-### المخرجات
+#### Structure Similarity Indicator
+مؤشر مبسط يعتمد على متوسط الفرق البصري بعد التطبيع.
 
-```text
-Metrics
-+
-Warnings
-+
-Assessment
-```
+لا يمثل SSIM القياسي ولا يجب تسميته SSIM.
 
-### مثال
+#### Edge Inflation
+يقارن عدد الحواف بعد المعالجة بعدد الحواف في الأصل، للمساعدة في اكتشاف التضخيم المحتمل للضوضاء أو الحواف.
 
-```json
-{
-  "metrics": {},
-  "warnings": [],
-  "assessment": "acceptable"
-}
-```
+### Assessment
 
-### لا يجب أن
+تجمع Warnings الأولية إلى:
 
-* يفسر كل اختلاف Pixel كفقد نص.
-* يدعي معرفة معنى الحروف.
-* يعيد بناء تفاصيل مفقودة.
-* يصف النتيجة بأنها `100% safe`.
-* يحدد Treatment قبل المعالجة.
+- acceptable
+- caution
+- high_risk
+
+هذه الحالات Heuristic وليست ضمانًا علميًا للمحافظة على النص.
+
+### Important Limitation
+
+تؤدي عمليات Binarization بطبيعتها إلى تغيير مظهر الصورة بدرجة كبيرة، ولذلك لا يجب تفسير جميع Preservation Metrics بنفس الطريقة المستخدمة مع عمليات Enhancement التقليدية.
 
 ---
 

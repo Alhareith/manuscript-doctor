@@ -525,7 +525,61 @@ flowchart LR
 - [x] تحديث الوثائق
   
   ---
-  
+  ## Phase 9 — Preservation Verification Engine
+
+- [x] إنشاء `processing/preservation.py`
+- [x] التحقق من Original وProcessed inputs
+- [x] دعم Grayscale وBGR وBGRA
+- [x] توحيد أبعاد المقارنة
+- [x] إنشاء Edge Retention
+- [x] إنشاء Component Retention
+- [x] إنشاء Structure Similarity Indicator
+- [x] إنشاء Edge Inflation
+- [x] إنشاء Preservation Warnings
+- [x] إنشاء Assessment مبدئي
+- [x] دعم acceptable / caution / high_risk
+- [x] اختبار الصور المتطابقة
+- [x] اختبار Blur قوي
+- [x] اختبار حذف محتوى
+- [x] اختبار Noise amplification
+- [x] اختبار عدم تعديل الصور
+- [x] تجربة CLAHE على صور حقيقية
+- [x] تجربة Median على صور Noise
+- [x] تجربة Sharpen على Fine Details
+- [x] تجربة Morphology على Fine Details
+- [x] توثيق حدود Binarization
+- [x] توثيق Scientific Limitations
+- [ ] معايرة Thresholds النهائية على مجموعة الصور الواقعية
+- [ ] تطوير تفسير Preservation خاص بعمليات Binarization
+  ---
+  ## Phase 10 — Recommendation Engine
+
+- [x] إنشاء `processing/recommender.py`
+- [x] تعريف Recommendation Policy
+- [x] استخدام نتائج Phase 8
+- [x] استخدام Provisional Defaults
+- [x] ربط Low Contrast بـCLAHE
+- [x] ربط Darkness بـCLAHE
+- [x] ربط Noise بـMedian بصورة مشروطة
+- [x] ربط Low Sharpness بـSharpen بصورة مشروطة
+- [x] ربط Uneven Illumination بـAdaptive Threshold في Binarization Path
+- [x] منع Sharpen عند وجود Noise
+- [x] استخدام Preservation Profile في القرار
+- [x] منع Manual-only Operations من التوصية التلقائية
+- [x] منع تكرار Recommendation نفسها
+- [x] إضافة Reason لكل Recommendation
+- [x] إضافة Risk لكل Recommendation
+- [x] إضافة Processing Mode
+- [x] دعم No-treatment-needed
+- [x] إنشاء `tests/test_recommender.py`
+- [x] اختبار الحالات المفردة
+- [x] اختبار Mixed Diagnoses
+- [x] اختبار Preservation sensitivity
+- [x] اختبار Manual-only exclusion
+- [x] اختبار صورة بدون تشخيص
+- [x] تحديث الوثائق
+- [ ] تحسين Noise Diagnosis قبل الاعتماد القوي على Automatic Denoising
+  ---
 # قاعدة إغلاق أي مرحلة
 
 لا يتم تحويل:

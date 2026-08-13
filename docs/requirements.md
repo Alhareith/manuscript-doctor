@@ -378,6 +378,98 @@ Error
 يجب تقييم أثر العمليات على صور المخطوطات قبل السماح للRecommendation Engine أو Smart Pipeline باستخدامها تلقائيًا.
 
 ---
+## Preservation Verification Requirements
+
+### PVR-01
+
+يجب أن تستقبل Preservation Verification الصورة الأصلية والنتيجة المعالجة.
+
+### PVR-02
+
+يجب ألا تعدل الوحدة أيًا من الصورتين.
+
+### PVR-03
+
+يجب أن تعتمد المقارنة على مؤشرات بنيوية ولا تدعي فهم المعنى اللغوي للنص.
+
+### PVR-04
+
+يجب إرجاع Metrics وWarnings وAssessment بصورة منفصلة.
+
+### PVR-05
+
+يجب ألا تعتبر كل اختلاف بصري دليلًا على فقد معلومات.
+
+### PVR-06
+
+يجب توثيق حدود كل Preservation Metric.
+
+### PVR-07
+
+يجب أن تكون قواعد Assessment قابلة للمعايرة لاحقًا.
+
+### PVR-08
+
+يجب التعامل بحذر مع عمليات Binarization لأن طبيعتها تغير المظهر العام للصورة.
+
+### PVR-09
+
+يجب ألا تستخدم Preservation Score كادعاء لنسبة النص المحفوظ.
+
+### PVR-10
+
+يجب أن تعمل الوحدة دون Flask أو File I/O.
+---
+## Recommendation Engine Requirements
+
+### RER-01
+
+يجب أن يعتمد Recommendation Engine على نتائج Analyzer وليس على الصورة الخام مباشرة.
+
+### RER-02
+
+يجب أن تكون كل توصية قابلة للتفسير بسبب واضح.
+
+### RER-03
+
+يجب أن تستخدم التوصيات Operation IDs الثابتة.
+
+### RER-04
+
+يجب ألا يقوم Recommendation Engine بتنفيذ عمليات معالجة الصور.
+
+### RER-05
+
+يجب ألا يوصي تلقائيًا بعملية مصنفة manual-only أو rejected.
+
+### RER-06
+
+يجب استخدام Provisional Defaults المستخرجة من Operation Evaluation.
+
+### RER-07
+
+يجب أخذ Preservation Profile في الاعتبار عند العمليات التي قد تؤثر على التفاصيل.
+
+### RER-08
+
+يجب منع Sharpening التلقائي عند وجود Noise قوي.
+
+### RER-09
+
+يجب التعامل مع Adaptive Threshold كمسار Binarization وليس Enhancement عام.
+
+### RER-10
+
+يجب أن يستطيع النظام عدم تقديم أي معالجة إذا لم توجد مشكلة واضحة.
+
+### RER-11
+
+لا يجوز وصف قواعد التوصية بأنها AI أو Machine Learning.
+
+### RER-12
+
+يجب ألا تعتبر العمليات المستبعدة من الاستخدام التلقائي غير صالحة للاستخدام اليدوي بالضرورة.
+---
 
 # 10. المتطلبات غير الوظيفية — Non-Functional Requirements
 
