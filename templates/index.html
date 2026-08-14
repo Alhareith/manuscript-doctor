@@ -1,16 +1,1323 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Manuscript Doctor — نظام لفحص وتشخيص ومعالجة صور الوثائق والمخطوطات مع مراعاة المحافظة على التفاصيل."
+    >
+
     <title>Manuscript Doctor</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
 </head>
+
 <body>
-    <main>
-        <h1>Manuscript Doctor</h1>
-        <p>Diagnose. Treat. Preserve. Verify.</p>
-        <p>Backend foundation is running.</p>
+
+    <header id="home" class="site-header">
+
+        <nav class="navbar">
+
+            <a href="#home" class="brand" aria-label="Manuscript Doctor">
+                <span class="brand-symbol">
+                    <span>MD</span>
+                </span>
+
+                <span class="brand-copy">
+                    <strong>Manuscript Doctor</strong>
+                    <small>Preservation-Aware Processing</small>
+                </span>
+            </a>
+
+            <div class="nav-links">
+                <a href="#home">الرئيسية</a>
+                <a href="#workflow">سير العمل</a>
+                <a href="#workspace">مساحة العمل</a>
+                <a href="#about">حول المشروع</a>
+            </div>
+
+            <a href="#workspace" class="nav-action">
+                ابدأ الفحص
+                <span>←</span>
+            </a>
+
+        </nav>
+
+
+        <section class="hero">
+
+            <div class="hero-content">
+
+                <div class="hero-eyebrow">
+                    <span class="eyebrow-line"></span>
+                    Digital Manuscript Laboratory
+                </div>
+
+                <h1>
+                    لا تعالج الوثيقة
+                    <span>قبل أن تفهم حالتها.</span>
+                </h1>
+
+                <p class="hero-description">
+                    مساحة رقمية لفحص صور الوثائق والمخطوطات،
+                    تشخيص مشكلاتها، اقتراح المعالجة المناسبة،
+                    ثم التحقق من أثر المعالجة على بنيتها الأصلية.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="#workspace" class="hero-primary">
+                        ابدأ بفحص وثيقة
+                        <span>←</span>
+                    </a>
+
+                    <a href="#workflow" class="hero-secondary">
+                        استكشف المنهجية
+                    </a>
+                </div>
+
+                <div class="hero-principle">
+                    <span>01</span>
+                    Diagnose
+
+                    <i></i>
+
+                    <span>02</span>
+                    Treat
+
+                    <i></i>
+
+                    <span>03</span>
+                    Preserve
+
+                    <i></i>
+
+                    <span>04</span>
+                    Verify
+                </div>
+
+            </div>
+
+
+            <div class="hero-visual" aria-hidden="true">
+
+                <div class="archival-orbit archival-orbit-one"></div>
+                <div class="archival-orbit archival-orbit-two"></div>
+
+                <div class="document-stack">
+
+                    <div class="document-sheet document-sheet-back">
+                        <div class="document-seal"></div>
+
+                        <div class="script-lines">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="document-sheet document-sheet-middle">
+                        <div class="document-index">ARCHIVE · 021</div>
+
+                        <div class="script-lines compact">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+
+                        <div class="document-mark">
+                            PRESERVE
+                        </div>
+                    </div>
+
+                    <div class="document-sheet document-sheet-front">
+
+                        <div class="document-corner">
+                            MD
+                        </div>
+
+                        <div class="document-title">
+                            MANUSCRIPT
+                            <small>EXAMINATION RECORD</small>
+                        </div>
+
+                        <div class="document-divider"></div>
+
+                        <div class="manuscript-glyph">
+                            𐩱 𐩣 𐩬
+                        </div>
+
+                        <div class="script-lines strong">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+
+                        <div class="document-footer-line">
+                            STRUCTURE BEFORE BEAUTY
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="floating-label label-analysis">
+                    <small>EXAMINATION</small>
+                    <strong>Visual condition</strong>
+                </div>
+
+                <div class="floating-label label-preserve">
+                    <small>PRESERVATION</small>
+                    <strong>Structural check</strong>
+                </div>
+
+            </div>
+
+        </section>
+
+        <div class="hero-bottom-line">
+            <span>MANUSCRIPT DOCTOR</span>
+            <span>RULE-BASED · EXPLAINABLE · PRESERVATION-AWARE</span>
+            <span>2026</span>
+        </div>
+
+    </header>
+
+
+    <section id="workflow" class="workflow-section">
+
+        <div class="section-intro">
+            <span class="intro-label">THE METHOD</span>
+
+            <h2>
+                المعالجة ليست أول خطوة.
+            </h2>
+
+            <p>
+                كل وثيقة تمر بمسار واضح قبل اعتماد أي نتيجة.
+            </p>
+        </div>
+
+        <div class="workflow-track">
+
+            <article class="workflow-step">
+                <span class="workflow-number">01</span>
+                <div>
+                    <small>EXAMINE</small>
+                    <h3>الفحص</h3>
+                    <p>قراءة الحالة البصرية قبل أي تعديل.</p>
+                </div>
+            </article>
+
+            <div class="workflow-connector"></div>
+
+            <article class="workflow-step">
+                <span class="workflow-number">02</span>
+                <div>
+                    <small>DIAGNOSE</small>
+                    <h3>التشخيص</h3>
+                    <p>تحويل المؤشرات إلى مشاكل مفهومة.</p>
+                </div>
+            </article>
+
+            <div class="workflow-connector"></div>
+
+            <article class="workflow-step">
+                <span class="workflow-number">03</span>
+                <div>
+                    <small>TREAT</small>
+                    <h3>المعالجة</h3>
+                    <p>اختيار أقل معالجة تحقق فائدة واضحة.</p>
+                </div>
+            </article>
+
+            <div class="workflow-connector"></div>
+
+            <article class="workflow-step">
+                <span class="workflow-number">04</span>
+                <div>
+                    <small>VERIFY</small>
+                    <h3>التحقق</h3>
+                    <p>مقارنة النتيجة بالأصل قبل اعتمادها.</p>
+                </div>
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <main id="workspace" class="workspace">
+
+        <header class="workspace-header">
+
+            <div>
+                <span class="workspace-kicker">
+                    DOCUMENT WORKSPACE
+                </span>
+
+                <h2>
+                    مختبر الوثيقة
+                </h2>
+
+                <p>
+                    ابدأ بالصورة الأصلية واترك كل مرحلة تبرر المرحلة التالية.
+                </p>
+            </div>
+
+            <div class="workspace-status">
+                <span class="status-pulse"></span>
+                Ready for examination
+            </div>
+
+        </header>
+
+
+        <section
+            id="uploadSection"
+            class="panel upload-panel"
+        >
+
+            <div class="panel-rail">
+                <span>01</span>
+                <small>INPUT</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            DOCUMENT INPUT
+                        </span>
+
+                        <h2>
+                            أدخل الوثيقة
+                        </h2>
+                    </div>
+
+                    <p>
+                        اختر نسخة واضحة قدر الإمكان من الصورة الأصلية.
+                        لن يتم تعديل الملف الأصلي أثناء المعالجة.
+                    </p>
+                </div>
+
+
+                <div
+                    id="dropZone"
+                    class="drop-zone"
+                    tabindex="0"
+                    role="button"
+                    aria-label="اختيار صورة وثيقة"
+                >
+
+                    <input
+                        id="imageInput"
+                        type="file"
+                        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                        hidden
+                    >
+
+                    <div class="drop-decoration">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+
+                    <div class="drop-content">
+
+                        <div class="drop-icon">
+                            <span>+</span>
+                        </div>
+
+                        <strong>
+                            ضع الوثيقة هنا
+                        </strong>
+
+                        <p>
+                            اسحب الصورة إلى هذه المساحة
+                            أو اضغط لاختيار الملف.
+                        </p>
+
+                        <div class="file-specs">
+                            <span>JPG</span>
+                            <span>JPEG</span>
+                            <span>PNG</span>
+                            <span>8-bit</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="selectedFile"
+                    class="selected-file hidden"
+                >
+
+                    <div class="selected-file-icon">
+                        DOC
+                    </div>
+
+                    <div class="selected-file-info">
+                        <strong id="selectedFileName">—</strong>
+                        <span id="selectedFileMeta">—</span>
+                    </div>
+
+                    <button
+                        id="removeImageButton"
+                        class="button button-ghost"
+                        type="button"
+                    >
+                        إزالة
+                    </button>
+
+                </div>
+
+
+                <div class="primary-action-row">
+
+                    <div class="action-hint">
+                        <span></span>
+                        يبدأ النظام بفحص الصورة قبل المعالجة.
+                    </div>
+
+                    <button
+                        id="startExaminationButton"
+                        class="button button-primary"
+                        type="button"
+                        disabled
+                    >
+                        بدء الفحص
+                        <span>←</span>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="documentPreviewSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>02</span>
+                <small>ORIGINAL</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            ORIGINAL REFERENCE
+                        </span>
+
+                        <h2>الصورة الأصلية</h2>
+                    </div>
+
+                    <p>
+                        هذه الصورة هي المرجع الثابت الذي تقارن به
+                        نتائج المعالجة لاحقًا.
+                    </p>
+                </div>
+
+                <div class="image-stage archival-stage">
+                    <div class="stage-corner top-right"></div>
+                    <div class="stage-corner top-left"></div>
+                    <div class="stage-corner bottom-right"></div>
+                    <div class="stage-corner bottom-left"></div>
+
+                    <img
+                        id="originalPreview"
+                        alt="معاينة الوثيقة الأصلية"
+                    >
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="examinationSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>03</span>
+                <small>EXAMINE</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            VISUAL EXAMINATION
+                        </span>
+
+                        <h2>الفحص</h2>
+                    </div>
+
+                    <p>
+                        قياسات تصف حالة الصورة قبل اتخاذ قرار المعالجة.
+                    </p>
+                </div>
+
+
+                <div class="metrics-grid">
+
+                    <article class="metric-card">
+                        <span class="metric-index">01</span>
+                        <small>Brightness</small>
+                        <strong id="brightnessMetric">—</strong>
+                        <p>gray level</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">02</span>
+                        <small>Contrast</small>
+                        <strong id="contrastMetric">—</strong>
+                        <p>standard deviation</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">03</span>
+                        <small>Sharpness</small>
+                        <strong id="sharpnessMetric">—</strong>
+                        <p>Laplacian variance</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">04</span>
+                        <small>Noise</small>
+                        <strong id="noiseMetric">—</strong>
+                        <p>heuristic indicator</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">05</span>
+                        <small>Illumination</small>
+                        <strong id="illuminationMetric">—</strong>
+                        <p>variation</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">06</span>
+                        <small>Edge Density</small>
+                        <strong id="edgeDensityMetric">—</strong>
+                        <p>structural ratio</p>
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="diagnosisSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>04</span>
+                <small>DIAGNOSE</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            CONDITION REPORT
+                        </span>
+
+                        <h2>التشخيص</h2>
+                    </div>
+
+                    <p>
+                        تفسير القياسات إلى حالات مفهومة وقابلة للتتبع.
+                    </p>
+                </div>
+
+                <div
+                    id="diagnosisList"
+                    class="diagnosis-list"
+                >
+                    <div class="empty-state">
+                        <span>—</span>
+                        لم يتم إجراء الفحص بعد.
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="preservationProfileSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>05</span>
+                <small>PRESERVE</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            PRESERVATION SENSITIVITY
+                        </span>
+
+                        <h2>حساسية المحافظة</h2>
+                    </div>
+
+                    <p>
+                        تقدير أولي لمقدار الحذر المطلوب أثناء المعالجة.
+                    </p>
+                </div>
+
+
+                <div class="preservation-profile">
+
+                    <div
+                        id="preservationLevelBadge"
+                        class="preservation-badge neutral"
+                    >
+                        <small>SENSITIVITY</small>
+                        <strong>—</strong>
+                    </div>
+
+                    <div class="preservation-copy">
+
+                        <p id="preservationMessage">
+                            —
+                        </p>
+
+                        <ul
+                            id="preservationIndicators"
+                            class="indicator-list"
+                        ></ul>
+
+                    </div>
+
+                </div>
+
+                <div class="scientific-note">
+                    <span>!</span>
+
+                    <p>
+                        هذا التقدير Heuristic ولا يمثل نسبة
+                        من النص أو التفاصيل المحفوظة.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="treatmentPlanSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>06</span>
+                <small>PLAN</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            TREATMENT PLAN
+                        </span>
+
+                        <h2>خطة المعالجة</h2>
+                    </div>
+
+                    <p>
+                        توصيات Rule-Based مبنية على التشخيص
+                        ونتائج تقييم العمليات.
+                    </p>
+                </div>
+
+
+                <div
+                    id="recommendationList"
+                    class="recommendation-list"
+                >
+                    <div class="empty-state">
+                        <span>—</span>
+                        لا توجد توصيات حتى الآن.
+                    </div>
+                </div>
+
+
+                <div
+                    id="automaticExclusions"
+                    class="automatic-exclusions hidden"
+                >
+                    <div class="subsection-title">
+                        <span></span>
+                        <h3>مستبعدة من التنفيذ التلقائي</h3>
+                    </div>
+
+                    <div
+                        id="automaticExclusionList"
+                        class="exclusion-list"
+                    ></div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="treatmentSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>07</span>
+                <small>TREAT</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            TREATMENT DESK
+                        </span>
+
+                        <h2>المعالجة</h2>
+                    </div>
+
+                    <p>
+                        اختر بين التنفيذ المحافظ التلقائي
+                        أو التحكم اليدوي في عملية محددة.
+                    </p>
+                </div>
+
+
+                <div class="treatment-layout">
+
+                    <article class="treatment-card smart-treatment">
+
+                        <div class="treatment-card-head">
+                            <span class="treatment-number">
+                                A
+                            </span>
+
+                            <span class="treatment-type">
+                                SYSTEM GUIDED
+                            </span>
+                        </div>
+
+                        <h3>
+                            Smart Treatment
+                        </h3>
+
+                        <p>
+                            ينفذ فقط العمليات المؤهلة،
+                            ويفحص أثر كل Candidate قبل اعتماده.
+                        </p>
+
+                        <div class="smart-flow">
+                            <span>Recommend</span>
+                            <i>→</i>
+                            <span>Treat</span>
+                            <i>→</i>
+                            <span>Verify</span>
+                        </div>
+
+                        <button
+                            id="runPipelineButton"
+                            class="button button-primary"
+                            type="button"
+                        >
+                            تشغيل Smart Pipeline
+                            <span>←</span>
+                        </button>
+
+                    </article>
+
+
+                    <article class="treatment-card manual-treatment">
+
+                        <div class="treatment-card-head">
+                            <span class="treatment-number">
+                                B
+                            </span>
+
+                            <span class="treatment-type">
+                                MANUAL CONTROL
+                            </span>
+                        </div>
+
+                        <h3>
+                            Manual Treatment
+                        </h3>
+
+                        <p>
+                            تطبيق عملية واحدة مباشرة على الصورة الأصلية.
+                        </p>
+
+                        <label for="manualOperation">
+                            اختر العملية
+                        </label>
+
+                        <select id="manualOperation">
+                            <option value="">
+                                اختر عملية معالجة
+                            </option>
+
+                            <option value="clahe">
+                                CLAHE
+                            </option>
+
+                            <option value="histogram_equalization">
+                                Histogram Equalization
+                            </option>
+
+                            <option value="median_denoise">
+                                Median Denoising
+                            </option>
+
+                            <option value="sharpen">
+                                Sharpen
+                            </option>
+
+                            <option value="global_threshold">
+                                Global Threshold
+                            </option>
+
+                            <option value="otsu_threshold">
+                                Otsu Threshold
+                            </option>
+
+                            <option value="adaptive_threshold">
+                                Adaptive Threshold
+                            </option>
+
+                            <option value="morphological_opening">
+                                Morphological Opening
+                            </option>
+
+                            <option value="morphological_closing">
+                                Morphological Closing
+                            </option>
+                        </select>
+
+                        <div
+                            id="manualParameters"
+                            class="parameter-container"
+                        ></div>
+
+                        <button
+                            id="applyManualButton"
+                            class="button button-outline"
+                            type="button"
+                            disabled
+                        >
+                            تطبيق العملية
+                        </button>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="processingStateSection"
+            class="panel process-state hidden"
+            aria-live="polite"
+        >
+
+            <div class="panel-rail">
+                <span>••</span>
+                <small>PROCESS</small>
+            </div>
+
+            <div class="panel-content processing-content">
+
+                <div class="process-spinner">
+                    <div></div>
+                    <span>MD</span>
+                </div>
+
+                <div>
+                    <small>PROCESSING DOCUMENT</small>
+
+                    <strong id="processingTitle">
+                        جاري التنفيذ
+                    </strong>
+
+                    <p id="processingMessage">
+                        يرجى الانتظار...
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="verificationSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>08</span>
+                <small>VERIFY</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            PRESERVATION VERIFICATION
+                        </span>
+
+                        <h2>التحقق من المحافظة</h2>
+                    </div>
+
+                    <p>
+                        مؤشرات تقارن البنية المرئية في النتيجة
+                        مع الصورة الأصلية.
+                    </p>
+                </div>
+
+
+                <div class="metrics-grid verification-grid">
+
+                    <article class="metric-card">
+                        <span class="metric-index">A</span>
+                        <small>Edge Retention</small>
+                        <strong id="edgeRetentionMetric">—</strong>
+                        <p>structural indicator</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">B</span>
+                        <small>Component Retention</small>
+                        <strong id="componentRetentionMetric">—</strong>
+                        <p>component indicator</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">C</span>
+                        <small>Structure Similarity</small>
+                        <strong id="structureSimilarityMetric">—</strong>
+                        <p>visual similarity</p>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-index">D</span>
+                        <small>Edge Inflation</small>
+                        <strong id="edgeInflationMetric">—</strong>
+                        <p>added structure</p>
+                    </article>
+
+                </div>
+
+
+                <div
+                    id="preservationWarnings"
+                    class="warning-list"
+                ></div>
+
+
+                <div class="scientific-note">
+                    <span>!</span>
+
+                    <p>
+                        هذه المؤشرات لا تفهم معنى النص،
+                        ولا تثبت استعادة أو فقد محتوى لغوي.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="decisionSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>09</span>
+                <small>DECIDE</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            TREATMENT DECISION
+                        </span>
+
+                        <h2>القرار</h2>
+                    </div>
+
+                    <p>
+                        خلاصة تقييم نتيجة المعالجة الحالية.
+                    </p>
+                </div>
+
+                <div
+                    id="decisionCard"
+                    class="decision-card neutral"
+                >
+
+                    <div class="decision-symbol">
+                        MD
+                    </div>
+
+                    <div>
+                        <span id="decisionStatus">
+                            —
+                        </span>
+
+                        <p id="decisionMessage">
+                            —
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="comparisonSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>10</span>
+                <small>COMPARE</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            VISUAL COMPARISON
+                        </span>
+
+                        <h2>الأصل والنتيجة</h2>
+                    </div>
+
+                    <p>
+                        لا تعتمد الأرقام وحدها؛
+                        راجع النتيجة بصريًا إلى جانب الأصل.
+                    </p>
+                </div>
+
+
+                <div class="comparison-grid">
+
+                    <article class="comparison-item">
+                        <div class="image-label">
+                            <span>01</span>
+                            ORIGINAL
+                        </div>
+
+                        <div class="image-stage comparison-stage">
+                            <img
+                                id="comparisonOriginal"
+                                alt="الصورة الأصلية"
+                            >
+                        </div>
+                    </article>
+
+
+                    <article class="comparison-item">
+                        <div class="image-label">
+                            <span>02</span>
+                            RESULT
+                        </div>
+
+                        <div class="image-stage comparison-stage">
+                            <img
+                                id="resultPreview"
+                                alt="نتيجة المعالجة"
+                            >
+                        </div>
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="binarizationSection"
+            class="panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>11</span>
+                <small>BINARY</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            SEPARATE OUTPUT
+                        </span>
+
+                        <h2>نتائج الفصل الثنائي</h2>
+                    </div>
+
+                    <p>
+                        Binarization نتيجة مستقلة ولا تستبدل
+                        نسخة Enhancement الأساسية.
+                    </p>
+                </div>
+
+                <div
+                    id="binarizationList"
+                    class="binarization-list"
+                ></div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="downloadSection"
+            class="panel result-panel hidden"
+        >
+
+            <div class="panel-rail">
+                <span>12</span>
+                <small>OUTPUT</small>
+            </div>
+
+            <div class="panel-content">
+
+                <div class="section-heading">
+                    <div>
+                        <span class="section-overline">
+                            FINAL OUTPUT
+                        </span>
+
+                        <h2>النتيجة</h2>
+                    </div>
+
+                    <p>
+                        احتفظ بالنتيجة بعد مراجعتها،
+                        أو ابدأ بوثيقة جديدة.
+                    </p>
+                </div>
+
+                <div class="download-actions">
+
+                    <button
+                        id="startOverButton"
+                        class="button button-outline"
+                        type="button"
+                    >
+                        وثيقة جديدة
+                    </button>
+
+                    <button
+                        id="downloadResultButton"
+                        class="button button-primary"
+                        type="button"
+                        disabled
+                    >
+                        تحميل النتيجة
+                        <span>↓</span>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="errorSection"
+            class="error-banner hidden"
+            role="alert"
+        >
+            <div class="error-symbol">!</div>
+
+            <div>
+                <strong>تعذر إكمال العملية</strong>
+                <p id="errorMessage">—</p>
+            </div>
+        </section>
+
     </main>
+
+
+    <section id="about" class="about-section">
+
+        <div class="about-main">
+
+            <span class="about-index">
+                MD / ABOUT
+            </span>
+
+            <h2>
+                تحسين ما يمكن رؤيته،
+                <span>دون الادعاء باستعادة ما فُقد.</span>
+            </h2>
+
+            <p>
+                Manuscript Doctor مشروع لمعالجة صور الوثائق
+                بمنهج يحاول موازنة التحسين مع المحافظة على
+                بنيتها البصرية الأصلية.
+            </p>
+
+        </div>
+
+
+        <div class="about-principles">
+
+            <div>
+                <span>01</span>
+                <strong>Explainable</strong>
+                <small>
+                    كل توصية لها سبب واضح.
+                </small>
+            </div>
+
+            <div>
+                <span>02</span>
+                <strong>Conservative</strong>
+                <small>
+                    أقل معالجة مفيدة قبل الأقوى.
+                </small>
+            </div>
+
+            <div>
+                <span>03</span>
+                <strong>Verifiable</strong>
+                <small>
+                    النتيجة تعود دائمًا إلى الأصل.
+                </small>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <footer class="site-footer">
+
+        <div class="footer-watermark">
+            MD
+        </div>
+
+        <div class="footer-main">
+
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    MD
+                </div>
+
+                <div>
+                    <strong>Manuscript Doctor</strong>
+                    <span>
+                        Preservation-Aware Document Processing
+                    </span>
+                </div>
+            </div>
+
+
+            <div class="footer-philosophy">
+                <small>CORE PHILOSOPHY</small>
+
+                <p>
+                    Diagnose
+                    <span>→</span>
+                    Treat
+                    <span>→</span>
+                    Preserve
+                    <span>→</span>
+                    Verify
+                </p>
+            </div>
+
+
+            <div class="footer-links">
+                <a href="#home">الرئيسية</a>
+                <a href="#workflow">سير العمل</a>
+                <a href="#workspace">مساحة العمل</a>
+                <a href="#about">حول المشروع</a>
+            </div>
+
+        </div>
+
+
+        <div class="footer-bottom">
+            <span>
+                Academic Image Processing Project
+            </span>
+
+            <span class="footer-line"></span>
+
+            <span>
+                Original remains the reference.
+            </span>
+        </div>
+
+    </footer>
+
+
+    <script
+        src="{{ url_for('static', filename='js/main.js') }}"
+        defer
+    ></script>
+
 </body>
 </html>

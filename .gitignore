@@ -67,3 +67,8 @@ dist/
 # Temporary files
 *.tmp
 *.temp
+
+# Local operation evaluation data
+evaluation/input/*
+evaluation/output/*
+evaluation/results.csv

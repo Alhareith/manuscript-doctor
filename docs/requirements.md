@@ -335,7 +335,299 @@ Error
 ```
 
 ---
+## Processing Operation Requirements
 
+### POR-01
+
+يجب أن تعمل عمليات المعالجة على صورة موجودة في الذاكرة ولا تعتمد على مسار ملف.
+
+### POR-02
+
+يجب ألا تقوم أي عملية بتعديل الصورة الأصلية التي تستقبلها.
+
+### POR-03
+
+يجب ألا تقوم عمليات المعالجة بحفظ الملفات.
+
+### POR-04
+
+يجب ألا تتعامل عمليات المعالجة مباشرة مع Flask أو HTTP.
+
+### POR-05
+
+يجب التحقق من Parameters قبل تمريرها إلى OpenCV.
+
+### POR-06
+
+يجب تنفيذ العمليات المسموحة فقط من خلال Operation Registry.
+
+### POR-07
+
+لا يجوز تنفيذ اسم دالة Python قادم مباشرة من المستخدم.
+
+### POR-08
+
+يجب أن تكون القيم الافتراضية للـParameters قابلة للتعديل والمعايرة لاحقًا.
+
+### POR-09
+
+العمليات التي قد تغير البنية مثل Morphology لا تعتبر آمنة تلقائيًا لمجرد نجاح تنفيذها.
+
+### POR-10
+
+يجب تقييم أثر العمليات على صور المخطوطات قبل السماح للRecommendation Engine أو Smart Pipeline باستخدامها تلقائيًا.
+
+---
+## Preservation Verification Requirements
+
+### PVR-01
+
+يجب أن تستقبل Preservation Verification الصورة الأصلية والنتيجة المعالجة.
+
+### PVR-02
+
+يجب ألا تعدل الوحدة أيًا من الصورتين.
+
+### PVR-03
+
+يجب أن تعتمد المقارنة على مؤشرات بنيوية ولا تدعي فهم المعنى اللغوي للنص.
+
+### PVR-04
+
+يجب إرجاع Metrics وWarnings وAssessment بصورة منفصلة.
+
+### PVR-05
+
+يجب ألا تعتبر كل اختلاف بصري دليلًا على فقد معلومات.
+
+### PVR-06
+
+يجب توثيق حدود كل Preservation Metric.
+
+### PVR-07
+
+يجب أن تكون قواعد Assessment قابلة للمعايرة لاحقًا.
+
+### PVR-08
+
+يجب التعامل بحذر مع عمليات Binarization لأن طبيعتها تغير المظهر العام للصورة.
+
+### PVR-09
+
+يجب ألا تستخدم Preservation Score كادعاء لنسبة النص المحفوظ.
+
+### PVR-10
+
+يجب أن تعمل الوحدة دون Flask أو File I/O.
+---
+## Recommendation Engine Requirements
+
+### RER-01
+
+يجب أن يعتمد Recommendation Engine على نتائج Analyzer وليس على الصورة الخام مباشرة.
+
+### RER-02
+
+يجب أن تكون كل توصية قابلة للتفسير بسبب واضح.
+
+### RER-03
+
+يجب أن تستخدم التوصيات Operation IDs الثابتة.
+
+### RER-04
+
+يجب ألا يقوم Recommendation Engine بتنفيذ عمليات معالجة الصور.
+
+### RER-05
+
+يجب ألا يوصي تلقائيًا بعملية مصنفة manual-only أو rejected.
+
+### RER-06
+
+يجب استخدام Provisional Defaults المستخرجة من Operation Evaluation.
+
+### RER-07
+
+يجب أخذ Preservation Profile في الاعتبار عند العمليات التي قد تؤثر على التفاصيل.
+
+### RER-08
+
+يجب منع Sharpening التلقائي عند وجود Noise قوي.
+
+### RER-09
+
+يجب التعامل مع Adaptive Threshold كمسار Binarization وليس Enhancement عام.
+
+### RER-10
+
+يجب أن يستطيع النظام عدم تقديم أي معالجة إذا لم توجد مشكلة واضحة.
+
+### RER-11
+
+لا يجوز وصف قواعد التوصية بأنها AI أو Machine Learning.
+
+### RER-12
+
+يجب ألا تعتبر العمليات المستبعدة من الاستخدام التلقائي غير صالحة للاستخدام اليدوي بالضرورة.
+---
+## Smart Pipeline Requirements
+
+### SPR-01
+
+يجب أن يعمل Smart Pipeline على نسخة من الصورة الأصلية وألا يعدل الأصل.
+
+### SPR-02
+
+يجب تنفيذ العمليات المؤهلة تلقائيًا فقط.
+
+### SPR-03
+
+يجب أن تستند العمليات إلى Recommendation Engine.
+
+### SPR-04
+
+يجب إجراء Preservation Verification بعد كل Candidate Enhancement.
+
+### SPR-05
+
+يجب مقارنة كل Candidate بالصورة الأصلية.
+
+### SPR-06
+
+يجب رفض Candidate ذي `high_risk`.
+
+### SPR-07
+
+يجب رفض `caution` تلقائيًا عندما يكون Preservation Profile مرتفعًا.
+
+### SPR-08
+
+يجب ألا يؤدي فشل Preservation Verification إلى اعتماد النتيجة تلقائيًا.
+
+### SPR-09
+
+يجب تسجيل كل خطوة وParameters والسبب ونتيجة التنفيذ وPreservation Decision.
+
+### SPR-10
+
+يجب ألا يدخل Median Denoising إلى Smart Pipeline تلقائيًا قبل تحسين Noise Diagnosis.
+
+### SPR-11
+
+يجب التعامل مع Binarization كمسار مستقل.
+
+### SPR-12
+
+يجب إنشاء Adaptive Threshold Candidate من Original ضمن MVP الحالي.
+
+### SPR-13
+
+يجب ألا تستخدم Histogram Equalization أو Global Threshold أو Morphology تلقائيًا في MVP.
+
+### SPR-14
+
+يجب ألا يقوم Pipeline بحفظ الملفات.
+
+### SPR-15
+
+يجب ألا يعتمد Pipeline على Flask أو HTTP.
+
+### SPR-16
+
+يجب عدم استخدام Preservation Percentage أو Quality Score غير مثبت علميًا.
+
+### SPR-17
+
+يجب ألا يتم البحث التلقائي عن Parameters مختلفة في MVP الحالي.
+
+### SPR-18
+
+يجب أن تكون Pipeline Rule-Based وقابلة للتفسير.
+---
+
+## Frontend Requirements
+
+### FER-01
+
+يجب أن تدعم الواجهة اتجاه RTL.
+
+### FER-02
+
+يجب أن تعمل الواجهة على Desktop وMobile.
+
+### FER-03
+
+يجب أن تعرض الصورة الأصلية بوضوح.
+
+### FER-04
+
+يجب أن تعرض Metrics دون تفسيرها من جانب Frontend.
+
+### FER-05
+
+يجب أن تعرض Diagnoses القادمة من Backend.
+
+### FER-06
+
+يجب أن تعرض Preservation Profile دون تحويله إلى نسبة مئوية.
+
+### FER-07
+
+يجب عرض Reasons الخاصة بالتوصيات.
+
+### FER-08
+
+يجب فصل Manual Treatment عن Smart Treatment.
+
+### FER-09
+
+يجب أن تستخدم الواجهة Operation IDs فقط عند إرسال العمليات.
+
+### FER-10
+
+يجب أن تعرض Preservation Metrics وWarnings بعد المعالجة.
+
+### FER-11
+
+يجب أن تعرض Decision Status ورسالتها.
+
+### FER-12
+
+يجب توفير Original / Result Comparison.
+
+### FER-13
+
+يجب عرض Binarization Results بصورة منفصلة.
+
+### FER-14
+
+يجب توفير Loading State.
+
+### FER-15
+
+يجب توفير Error State مفهوم للمستخدم.
+
+### FER-16
+
+لا يجوز وضع Diagnostic Thresholds داخل JavaScript.
+
+### FER-17
+
+لا يجوز وضع Recommendation Rules داخل JavaScript.
+
+### FER-18
+
+لا يجوز اعتبار Frontend مصدر الحقيقة لأي Processing Decision.
+
+### FER-19
+
+لا يجوز عرض Preservation Percentage غير مثبت علميًا.
+
+### FER-20
+
+يجب ألا تستخدم الواجهة نتائج وهمية أثناء Runtime الحقيقي.
+
+---
 # 10. المتطلبات غير الوظيفية — Non-Functional Requirements
 
 | المعرف     | المتطلب             | التفاصيل                                                               |

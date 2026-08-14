@@ -184,126 +184,110 @@ Preservation Profile
 ---
 
 ## 4.3 `processing/recommender.py` — Recommendation Engine
+## Recommendation Engine
 
-### المسؤولية
+`processing/recommender.py` يحول نتائج Examination Engine إلى توصيات معالجة قابلة للتفسير.
 
-تحويل نتائج التحليل إلى **خطة معالجة قابلة للتفسير**.
+لا يقوم الملف بتنفيذ عمليات معالجة الصور.
 
-### المدخلات
+### Inputs
 
-```text
-Analysis
-+
-Diagnoses
-+
-Preservation Profile
-```
+- diagnoses
+- preservation profile
 
-### المخرجات
+### Outputs
 
-* Operation مقترحة.
-* سبب الاختيار.
-* Priority.
-* تحذير عند وجود حساسية مرتفعة.
-* خطة أولية يمكن للـPipeline استخدامها.
+- recommended operations
+- provisional parameters
+- recommendation reasons
+- processing mode
+- operation risk
+- operations excluded from automatic use
+- summary
 
-### مثال منطقي
+### Recommendation Policy
 
-```text
-Low Contrast
-+
-Uneven Illumination
-+
-Moderate Preservation Sensitivity
-        ↓
-Recommend CLAHE
-        ↓
-Reason:
-تحسين التباين المحلي مع تجنب معالجة عالمية قوية
-```
+قواعد التوصية مبنية على نتائج Operation Evaluation وليس على أسماء الخوارزميات فقط.
 
-### لا يجب أن يقوم بـ
+لا تصبح أي عملية مؤهلة للاستخدام التلقائي إذا كانت مصنفة `manual_only` أو `reject`.
 
-* تنفيذ الخوارزمية.
-* قراءة الملفات.
-* حفظ النتائج.
-* اتخاذ قرار Preservation بعد المعالجة.
+### Processing Modes
 
+#### Enhancement
+
+عمليات تنتج نسخة محسنة مع المحافظة على طبيعة الصورة العامة، مثل:
+
+- CLAHE
+- Median Denoising
+- Sharpening
+
+#### Binarization
+
+عمليات تنتج تمثيلًا ثنائيًا منفصلًا، مثل:
+
+- Adaptive Threshold
+
+لا يعامل Binarization كنتيجة Enhancement عادية.
+
+### Important Limitation
+
+Recommendation Engine هو Rule-Based Decision Support وليس نموذج AI أو Machine Learning.
 ---
 
-## 4.4 `processing/operations.py` — Image Processing Operations
+## 4.4 `processing/operations.py` ## Processing Operations
 
-### المسؤولية
+`processing/operations.py` يحتوي على عمليات معالجة صور مستقلة.
 
-توفير عمليات معالجة مستقلة وقابلة للاختبار.
+تستقبل العمليات صورة OpenCV موجودة في الذاكرة وتعيد صورة جديدة دون تعديل الصورة الأصلية أو التعامل مع الملفات أو HTTP.
 
-من أمثلتها:
+### Core Operations
 
-* Grayscale
-* Median Filter
-* Gaussian Filter
-* Histogram Equalization
-* CLAHE
-* Sharpening
-* Canny
-* Otsu Threshold
-* Adaptive Threshold
-* Morphological Opening
-* Morphological Closing
+#### CLAHE
+تحسين التباين المحلي مع الحد من التضخيم المفرط للتباين.
 
-كل Operation يجب أن:
+في الصور الملونة يتم تعديل قناة الإضاءة فقط للمحافظة على المعلومات اللونية قدر الإمكان.
 
-```text
-تستقبل Image
-      ↓
-تنفذ عملية محددة
-      ↓
-تعيد Result
-```
+#### Histogram Equalization
+تحسين عالمي للتباين يستخدم أساسًا كعملية مقارنة مع طرق التحسين المحلي.
 
-ولا تتعامل مع:
+#### Median Denoising
+تقليل بعض أنواع التغيرات النقطية مع محافظة نسبية على الحواف.
 
-* HTTP
-* File Paths من المستخدم
-* Diagnosis
-* Recommendations
-* UI
+#### Sharpening
+تعزيز التفاصيل باستخدام Unsharp Masking بمعامل شدة قابل للتحكم.
 
----
+#### Global Threshold
+تحويل الصورة إلى تمثيل ثنائي باستخدام قيمة Threshold محددة.
 
-# 5. Operation Registry
+#### Otsu Threshold
+اختيار Threshold عالمي تلقائيًا اعتمادًا على توزيع شدة الصورة.
 
-لا يرسل المستخدم اسم Python Function.
+#### Adaptive Threshold
+استخدام Thresholds محلية، ويستهدف بصورة خاصة الحالات التي تتغير فيها الإضاءة عبر الصفحة.
 
-يرسل فقط معرفًا ثابتًا مثل:
+#### Morphological Opening
+عملية بنيوية قد تساعد على إزالة مكونات صغيرة، ويجب استخدامها بحذر بسبب احتمال فقد التفاصيل.
 
-```json
-{
-  "operation": "clahe"
-}
-```
+#### Morphological Closing
+عملية بنيوية قد تسد فجوات صغيرة، ويجب استخدامها بحذر بسبب احتمال دمج تفاصيل متجاورة.
 
-ويتم الربط داخليًا:
+### Operation Registry
 
-```text
-"clahe"
-   ↓
-Operation Registry
-   ↓
-clahe function
-```
+لا يرسل Frontend أسماء دوال Python.
 
-مثال مفاهيمي:
+يستخدم النظام معرفات ثابتة مثل:
 
-```python
-OPERATIONS = {
-    "grayscale": ...,
-    "median": ...,
-    "clahe": ...,
-    "otsu": ...
-}
-```
+- `clahe`
+- `median_denoise`
+- `adaptive_threshold`
 
+ويقوم Backend لاحقًا بربط المعرف بالدالة المسموح بها عبر Operation Registry.
+
+### Parameter Status
+
+القيم الافتراضية الحالية هي Initial Defaults فقط.
+
+لا تعتبر Parameters نهائية أو مثلى للمخطوطات قبل مرحلة Operation Evaluation & Parameter Tuning.
 ## الهدف
 
 * منع استدعاء دوال عشوائية.
@@ -312,121 +296,132 @@ OPERATIONS = {
 * عدم إنشاء Route جديد لكل خوارزمية.
 
 ---
+## Operation Qualification
+
+تمر عملية المعالجة بثلاث درجات قبل الاستخدام التلقائي:
+
+1. Implementation Validation
+   - تتم في Phase 7.
+   - تثبت أن العملية تعمل برمجيًا.
+
+2. Operation Evaluation
+   - تتم في Phase 8.
+   - تحدد الاستخدام المناسب والParameters والمخاطر الأولية.
+
+3. Preservation Verification
+   - تبدأ في Phase 9.
+   - تقيس تغير البنية بين الأصل والنتيجة.
+
+لا يجوز اعتبار العملية Auto-Safe قبل اكتمال المراحل اللازمة.
+---
+
 
 # 6. `processing/pipeline.py` — Preservation-Aware Smart Pipeline
+## Preservation-Aware Smart Pipeline
 
-### المسؤولية
+`processing/pipeline.py` ينسق التنفيذ التلقائي المحافظ للعمليات المؤهلة فقط.
 
-تنفيذ سلسلة معالجة تلقائية بناءً على حالة الصورة.
+### Pipeline Flow
 
-الـPipeline ليست:
+Original Image
+→ Recommendation Engine
+→ Automatic Eligibility Gate
+→ Candidate Operation
+→ Preservation Verification
+→ Accept / Reject
+→ Next Candidate
+→ Final Verification
 
-```text
-Filter A
-→ Filter B
-→ Filter C
-```
+### Original Reference
 
-ثابتة لجميع الصور.
+تتم مقارنة كل Candidate بالصورة الأصلية، وليس فقط بنتيجة الخطوة السابقة.
 
-بل:
+يمنع ذلك إخفاء التغير التراكمي الناتج من عدة عمليات متتالية.
 
-```text
-Diagnosis
-+
-Recommendation
-+
-Preservation Profile
-       ↓
-Treatment Plan
-       ↓
-Pipeline Execution
-```
+### Automatic Enhancement Operations
 
-### النسخة الأساسية
+في الـMVP الحالي:
 
-```text
-Original
-   ↓
-Treatment Plan
-   ↓
-Step 1
-   ↓
-Step 2
-   ↓
-Result
-   ↓
-Preservation Verification
-```
+- CLAHE
+- Sharpening بصورة مشروطة
 
-### يجب أن تعيد
+### Deferred Automatic Operation
 
-* الخطوات المنفذة.
-* ترتيبها.
-* سبب كل خطوة.
-* Result.
-* Preservation Assessment عند توفره.
+Median Denoising لا ينفذ تلقائيًا حاليًا بسبب محدودية Noise Indicator الحالية.
 
-### لا يجب أن
+يبقى متاحًا للتوصية والمراجعة اليدوية.
 
-* تستخدم نتيجة Manual Operation سابقة كمدخل.
-* تعتبر Result مقبولة تلقائيًا دون التحقق.
-* تخفي خطواتها عن المستخدم.
+### Binarization Path
 
----
+لا يتم دمج Adaptive Threshold داخل Enhancement Chain.
+
+يتم إنشاؤه كـBinarization Candidate مستقل من الصورة الأصلية وتصنيفه `review_required`.
+
+### Preservation Acceptance Policy
+
+#### Low / Moderate Preservation Sensitivity
+
+- acceptable → accept
+- caution → accept with caution
+- high_risk → reject
+
+#### High Preservation Sensitivity
+
+- acceptable → accept
+- caution → reject automatically
+- high_risk → reject automatically
+
+هذه السياسة Provisional وHeuristic وتحتاج معايرة مستقبلية.
+
+### Verification Failure
+
+إذا نجحت عملية المعالجة وفشل Preservation Verification، لا يعتمد Smart Pipeline النتيجة تلقائيًا.
+
+### No Dynamic Re-analysis
+
+يتم تحليل الصورة الأصلية وإنشاء التوصيات مرة واحدة فقط في MVP.
+
+لا يعاد تشغيل Analyzer بين خطوات Pipeline.
 
 # 7. `processing/preservation.py` — Preservation Verification Engine
 
-هذا المكوّن من أهم أجزاء معمارية Manuscript Doctor.
+## Preservation Verification Engine
 
-### المسؤولية
+`processing/preservation.py` يقارن الصورة الأصلية بالصورة المعالجة بعد تنفيذ العملية.
 
-مقارنة:
+لا يحاول فهم النص لغويًا ولا يستخدم OCR.
 
-```text
-Original
-+
-Processed Result
-```
+### Initial Preservation Metrics
 
-للبحث عن مؤشرات بنيوية على أن المعالجة قد تكون أثرت في التفاصيل الأصلية.
+#### Edge Retention
+يقيس النسبة التقريبية من الحواف الأصلية التي ما زالت تظهر بالقرب من مواقعها بعد المعالجة.
 
-### يمكن أن يشمل مستقبلًا
+#### Component Retention
+يقارن عدد المكونات البنيوية الصغيرة في تمثيل ثنائي مشتق من الأصل والنتيجة.
 
-* Edge Retention.
-* Small Detail Retention.
-* Component Changes.
-* Stroke Continuity Indicators.
-* Component Merging Indicators.
-* Structural Change Indicators.
+لا تعتبر Connected Components حروفًا بشكل تلقائي.
 
-### المخرجات
+#### Structure Similarity Indicator
+مؤشر مبسط يعتمد على متوسط الفرق البصري بعد التطبيع.
 
-```text
-Metrics
-+
-Warnings
-+
-Assessment
-```
+لا يمثل SSIM القياسي ولا يجب تسميته SSIM.
 
-### مثال
+#### Edge Inflation
+يقارن عدد الحواف بعد المعالجة بعدد الحواف في الأصل، للمساعدة في اكتشاف التضخيم المحتمل للضوضاء أو الحواف.
 
-```json
-{
-  "metrics": {},
-  "warnings": [],
-  "assessment": "acceptable"
-}
-```
+### Assessment
 
-### لا يجب أن
+تجمع Warnings الأولية إلى:
 
-* يفسر كل اختلاف Pixel كفقد نص.
-* يدعي معرفة معنى الحروف.
-* يعيد بناء تفاصيل مفقودة.
-* يصف النتيجة بأنها `100% safe`.
-* يحدد Treatment قبل المعالجة.
+- acceptable
+- caution
+- high_risk
+
+هذه الحالات Heuristic وليست ضمانًا علميًا للمحافظة على النص.
+
+### Important Limitation
+
+تؤدي عمليات Binarization بطبيعتها إلى تغيير مظهر الصورة بدرجة كبيرة، ولذلك لا يجب تفسير جميع Preservation Metrics بنفس الطريقة المستخدمة مع عمليات Enhancement التقليدية.
 
 ---
 

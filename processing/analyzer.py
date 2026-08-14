@@ -86,12 +86,42 @@ def _measure_sharpness(gray):
     return float(laplacian.var())
 
 
-def _measure_noise(gray):
-    median = cv2.medianBlur(gray, 3)
+def _noise_metrics(gray):
+    filtered = cv2.medianBlur(
+        gray,
+        3
+    )
 
-    difference = cv2.absdiff(gray, median)
+    residual = cv2.absdiff(
+        gray,
+        filtered
+    ).astype(np.float32)
 
-    return float(np.median(difference))
+    mean_residual = float(
+        np.mean(residual)
+    )
+
+    percentile_90 = float(
+        np.percentile(
+            residual,
+            90
+        )
+    )
+
+    affected_ratio = float(
+        np.mean(
+            residual >= 5.0
+        )
+    )
+
+    return {
+        "value": mean_residual,
+        "unit": "mean_absolute_residual",
+        "p90": percentile_90,
+        "affected_ratio": affected_ratio,
+        "interpretation": "heuristic"
+    }
+
 
 
 def _measure_illumination_variation(gray):
@@ -159,10 +189,7 @@ def _build_metrics(gray):
             "value": round(_measure_sharpness(gray), 3),
             "unit": "laplacian_variance"
         },
-        "noise": {
-            "value": round(_measure_noise(gray), 3),
-            "unit": "local_difference"
-        },
+        "noise": _noise_metrics(gray),
         "illumination_variation": {
             "value": round(
                 _measure_illumination_variation(gray),
@@ -347,8 +374,29 @@ def _build_preservation_profile(metrics):
         "message": messages[level],
         "interpretation": "heuristic"
     }
+def _clipping_metrics(
+    gray
+):
+    dark_clipped_ratio = float(
+        np.mean(
+            gray <= 5
+        )
+    )
 
+    bright_clipped_ratio = float(
+        np.mean(
+            gray >= 250
+        )
+    )
 
+    return {
+        "dark_clipped_ratio": (
+            dark_clipped_ratio
+        ),
+        "bright_clipped_ratio": (
+            bright_clipped_ratio
+        )
+    }
 def analyze_image(image):
     gray = _to_gray(image)
 
@@ -356,13 +404,34 @@ def analyze_image(image):
 
     metrics = _build_metrics(gray)
 
+    clipping = _clipping_metrics(gray)
+
+    metrics["dark_clipped_ratio"] = {
+        "value": round(
+            clipping["dark_clipped_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
+    metrics["bright_clipped_ratio"] = {
+        "value": round(
+            clipping["bright_clipped_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
     diagnoses = _diagnose(metrics)
 
-    preservation_profile = _build_preservation_profile(metrics)
+    preservation_profile = _build_preservation_profile(
+        metrics
+    )
 
     return {
         "dimensions": dimensions,
         "metrics": metrics,
         "diagnoses": diagnoses,
-        "preservation_profile": preservation_profile
+        "preservation_profile": preservation_profile,
+        "clipping": clipping
     }
