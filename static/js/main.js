@@ -303,10 +303,56 @@ const operationParameters = {
             max: 3,
             step: 0.05
         }
+    ],
+    background_suppress: [
+        {
+            name: "kernel_size",
+            label: "Background Scale",
+            type: "number",
+            value: 31,
+            min: 15,
+            step: 2
+        },
+        {
+            name: "strength",
+            label: "Suppression Strength",
+            type: "number",
+            value: 0.45,
+            min: 0.1,
+            max: 1,
+            step: 0.05
+        }
+    ],
+    weak_structure_suppress: [
+        {
+            name: "kernel_size",
+            label: "Background Scale",
+            type: "number",
+            value: 31,
+            min: 15,
+            step: 2
+        },
+        {
+            name: "threshold",
+            label: "Weak Structure Threshold",
+            type: "number",
+            value: 12,
+            min: 1,
+            max: 50,
+            step: 1
+        },
+        {
+            name: "strength",
+            label: "Suppression Strength",
+            type: "number",
+            value: 0.35,
+            min: 0.1,
+            max: 1,
+            step: 0.05
+        }
     ]
 
 };
-
 
 function getElement(id) {
     return document.getElementById(id);

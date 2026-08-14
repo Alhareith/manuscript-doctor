@@ -397,6 +397,55 @@ def _clipping_metrics(
             bright_clipped_ratio
         )
     }
+
+def _bleed_through_indicators(gray):
+    source = gray.astype(
+        np.float32
+    )
+
+    background = cv2.GaussianBlur(
+        source,
+        (31, 31),
+        0
+    )
+
+    residual = np.abs(
+        source - background
+    )
+
+    weak_structure_ratio = float(
+        np.mean(
+            (residual >= 4.0)
+            & (residual <= 18.0)
+        )
+    )
+
+    strong_structure_ratio = float(
+        np.mean(
+            residual > 18.0
+        )
+    )
+
+    weak_to_strong_ratio = float(
+        weak_structure_ratio
+        / max(
+            strong_structure_ratio,
+            1e-6
+        )
+    )
+
+    return {
+        "weak_structure_ratio": (
+            weak_structure_ratio
+        ),
+        "strong_structure_ratio": (
+            strong_structure_ratio
+        ),
+        "weak_to_strong_ratio": (
+            weak_to_strong_ratio
+        )
+    }
+
 def analyze_image(image):
     gray = _to_gray(image)
 
@@ -405,6 +454,11 @@ def analyze_image(image):
     metrics = _build_metrics(gray)
 
     clipping = _clipping_metrics(gray)
+    bleed_indicators = (
+        _bleed_through_indicators(
+            gray
+        )
+    )
 
     metrics["dark_clipped_ratio"] = {
         "value": round(
@@ -417,6 +471,30 @@ def analyze_image(image):
     metrics["bright_clipped_ratio"] = {
         "value": round(
             clipping["bright_clipped_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
+    metrics["weak_structure_ratio"] = {
+        "value": round(
+            bleed_indicators["weak_structure_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
+    metrics["strong_structure_ratio"] = {
+        "value": round(
+            bleed_indicators["strong_structure_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
+    metrics["weak_to_strong_ratio"] = {
+        "value": round(
+            bleed_indicators["weak_to_strong_ratio"],
             4
         ),
         "unit": "ratio"
@@ -435,3 +513,4 @@ def analyze_image(image):
         "preservation_profile": preservation_profile,
         "clipping": clipping
     }
+

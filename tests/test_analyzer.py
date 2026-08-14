@@ -371,3 +371,58 @@ def test_dark_clipping_detected():
     )
 
     assert value > 0.95
+def test_bleed_indicators_exist():
+    image = np.full(
+        (200, 250),
+        180,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    metrics = result["metrics"]
+
+    assert (
+        "weak_structure_ratio"
+        in metrics
+    )
+
+    assert (
+        "strong_structure_ratio"
+        in metrics
+    )
+
+    assert (
+        "weak_to_strong_ratio"
+        in metrics
+    )
+
+
+def test_bleed_indicator_values_are_finite():
+    image = np.full(
+        (200, 250),
+        180,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    for key in [
+        "weak_structure_ratio",
+        "strong_structure_ratio",
+        "weak_to_strong_ratio"
+    ]:
+        value = (
+            result["metrics"]
+            [key]["value"]
+        )
+
+        assert np.isfinite(
+            value
+        )
+
+        assert value >= 0

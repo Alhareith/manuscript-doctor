@@ -21,7 +21,9 @@ from processing.operations import (
     illumination_normalize,
     gamma_correct,
     intensity_adjust,
-    faded_text_enhance
+    faded_text_enhance,
+    background_suppress,
+    weak_structure_suppress
 )
 
 
@@ -698,3 +700,60 @@ def test_faded_text_enhance_preserves_shape():
 
     assert result.shape == image.shape
     assert result.dtype == np.uint8
+
+def test_background_suppress_preserves_shape():
+    image = np.full(
+        (160, 220),
+        180,
+        dtype=np.uint8
+    )
+
+    result = background_suppress(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_background_suppress_rejects_even_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        background_suppress(
+            image,
+            kernel_size=30
+        )
+
+
+def test_weak_structure_suppress_preserves_shape():
+    image = np.full(
+        (160, 220),
+        180,
+        dtype=np.uint8
+    )
+
+    result = weak_structure_suppress(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_weak_structure_suppress_invalid_threshold():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        weak_structure_suppress(
+            image,
+            threshold=0
+        )
