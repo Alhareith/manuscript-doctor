@@ -446,6 +446,130 @@ def _bleed_through_indicators(gray):
         )
     }
 
+def _structural_metrics(gray):
+    blurred = cv2.GaussianBlur(
+        gray,
+        (3, 3),
+        0
+    )
+
+    _, binary = cv2.threshold(
+        blurred,
+        0,
+        255,
+        cv2.THRESH_BINARY_INV
+        + cv2.THRESH_OTSU
+    )
+
+    count, labels, stats, _ = (
+        cv2.connectedComponentsWithStats(
+            binary,
+            connectivity=8
+        )
+    )
+
+    if count <= 1:
+        return {
+            "component_count": 0,
+            "small_component_ratio": 0.0,
+            "mean_component_area": 0.0,
+            "median_component_area": 0.0,
+            "foreground_ratio": 0.0,
+            "thin_structure_ratio": 0.0
+        }
+
+    areas = stats[
+        1:,
+        cv2.CC_STAT_AREA
+    ].astype(
+        np.float32
+    )
+
+    valid_areas = areas[
+        areas > 0
+    ]
+
+    if valid_areas.size == 0:
+        return {
+            "component_count": 0,
+            "small_component_ratio": 0.0,
+            "mean_component_area": 0.0,
+            "median_component_area": 0.0,
+            "foreground_ratio": 0.0,
+            "thin_structure_ratio": 0.0
+        }
+
+    small_component_ratio = float(
+        np.mean(
+            valid_areas <= 6
+        )
+    )
+
+    foreground_ratio = float(
+        np.mean(
+            binary > 0
+        )
+    )
+
+    eroded = cv2.erode(
+        binary,
+        np.ones(
+            (3, 3),
+            dtype=np.uint8
+        ),
+        iterations=1
+    )
+
+    original_foreground = float(
+        np.count_nonzero(
+            binary
+        )
+    )
+
+    eroded_foreground = float(
+        np.count_nonzero(
+            eroded
+        )
+    )
+
+    if original_foreground == 0:
+        thin_structure_ratio = 0.0
+    else:
+        thin_structure_ratio = float(
+            1.0
+            - (
+                eroded_foreground
+                / original_foreground
+            )
+        )
+
+    return {
+        "component_count": int(
+            len(
+                valid_areas
+            )
+        ),
+        "small_component_ratio": (
+            small_component_ratio
+        ),
+        "mean_component_area": float(
+            np.mean(
+                valid_areas
+            )
+        ),
+        "median_component_area": float(
+            np.median(
+                valid_areas
+            )
+        ),
+        "foreground_ratio": (
+            foreground_ratio
+        ),
+        "thin_structure_ratio": (
+            thin_structure_ratio
+        )
+    }
+
 def analyze_image(image):
     gray = _to_gray(image)
 
@@ -454,11 +578,13 @@ def analyze_image(image):
     metrics = _build_metrics(gray)
 
     clipping = _clipping_metrics(gray)
+
     bleed_indicators = (
         _bleed_through_indicators(
             gray
         )
     )
+    structural = _structural_metrics(gray)
 
     metrics["dark_clipped_ratio"] = {
         "value": round(
@@ -495,6 +621,46 @@ def analyze_image(image):
     metrics["weak_to_strong_ratio"] = {
         "value": round(
             bleed_indicators["weak_to_strong_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
+    metrics["component_count"] = {
+        "value": structural["component_count"],
+        "unit": "count"
+    }
+    metrics["small_component_ratio"] = {
+        "value": round(
+            structural["small_component_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+    metrics["mean_component_area"] = {
+        "value": round(
+            structural["mean_component_area"],
+            4
+        ),
+        "unit": "pixels"
+    }
+    metrics["median_component_area"] = {
+        "value": round(
+            structural["median_component_area"],
+            4
+        ),
+        "unit": "pixels"
+    }
+    metrics["foreground_ratio"] = {
+        "value": round(
+            structural["foreground_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+    metrics["thin_structure_ratio"] = {
+        "value": round(
+            structural["thin_structure_ratio"],
             4
         ),
         "unit": "ratio"

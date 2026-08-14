@@ -350,6 +350,26 @@ const operationParameters = {
             max: 1,
             step: 0.05
         }
+    ],
+    morphological_top_hat: [
+        {
+            name: "kernel_size",
+            label: "Kernel Size",
+            type: "number",
+            value: 3,
+            min: 3,
+            step: 2
+        }
+    ],
+    morphological_black_hat: [
+        {
+            name: "kernel_size",
+            label: "Kernel Size",
+            type: "number",
+            value: 3,
+            min: 3,
+            step: 2
+        }
     ]
 
 };

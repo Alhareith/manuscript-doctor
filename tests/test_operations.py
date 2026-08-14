@@ -23,7 +23,9 @@ from processing.operations import (
     intensity_adjust,
     faded_text_enhance,
     background_suppress,
-    weak_structure_suppress
+    weak_structure_suppress,
+    morphological_top_hat,
+    morphological_black_hat
 )
 
 
@@ -161,7 +163,9 @@ def test_morphological_closing_returns_grayscale():
         otsu_threshold,
         adaptive_threshold,
         morphological_opening,
-        morphological_closing
+        morphological_closing,
+        morphological_top_hat,
+        morphological_black_hat
     ]
 )
 def test_operations_do_not_modify_original(operation):
@@ -756,4 +760,63 @@ def test_weak_structure_suppress_invalid_threshold():
         weak_structure_suppress(
             image,
             threshold=0
+        )
+
+def test_top_hat_preserves_dimensions():
+    image = np.full(
+        (120, 160),
+        180,
+        dtype=np.uint8
+    )
+
+    result = morphological_top_hat(
+        image,
+        kernel_size=3
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_black_hat_preserves_dimensions():
+    image = np.full(
+        (120, 160),
+        180,
+        dtype=np.uint8
+    )
+
+    result = morphological_black_hat(
+        image,
+        kernel_size=5
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_top_hat_rejects_even_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        morphological_top_hat(
+            image,
+            kernel_size=4
+        )
+
+
+def test_black_hat_rejects_even_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        morphological_black_hat(
+            image,
+            kernel_size=4
         )

@@ -426,3 +426,71 @@ def test_bleed_indicator_values_are_finite():
         )
 
         assert value >= 0
+
+def test_structural_metrics_exist():
+    image = np.full(
+        (220, 300),
+        220,
+        dtype=np.uint8
+    )
+
+    cv2.putText(
+        image,
+        "TEXT",
+        (50, 130),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.5,
+        40,
+        2,
+        cv2.LINE_AA
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    metrics = result[
+        "metrics"
+    ]
+
+    required = [
+        "component_count",
+        "small_component_ratio",
+        "mean_component_area",
+        "median_component_area",
+        "foreground_ratio",
+        "thin_structure_ratio"
+    ]
+
+    for key in required:
+        assert key in metrics
+        assert "value" in metrics[key]
+
+
+def test_structural_ratios_valid():
+    image = np.full(
+        (200, 300),
+        220,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    metrics = result[
+        "metrics"
+    ]
+
+    for key in [
+        "small_component_ratio",
+        "foreground_ratio",
+        "thin_structure_ratio"
+    ]:
+        value = metrics[
+            key
+        ]["value"]
+
+        assert 0 <= value <= 1
+
+        

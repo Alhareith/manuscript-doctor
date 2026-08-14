@@ -978,6 +978,69 @@ def weak_structure_suppress(
         "Unsupported image format."
     )
 
+def morphological_top_hat(
+    image,
+    kernel_size=3
+):
+    _validate_image(image)
+
+    if (
+        kernel_size < 3
+        or kernel_size % 2 == 0
+    ):
+        raise ValueError(
+            "kernel_size must be odd and >= 3."
+        )
+
+    gray = _to_gray(
+        image
+    )
+
+    kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE,
+        (
+            kernel_size,
+            kernel_size
+        )
+    )
+
+    return cv2.morphologyEx(
+        gray,
+        cv2.MORPH_TOPHAT,
+        kernel
+    )
+def morphological_black_hat(
+    image,
+    kernel_size=5
+):
+    _validate_image(image)
+
+    if (
+        kernel_size < 3
+        or kernel_size % 2 == 0
+    ):
+        raise ValueError(
+            "kernel_size must be odd and >= 3."
+        )
+
+    gray = _to_gray(
+        image
+    )
+
+    kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE,
+        (
+            kernel_size,
+            kernel_size
+        )
+    )
+
+    return cv2.morphologyEx(
+        gray,
+        cv2.MORPH_BLACKHAT,
+        kernel
+    )
+
 OPERATIONS = {
     "clahe": {
         "function": clahe,
@@ -1157,6 +1220,30 @@ OPERATIONS = {
             "kernel_size": 31,
             "threshold": 12,
             "strength": 0.35
+        }
+    },
+    "morphological_top_hat": {
+        "function": morphological_top_hat,
+        "name": "Morphological Top-hat",
+        "category": "morphology",
+        "purpose": "Extract small bright structures from a dark background.",
+        "description": "Highlights small bright structures in the image using morphological top-hat transformation.",
+        "risk": "high",
+        "automatic": False,
+        "default_parameters": {
+            "kernel_size": 3
+        }
+    },
+    "morphological_black_hat": {
+        "function": morphological_black_hat,
+        "name": "Morphological Black-hat",
+        "category": "morphology",
+        "purpose": "Extract small dark structures from a bright background.",
+        "description": "Highlights small dark structures in the image using morphological black-hat transformation.",
+        "risk": "high",
+        "automatic": False,
+        "default_parameters": {
+            "kernel_size": 5
         }
     }
         
