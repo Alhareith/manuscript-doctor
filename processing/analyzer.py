@@ -374,8 +374,29 @@ def _build_preservation_profile(metrics):
         "message": messages[level],
         "interpretation": "heuristic"
     }
+def _clipping_metrics(
+    gray
+):
+    dark_clipped_ratio = float(
+        np.mean(
+            gray <= 5
+        )
+    )
 
+    bright_clipped_ratio = float(
+        np.mean(
+            gray >= 250
+        )
+    )
 
+    return {
+        "dark_clipped_ratio": (
+            dark_clipped_ratio
+        ),
+        "bright_clipped_ratio": (
+            bright_clipped_ratio
+        )
+    }
 def analyze_image(image):
     gray = _to_gray(image)
 
@@ -383,14 +404,34 @@ def analyze_image(image):
 
     metrics = _build_metrics(gray)
 
+    clipping = _clipping_metrics(gray)
+
+    metrics["dark_clipped_ratio"] = {
+        "value": round(
+            clipping["dark_clipped_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
+    metrics["bright_clipped_ratio"] = {
+        "value": round(
+            clipping["bright_clipped_ratio"],
+            4
+        ),
+        "unit": "ratio"
+    }
+
     diagnoses = _diagnose(metrics)
 
-    preservation_profile = _build_preservation_profile(metrics)
+    preservation_profile = _build_preservation_profile(
+        metrics
+    )
 
     return {
         "dimensions": dimensions,
         "metrics": metrics,
         "diagnoses": diagnoses,
-        "preservation_profile": preservation_profile
+        "preservation_profile": preservation_profile,
+        "clipping": clipping
     }
-

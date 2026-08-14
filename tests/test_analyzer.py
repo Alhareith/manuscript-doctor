@@ -309,3 +309,65 @@ def test_clean_flat_image_has_low_noise():
         ]["noise"]["value"]
         < 1.0
     )
+
+def test_clipping_metrics_exist():
+    image = np.full(
+        (200, 200),
+        180,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    metrics = result["metrics"]
+
+    assert (
+        "dark_clipped_ratio"
+        in metrics
+    )
+
+    assert (
+        "bright_clipped_ratio"
+        in metrics
+    )
+
+
+def test_bright_clipping_detected():
+    image = np.full(
+        (200, 200),
+        255,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    value = (
+        result["metrics"]
+        ["bright_clipped_ratio"]
+        ["value"]
+    )
+
+    assert value > 0.95
+
+
+def test_dark_clipping_detected():
+    image = np.zeros(
+        (200, 200),
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    value = (
+        result["metrics"]
+        ["dark_clipped_ratio"]
+        ["value"]
+    )
+
+    assert value > 0.95

@@ -566,6 +566,183 @@ def illumination_normalize(
     raise ValueError(
         "Unsupported image format."
     )
+def gamma_correct(
+    image,
+    gamma=1.0
+):
+    _validate_image(image)
+
+    if gamma <= 0:
+        raise ValueError(
+            "gamma must be greater than 0."
+        )
+
+    inverse_gamma =  gamma
+
+    table = np.array(
+        [
+            (
+                (i / 255.0)
+                ** inverse_gamma
+            ) * 255
+            for i in range(256)
+        ],
+        dtype=np.uint8
+    )
+
+    if image.ndim == 2:
+        return cv2.LUT(
+            image,
+            table
+        )
+
+    if image.shape[2] == 3:
+        lab = cv2.cvtColor(
+            image,
+            cv2.COLOR_BGR2LAB
+        )
+
+        l_channel, a_channel, b_channel = (
+            cv2.split(lab)
+        )
+
+        corrected_l = cv2.LUT(
+            l_channel,
+            table
+        )
+
+        corrected_lab = cv2.merge(
+            (
+                corrected_l,
+                a_channel,
+                b_channel
+            )
+        )
+
+        return cv2.cvtColor(
+            corrected_lab,
+            cv2.COLOR_LAB2BGR
+        )
+
+    if image.shape[2] == 4:
+        bgr = image[:, :, :3]
+        alpha = image[:, :, 3]
+
+        corrected = gamma_correct(
+            bgr,
+            gamma=gamma
+        )
+
+        return np.dstack(
+            (
+                corrected,
+                alpha
+            )
+        )
+
+    raise ValueError(
+        "Unsupported image format."
+    )
+def intensity_adjust(
+    image,
+    alpha=1.0,
+    beta=0
+):
+    _validate_image(image)
+
+    if alpha <= 0:
+        raise ValueError(
+            "alpha must be greater than 0."
+        )
+
+    if beta < -100 or beta > 100:
+        raise ValueError(
+            "beta must be between -100 and 100."
+        )
+
+    if image.ndim == 2:
+        return cv2.convertScaleAbs(
+            image,
+            alpha=float(alpha),
+            beta=float(beta)
+        )
+
+    if image.shape[2] == 3:
+        lab = cv2.cvtColor(
+            image,
+            cv2.COLOR_BGR2LAB
+        )
+
+        l_channel, a_channel, b_channel = (
+            cv2.split(lab)
+        )
+
+        adjusted_l = cv2.convertScaleAbs(
+            l_channel,
+            alpha=float(alpha),
+            beta=float(beta)
+        )
+
+        adjusted_lab = cv2.merge(
+            (
+                adjusted_l,
+                a_channel,
+                b_channel
+            )
+        )
+
+        return cv2.cvtColor(
+            adjusted_lab,
+            cv2.COLOR_LAB2BGR
+        )
+
+    if image.shape[2] == 4:
+        bgr = image[:, :, :3]
+        alpha_channel = image[:, :, 3]
+
+        adjusted = intensity_adjust(
+            bgr,
+            alpha=alpha,
+            beta=beta
+        )
+
+        return np.dstack(
+            (
+                adjusted,
+                alpha_channel
+            )
+        )
+def faded_text_enhance(
+    image,
+    clip_limit=1.4,
+    gamma=0.95
+):
+    _validate_image(image)
+
+    if clip_limit <= 0:
+        raise ValueError(
+            "clip_limit must be greater than 0."
+        )
+
+    if gamma <= 0:
+        raise ValueError(
+            "gamma must be greater than 0."
+        )
+
+    corrected = gamma_correct(
+        image,
+        gamma=gamma
+    )
+
+    return clahe(
+        corrected,
+        clip_limit=clip_limit,
+        tile_grid_size=8
+    )
+
+    raise ValueError(
+        "Unsupported image format."
+    )
 
 OPERATIONS = {
     "clahe": {
@@ -660,7 +837,7 @@ OPERATIONS = {
         "category": "denoising",
         "purpose": "Reduce image noise while preserving fine image structures.",
         "description": "Uses Non-Local Means filtering to reduce noise while preserving similar local structures.",
-    "risk": "medium",
+        "risk": "medium",
         "automatic": False,
         "default_parameters": {
             "strength": 5,
@@ -680,6 +857,45 @@ OPERATIONS = {
         "default_parameters": {
             "kernel_size": 51,
             "strength": 0.65
+        }
+    },
+    "gamma_correct": {
+        "function": gamma_correct,
+        "name": "Gamma Correction",
+        "category": "exposure",
+        "purpose": "Adjust image brightness using a gamma curve.",
+        "description": "Applies gamma correction to adjust image brightness and contrast.",
+        "risk": "low",
+        "automatic": False,
+        "default_parameters": {
+            "gamma": 1.0
+        }
+    },
+
+    "intensity_adjust": {
+        "function": intensity_adjust,
+        "name": "Intensity Adjustment",
+        "category": "exposure",
+        "purpose": "Adjust image brightness and contrast linearly.",
+        "description": "Linearly adjusts image intensity using alpha (contrast) and beta (brightness) parameters.",
+        "risk": "medium",
+        "automatic": False,
+        "default_parameters": {
+            "alpha": 1.0,
+            "beta": 0
+        }
+    },
+    "faded_text_enhance": {
+        "function": faded_text_enhance,
+        "name": "Faded Text Enhancement",
+        "category": "contrast",
+        "purpose": "Enhance faded text in document images.",
+        "description": "Applies gamma correction followed by CLAHE to enhance faded text while preserving overall image quality.",
+        "risk": "medium",
+        "automatic": False,
+        "default_parameters": {
+            "clip_limit": 1.4,
+            "gamma": 0.95
         }
     }
         

@@ -252,7 +252,59 @@ const operationParameters = {
             max: 1,
             step: 0.05
         }
+    ],
+    gamma_correct: [
+        {
+            name: "gamma",
+            label: "Gamma",
+            type: "number",
+            value: 1.0,
+            min: 0.1,
+            max: 3,
+            step: 0.05
+        }
+    ],
+    intensity_adjust: [
+        {
+            name: "alpha",
+            label: "Contrast Scale",
+            type: "number",
+            value: 1.0,
+            min: 0.1,
+            max: 3,
+            step: 0.05
+        },
+        {
+            name: "beta",
+            label: "Brightness Offset",
+            type: "number",
+            value: 0,
+            min: -100,
+            max: 100,
+            step: 1
+        }
+    ],
+    faded_text_enhance: [
+        {
+            name: "clip_limit",
+            label: "Local Contrast",
+            type: "number",
+            value: 1.4,
+            min: 0.1,
+            max: 5,
+            step: 0.1
+        },
+        {
+            name: "gamma",
+            label: "Gamma",
+            type: "number",
+            value: 0.95,
+            min: 0.1,
+            max: 3,
+            step: 0.05
+        }
     ]
+
 };
 
 

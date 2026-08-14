@@ -18,7 +18,10 @@ from processing.operations import (
     morphological_closing,
     bilateral_denoise,
     non_local_means_denoise,
-    illumination_normalize
+    illumination_normalize,
+    gamma_correct,
+    intensity_adjust,
+    faded_text_enhance
 )
 
 
@@ -609,3 +612,89 @@ def test_illumination_normalization_reduces_gradient():
         after_difference
         < before_difference
     )
+
+def test_gamma_correct_preserves_shape():
+    image = np.full(
+        (120, 160),
+        100,
+        dtype=np.uint8
+    )
+
+    result = gamma_correct(
+        image,
+        gamma=1.2
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_gamma_correct_rejects_invalid_gamma():
+    image = np.full(
+        (100, 100),
+        150,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        gamma_correct(
+            image,
+            gamma=0
+        )
+
+
+def test_intensity_adjust_preserves_shape():
+    image = np.full(
+        (120, 160),
+        100,
+        dtype=np.uint8
+    )
+
+    result = intensity_adjust(
+        image,
+        alpha=1.05,
+        beta=5
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_intensity_adjust_rejects_invalid_alpha():
+    image = np.full(
+        (100, 100),
+        150,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        intensity_adjust(
+            image,
+            alpha=0
+        )
+
+
+def test_faded_text_enhance_preserves_shape():
+    image = np.full(
+        (160, 220),
+        190,
+        dtype=np.uint8
+    )
+
+    cv2.putText(
+        image,
+        "TEXT",
+        (40, 100),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.2,
+        145,
+        2,
+        cv2.LINE_AA
+    )
+
+    result = faded_text_enhance(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
