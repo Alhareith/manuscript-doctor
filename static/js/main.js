@@ -1,9 +1,9 @@
-
 const state = {
     selectedFile: null,
     originalPreviewUrl: null,
     imageId: null,
-    resultId: null
+    resultId: null,
+    isBusy: false
 };
 
 
@@ -20,12 +20,47 @@ const elements = {
 
     originalPreview: document.getElementById("originalPreview"),
     comparisonOriginal: document.getElementById("comparisonOriginal"),
+    resultPreview: document.getElementById("resultPreview"),
+
+    brightnessMetric: document.getElementById("brightnessMetric"),
+    contrastMetric: document.getElementById("contrastMetric"),
+    sharpnessMetric: document.getElementById("sharpnessMetric"),
+    noiseMetric: document.getElementById("noiseMetric"),
+    illuminationMetric: document.getElementById("illuminationMetric"),
+    edgeDensityMetric: document.getElementById("edgeDensityMetric"),
+
+    diagnosisList: document.getElementById("diagnosisList"),
+
+    preservationLevelBadge: document.getElementById("preservationLevelBadge"),
+    preservationMessage: document.getElementById("preservationMessage"),
+    preservationIndicators: document.getElementById("preservationIndicators"),
+
+    recommendationList: document.getElementById("recommendationList"),
+
+    automaticExclusions: document.getElementById("automaticExclusions"),
+    automaticExclusionList: document.getElementById("automaticExclusionList"),
 
     manualOperation: document.getElementById("manualOperation"),
     manualParameters: document.getElementById("manualParameters"),
     applyManualButton: document.getElementById("applyManualButton"),
 
     runPipelineButton: document.getElementById("runPipelineButton"),
+
+    processingTitle: document.getElementById("processingTitle"),
+    processingMessage: document.getElementById("processingMessage"),
+
+    edgeRetentionMetric: document.getElementById("edgeRetentionMetric"),
+    componentRetentionMetric: document.getElementById("componentRetentionMetric"),
+    structureSimilarityMetric: document.getElementById("structureSimilarityMetric"),
+    edgeInflationMetric: document.getElementById("edgeInflationMetric"),
+
+    preservationWarnings: document.getElementById("preservationWarnings"),
+
+    decisionCard: document.getElementById("decisionCard"),
+    decisionStatus: document.getElementById("decisionStatus"),
+    decisionMessage: document.getElementById("decisionMessage"),
+
+    binarizationList: document.getElementById("binarizationList"),
 
     downloadResultButton: document.getElementById("downloadResultButton"),
     startOverButton: document.getElementById("startOverButton"),
@@ -35,14 +70,7 @@ const elements = {
 };
 
 
-const sections = [
-    "documentPreviewSection",
-    "examinationSection",
-    "diagnosisSection",
-    "preservationProfileSection",
-    "treatmentPlanSection",
-    "treatmentSection",
-    "processingStateSection",
+const resultSectionIds = [
     "verificationSection",
     "decisionSection",
     "comparisonSection",
@@ -156,41 +184,136 @@ const operationParameters = {
             min: 3,
             step: 2
         }
+    ],
+    bilateral_denoise: [
+        {
+            name: "diameter",
+            label: "Diameter",
+            type: "number",
+            value: 5,
+            min: 1,
+            step: 2
+        },
+        {
+            name: "sigma_color",
+            label: "Sigma Color",
+            type: "number",
+            value: 25,
+            min: 1
+        },
+        {
+            name: "sigma_space",
+            label: "Sigma Space",
+            type: "number",
+            value: 25,
+            min: 1
+        }
+    ],
+    non_local_means_denoise: [
+        {
+            name: "strength",
+            label: "Strength",
+            type: "number",
+            value: 5,
+            min: 1
+        },
+        {
+            name: "template_window_size",
+            label: "Template Window",
+            type: "number",
+            value: 7,
+            min: 3,
+            step: 2
+        },
+        {
+            name: "search_window_size",
+            label: "Search Window",
+            type: "number",
+            value: 21,
+            min: 3,
+            step: 2
+        }
+    ],
+    illumination_normalize: [
+        {
+            name: "kernel_size",
+            label: "Background Scale",
+            type: "number",
+            value: 51,
+            min: 15,
+            step: 2
+        },
+        {
+            name: "strength",
+            label: "Correction Strength",
+            type: "number",
+            value: 0.65,
+            min: 0.1,
+            max: 1,
+            step: 0.05
+        }
     ]
 };
 
 
+function getElement(id) {
+    return document.getElementById(id);
+}
+
+
 function showElement(element) {
-    element.classList.remove("hidden");
+    if (element) {
+        element.classList.remove("hidden");
+    }
 }
 
 
 function hideElement(element) {
-    element.classList.add("hidden");
-}
-
-
-function showSection(sectionId) {
-    const section = document.getElementById(sectionId);
-
-    if (section) {
-        showElement(section);
+    if (element) {
+        element.classList.add("hidden");
     }
 }
 
 
-function hideSection(sectionId) {
-    const section = document.getElementById(sectionId);
-
-    if (section) {
-        hideElement(section);
-    }
+function showSection(id) {
+    showElement(getElement(id));
 }
 
 
-function hideAllResultSections() {
-    sections.forEach((sectionId) => {
-        hideSection(sectionId);
+function hideSection(id) {
+    hideElement(getElement(id));
+}
+
+
+function scrollToSection(id) {
+    const element = getElement(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+
+function clearError() {
+    elements.errorMessage.textContent = "—";
+    hideElement(elements.errorSection);
+}
+
+
+function showError(message) {
+    elements.errorMessage.textContent =
+        message || "حدث خطأ غير متوقع.";
+
+    showElement(elements.errorSection);
+
+    elements.errorSection.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
     });
 }
 
@@ -206,47 +329,223 @@ function formatFileSize(bytes) {
         return `${kilobytes.toFixed(1)} KB`;
     }
 
-    const megabytes = kilobytes / 1024;
+    return `${(kilobytes / 1024).toFixed(2)} MB`;
+}
 
-    return `${megabytes.toFixed(2)} MB`;
+
+function formatNumber(value, digits = 4) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "—";
+    }
+
+    return number.toFixed(digits);
+}
+
+
+function humanizeCode(value) {
+    if (!value) {
+        return "—";
+    }
+
+    return String(value)
+        .replaceAll("_", " ")
+        .replaceAll("-", " ");
+}
+
+
+function safeStatusClass(status) {
+    if (!status) {
+        return "neutral";
+    }
+
+    return String(status)
+        .toLowerCase()
+        .replaceAll("_", "-")
+        .replace(/[^a-z0-9-]/g, "");
 }
 
 
 function isSupportedFile(file) {
+    if (!file) {
+        return false;
+    }
+
     const allowedTypes = [
         "image/jpeg",
         "image/png"
     ];
 
-    return allowedTypes.includes(file.type);
-}
+    const allowedName =
+        /\.(jpe?g|png)$/i.test(file.name);
 
-
-function clearError() {
-    hideElement(elements.errorSection);
-    elements.errorMessage.textContent = "—";
-}
-
-
-function showError(message) {
-    elements.errorMessage.textContent = message;
-    showElement(elements.errorSection);
-
-    elements.errorSection.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
+    return (
+        allowedTypes.includes(file.type)
+        || allowedName
+    );
 }
 
 
 function revokePreviewUrl() {
-    if (state.originalPreviewUrl) {
-        URL.revokeObjectURL(
-            state.originalPreviewUrl
+    if (!state.originalPreviewUrl) {
+        return;
+    }
+
+    URL.revokeObjectURL(
+        state.originalPreviewUrl
+    );
+
+    state.originalPreviewUrl = null;
+}
+
+
+function updateControls() {
+    elements.startExaminationButton.disabled =
+        state.isBusy
+        || !state.selectedFile;
+
+    elements.removeImageButton.disabled =
+        state.isBusy;
+
+    elements.runPipelineButton.disabled =
+        state.isBusy
+        || !state.imageId;
+
+    elements.manualOperation.disabled =
+        state.isBusy
+        || !state.imageId;
+
+    elements.applyManualButton.disabled =
+        state.isBusy
+        || !state.imageId
+        || !elements.manualOperation.value;
+
+    elements.downloadResultButton.disabled =
+        state.isBusy
+        || !state.resultId;
+}
+
+
+function setBusy(
+    busy,
+    title = "جاري التنفيذ",
+    message = "يرجى الانتظار..."
+) {
+    state.isBusy = busy;
+
+    if (busy) {
+        elements.processingTitle.textContent =
+            title;
+
+        elements.processingMessage.textContent =
+            message;
+
+        showSection(
+            "processingStateSection"
         );
 
-        state.originalPreviewUrl = null;
+        scrollToSection(
+            "processingStateSection"
+        );
+    } else {
+        hideSection(
+            "processingStateSection"
+        );
     }
+
+    updateControls();
+}
+
+
+function resetMetrics() {
+    elements.brightnessMetric.textContent = "—";
+    elements.contrastMetric.textContent = "—";
+    elements.sharpnessMetric.textContent = "—";
+    elements.noiseMetric.textContent = "—";
+    elements.illuminationMetric.textContent = "—";
+    elements.edgeDensityMetric.textContent = "—";
+}
+
+
+function resetPreservationMetrics() {
+    elements.edgeRetentionMetric.textContent = "—";
+    elements.componentRetentionMetric.textContent = "—";
+    elements.structureSimilarityMetric.textContent = "—";
+    elements.edgeInflationMetric.textContent = "—";
+
+    elements.preservationWarnings.innerHTML = "";
+}
+
+
+function clearTreatmentResult() {
+    state.resultId = null;
+
+    resultSectionIds.forEach(
+        hideSection
+    );
+
+    resetPreservationMetrics();
+
+    elements.resultPreview.removeAttribute(
+        "src"
+    );
+
+    elements.binarizationList.innerHTML = "";
+
+    elements.decisionCard.className =
+        "decision-card neutral";
+
+    elements.decisionStatus.textContent =
+        "—";
+
+    elements.decisionMessage.textContent =
+        "—";
+
+    updateControls();
+}
+
+
+function resetAnalysisUI() {
+    resetMetrics();
+
+    elements.diagnosisList.innerHTML = `
+        <div class="empty-state">
+            <span>—</span>
+            لم يتم إجراء الفحص بعد.
+        </div>
+    `;
+
+    elements.recommendationList.innerHTML = `
+        <div class="empty-state">
+            <span>—</span>
+            لا توجد توصيات حتى الآن.
+        </div>
+    `;
+
+    elements.automaticExclusionList.innerHTML =
+        "";
+
+    hideElement(
+        elements.automaticExclusions
+    );
+
+    const badgeValue =
+        elements.preservationLevelBadge
+            .querySelector("strong");
+
+    if (badgeValue) {
+        badgeValue.textContent = "—";
+    }
+
+    elements.preservationLevelBadge.className =
+        "preservation-badge neutral";
+
+    elements.preservationMessage.textContent =
+        "—";
+
+    elements.preservationIndicators.innerHTML =
+        "";
 }
 
 
@@ -254,27 +553,65 @@ function resetRuntimeState() {
     state.imageId = null;
     state.resultId = null;
 
-    elements.downloadResultButton.disabled = true;
+    [
+        "documentPreviewSection",
+        "examinationSection",
+        "diagnosisSection",
+        "preservationProfileSection",
+        "treatmentPlanSection",
+        "treatmentSection",
+        "processingStateSection",
+        "verificationSection",
+        "decisionSection",
+        "comparisonSection",
+        "binarizationSection",
+        "downloadSection"
+    ].forEach(
+        hideSection
+    );
 
-    hideAllResultSections();
-
+    resetAnalysisUI();
+    clearTreatmentResult();
     clearError();
+
+    updateControls();
 }
 
 
 function clearSelectedFile() {
+    if (state.isBusy) {
+        return;
+    }
+
     revokePreviewUrl();
 
     state.selectedFile = null;
+    state.imageId = null;
+    state.resultId = null;
 
     elements.imageInput.value = "";
 
-    elements.selectedFileName.textContent = "—";
-    elements.selectedFileMeta.textContent = "—";
+    elements.selectedFileName.textContent =
+        "—";
 
-    hideElement(elements.selectedFile);
+    elements.selectedFileMeta.textContent =
+        "—";
 
-    elements.startExaminationButton.disabled = true;
+    elements.originalPreview.removeAttribute(
+        "src"
+    );
+
+    elements.comparisonOriginal.removeAttribute(
+        "src"
+    );
+
+    elements.resultPreview.removeAttribute(
+        "src"
+    );
+
+    hideElement(
+        elements.selectedFile
+    );
 
     resetRuntimeState();
 }
@@ -289,7 +626,7 @@ function selectFile(file) {
 
     if (!isSupportedFile(file)) {
         showError(
-            "نوع الملف غير مدعوم. اختر JPG أو PNG."
+            "نوع الملف غير مدعوم. اختر JPG أو JPEG أو PNG."
         );
 
         return;
@@ -298,6 +635,8 @@ function selectFile(file) {
     revokePreviewUrl();
 
     state.selectedFile = file;
+    state.imageId = null;
+    state.resultId = null;
 
     state.originalPreviewUrl =
         URL.createObjectURL(file);
@@ -314,103 +653,1482 @@ function selectFile(file) {
     elements.comparisonOriginal.src =
         state.originalPreviewUrl;
 
-    showElement(elements.selectedFile);
+    showElement(
+        elements.selectedFile
+    );
 
-    elements.startExaminationButton.disabled =
-        false;
+    resetAnalysisUI();
+    clearTreatmentResult();
+
+    [
+        "documentPreviewSection",
+        "examinationSection",
+        "diagnosisSection",
+        "preservationProfileSection",
+        "treatmentPlanSection",
+        "treatmentSection"
+    ].forEach(
+        hideSection
+    );
+
+    updateControls();
 }
 
 
-function handleDroppedFiles(files) {
-    if (!files || files.length === 0) {
-        return;
+async function apiRequest(
+    url,
+    options = {}
+) {
+    let response;
+
+    try {
+        response = await fetch(
+            url,
+            options
+        );
+    } catch {
+        throw new Error(
+            "تعذر الاتصال بالخادم. تأكد أن التطبيق يعمل ثم أعد المحاولة."
+        );
     }
 
-    selectFile(files[0]);
+    const contentType =
+        response.headers.get(
+            "content-type"
+        ) || "";
+
+    let payload = null;
+
+    if (
+        contentType.includes(
+            "application/json"
+        )
+    ) {
+        try {
+            payload =
+                await response.json();
+        } catch {
+            payload = null;
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            payload?.message
+            || `فشل الطلب برمز HTTP ${response.status}.`
+        );
+    }
+
+    if (
+        !payload
+        || payload.success !== true
+    ) {
+        throw new Error(
+            payload?.message
+            || "أعاد الخادم استجابة غير متوقعة."
+        );
+    }
+
+    return payload.data;
 }
 
 
-function renderParameterFields(operationId) {
-    elements.manualParameters.innerHTML = "";
-
-    const definitions =
-        operationParameters[operationId];
-
-    if (!definitions) {
-        elements.applyManualButton.disabled = true;
-        return;
+function getMetric(
+    metrics,
+    names
+) {
+    for (const name of names) {
+        if (
+            metrics
+            && metrics[name] !== undefined
+            && metrics[name] !== null
+        ) {
+            return metrics[name];
+        }
     }
 
-    definitions.forEach((definition) => {
-        const wrapper =
+    return null;
+}
+
+
+function renderMetrics(analysis) {
+    const metrics = analysis?.metrics;
+
+    if (!metrics) {
+        throw new Error(
+            "Backend لم يرجع analysis.metrics."
+        );
+    }
+
+    elements.brightnessMetric.textContent =
+        formatNumber(
+            metrics.brightness?.value,
+            3
+        );
+
+    elements.contrastMetric.textContent =
+        formatNumber(
+            metrics.contrast?.value,
+            3
+        );
+
+    elements.sharpnessMetric.textContent =
+        formatNumber(
+            metrics.sharpness?.value,
+            3
+        );
+
+    elements.noiseMetric.textContent =
+        formatNumber(
+            metrics.noise?.value,
+            3
+        );
+
+    elements.illuminationMetric.textContent =
+        formatNumber(
+            metrics.illumination_variation?.value,
+            4
+        );
+
+    elements.edgeDensityMetric.textContent =
+        formatNumber(
+            metrics.edge_density?.value,
+            4
+        );
+}
+
+
+function renderDiagnoses(diagnoses) {
+    elements.diagnosisList.innerHTML = "";
+
+    if (
+        !Array.isArray(diagnoses)
+        || diagnoses.length === 0
+    ) {
+        const empty =
             document.createElement("div");
 
-        wrapper.className =
-            "parameter-field";
+        empty.className =
+            "empty-state";
 
-        const label =
-            document.createElement("label");
+        empty.textContent =
+            "لم يحدد محرك التشخيص مشكلة واضحة تحتاج معالجة.";
 
-        const input =
-            document.createElement("input");
-
-        const inputId =
-            `param-${definition.name}`;
-
-        label.htmlFor = inputId;
-        label.textContent = definition.label;
-
-        input.id = inputId;
-        input.dataset.parameterName =
-            definition.name;
-
-        input.type = definition.type;
-        input.value = definition.value;
-
-        if (definition.min !== undefined) {
-            input.min = definition.min;
-        }
-
-        if (definition.max !== undefined) {
-            input.max = definition.max;
-        }
-
-        if (definition.step !== undefined) {
-            input.step = definition.step;
-        }
-
-        wrapper.appendChild(label);
-        wrapper.appendChild(input);
-
-        elements.manualParameters.appendChild(
-            wrapper
+        elements.diagnosisList.appendChild(
+            empty
         );
-    });
 
-    elements.applyManualButton.disabled =
-        !operationId;
-}
-
-
-function previewFrontendState() {
-    if (!state.selectedFile) {
         return;
     }
 
-    resetRuntimeState();
+    diagnoses.forEach(
+        (diagnosis) => {
+            const article =
+                document.createElement(
+                    "article"
+                );
 
-    showSection("documentPreviewSection");
+            article.className =
+                "diagnosis-item";
 
-    showError(
-        "الواجهة جاهزة. ربط الفحص الحقيقي بالـBackend سيتم في المرحلة 14."
+            const heading =
+                document.createElement(
+                    "div"
+                );
+
+            heading.className =
+                "item-heading";
+
+            const title =
+                document.createElement(
+                    "strong"
+                );
+
+            title.textContent =
+                diagnosis.label
+                || diagnosis.name
+                || humanizeCode(
+                    diagnosis.code
+                );
+
+            const severity =
+                document.createElement(
+                    "span"
+                );
+
+            severity.textContent =
+                diagnosis.severity
+                || "detected";
+
+            heading.append(
+                title,
+                severity
+            );
+
+            article.appendChild(
+                heading
+            );
+
+            const description =
+                diagnosis.message
+                || diagnosis.description
+                || diagnosis.reason;
+
+            if (description) {
+                const paragraph =
+                    document.createElement(
+                        "p"
+                    );
+
+                paragraph.textContent =
+                    description;
+
+                article.appendChild(
+                    paragraph
+                );
+            }
+
+            elements.diagnosisList.appendChild(
+                article
+            );
+        }
     );
+}
+
+
+function preservationLevelLabel(level) {
+    const labels = {
+        low: "LOW",
+        moderate: "MODERATE",
+        high: "HIGH"
+    };
+
+    return (
+        labels[level]
+        || humanizeCode(level).toUpperCase()
+    );
+}
+
+
+function extractProfileIndicators(profile) {
+    if (!profile) {
+        return [];
+    }
+
+    const candidates = [
+        profile.indicators,
+        profile.reasons,
+        profile.signals,
+        profile.warnings
+    ];
+
+    for (const candidate of candidates) {
+        if (Array.isArray(candidate)) {
+            return candidate;
+        }
+    }
+
+    return [];
+}
+
+
+function renderPreservationProfile(profile) {
+    const safeProfile =
+        profile || {};
+
+    const level =
+        String(
+            safeProfile.level
+            || "moderate"
+        ).toLowerCase();
+
+    elements.preservationLevelBadge.className =
+        `preservation-badge ${safeStatusClass(level)}`;
+
+    const value =
+        elements.preservationLevelBadge
+            .querySelector("strong");
+
+    if (value) {
+        value.textContent =
+            preservationLevelLabel(
+                level
+            );
+    }
+
+    elements.preservationMessage.textContent =
+        safeProfile.message
+        || (
+            `المستوى الوارد من محرك التحليل: `
+            + preservationLevelLabel(level)
+        );
+
+    elements.preservationIndicators.innerHTML =
+        "";
+
+    const indicators =
+        extractProfileIndicators(
+            safeProfile
+        );
+
+    indicators.forEach(
+        (indicator) => {
+            const item =
+                document.createElement("li");
+
+            if (
+                typeof indicator
+                === "string"
+            ) {
+                item.textContent =
+                    indicator;
+            } else {
+                item.textContent =
+                    indicator.message
+                    || indicator.reason
+                    || indicator.code
+                    || "مؤشر Preservation";
+            }
+
+            elements.preservationIndicators
+                .appendChild(item);
+        }
+    );
+}
+
+
+function createRecommendationMeta(
+    recommendation
+) {
+    const meta =
+        document.createElement("div");
+
+    meta.className =
+        "recommendation-meta";
+
+    const values = [
+        recommendation.mode,
+        recommendation.risk
+    ].filter(Boolean);
+
+    values.forEach(
+        (value) => {
+            const badge =
+                document.createElement(
+                    "span"
+                );
+
+            badge.textContent =
+                humanizeCode(value);
+
+            meta.appendChild(
+                badge
+            );
+        }
+    );
+
+    return meta;
+}
+
+
+function renderRecommendations(
+    recommendations,
+    summary
+) {
+    elements.recommendationList.innerHTML =
+        "";
+
+    if (
+        !Array.isArray(recommendations)
+        || recommendations.length === 0
+    ) {
+        const empty =
+            document.createElement("div");
+
+        empty.className =
+            "empty-state";
+
+        empty.textContent =
+            summary?.message
+            || "لا توجد معالجة تلقائية موصى بها حاليًا.";
+
+        elements.recommendationList
+            .appendChild(empty);
+
+        return;
+    }
+
+    recommendations.forEach(
+        (recommendation) => {
+            const article =
+                document.createElement(
+                    "article"
+                );
+
+            article.className =
+                "recommendation-item";
+
+            const heading =
+                document.createElement(
+                    "div"
+                );
+
+            heading.className =
+                "item-heading";
+
+            const title =
+                document.createElement(
+                    "strong"
+                );
+
+            title.textContent =
+                humanizeCode(
+                    recommendation.operation_id
+                );
+
+            const priority =
+                document.createElement(
+                    "span"
+                );
+
+            priority.textContent =
+                recommendation.priority !== undefined
+                    ? `Priority ${recommendation.priority}`
+                    : (
+                        recommendation.mode
+                        || "recommended"
+                    );
+
+            heading.append(
+                title,
+                priority
+            );
+
+            article.appendChild(
+                heading
+            );
+
+            if (recommendation.reason) {
+                const reason =
+                    document.createElement(
+                        "p"
+                    );
+
+                reason.textContent =
+                    recommendation.reason;
+
+                article.appendChild(
+                    reason
+                );
+            }
+
+            article.appendChild(
+                createRecommendationMeta(
+                    recommendation
+                )
+            );
+
+            const parameters =
+                recommendation.parameters;
+
+            if (
+                parameters
+                && Object.keys(
+                    parameters
+                ).length > 0
+            ) {
+                const parameterLine =
+                    document.createElement(
+                        "small"
+                    );
+
+                parameterLine.className =
+                    "recommendation-parameters";
+
+                parameterLine.textContent =
+                    Object.entries(parameters)
+                        .map(
+                            ([key, value]) =>
+                                `${key}: ${value}`
+                        )
+                        .join(" · ");
+
+                article.appendChild(
+                    parameterLine
+                );
+            }
+
+            elements.recommendationList
+                .appendChild(article);
+        }
+    );
+}
+
+
+function renderAutomaticExclusions(
+    exclusions
+) {
+    elements.automaticExclusionList
+        .innerHTML = "";
+
+    if (
+        !Array.isArray(exclusions)
+        || exclusions.length === 0
+    ) {
+        hideElement(
+            elements.automaticExclusions
+        );
+
+        return;
+    }
+
+    exclusions.forEach(
+        (exclusion) => {
+            const article =
+                document.createElement(
+                    "article"
+                );
+
+            article.className =
+                "exclusion-item";
+
+            const heading =
+                document.createElement(
+                    "div"
+                );
+
+            heading.className =
+                "item-heading";
+
+            const title =
+                document.createElement(
+                    "strong"
+                );
+
+            title.textContent =
+                humanizeCode(
+                    exclusion.operation_id
+                );
+
+            const risk =
+                document.createElement(
+                    "span"
+                );
+
+            risk.textContent =
+                exclusion.risk
+                || "manual";
+
+            heading.append(
+                title,
+                risk
+            );
+
+            article.appendChild(
+                heading
+            );
+
+            if (exclusion.reason) {
+                const paragraph =
+                    document.createElement(
+                        "p"
+                    );
+
+                paragraph.textContent =
+                    exclusion.reason;
+
+                article.appendChild(
+                    paragraph
+                );
+            }
+
+            elements.automaticExclusionList
+                .appendChild(article);
+        }
+    );
+
+    showElement(
+        elements.automaticExclusions
+    );
+}
+
+
+function renderUploadResult(data) {
+    if (!data) {
+        throw new Error(
+            "لم تصل بيانات من Backend."
+        );
+    }
+    const imageId =
+        data?.image?.id
+        ?? data?.image?.image_id
+        ?? data?.image?.uuid
+        ?? data?.image_id
+        ?? data?.id;
+
+    console.log(
+        "IMAGE OBJECT:",
+        data?.image
+    );
+
+    console.log(
+        "RESOLVED IMAGE ID:",
+        imageId
+    );
+
+    if (!imageId) {
+        throw new Error(
+            "لم يتم العثور على معرف الصورة في استجابة Backend."
+        );
+    }
+
+    state.imageId = imageId;
+
+    renderMetrics(
+        data.analysis
+    );
+
+    if (
+        typeof renderDiagnoses
+        === "function"
+    ) {
+        renderDiagnoses(
+            data.diagnoses || []
+        );
+    }
+
+    if (
+        typeof renderPreservationProfile
+        === "function"
+    ) {
+        renderPreservationProfile(
+            data.preservation_profile
+        );
+    }
+
+    if (
+        typeof renderRecommendations
+        === "function"
+    ) {
+        renderRecommendations(
+            data.recommendations || [],
+            data.recommendation_summary
+        );
+    }
+
+    if (
+        typeof renderAutomaticExclusions
+        === "function"
+    ) {
+        renderAutomaticExclusions(
+            data.excluded_from_automatic || []
+        );
+    }
+
+    [
+        "documentPreviewSection",
+        "examinationSection",
+        "diagnosisSection",
+        "preservationProfileSection",
+        "treatmentPlanSection",
+        "treatmentSection"
+    ].forEach(
+        (sectionId) => {
+            const section =
+                document.getElementById(
+                    sectionId
+                );
+
+            if (section) {
+                section.classList.remove(
+                    "hidden"
+                );
+            }
+        }
+    );
+
+    elements.runPipelineButton.disabled =
+        false;
+
+    updateControls();
+}
+
+
+async function startExamination() {
+    if (!state.selectedFile) {
+        showError(
+            "اختر صورة أولاً."
+        );
+
+        return;
+    }
+
+    clearError();
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "image",
+        state.selectedFile
+    );
+
+    setBusy(
+        true,
+        "جاري فحص الوثيقة",
+        "يتم تحليل الصورة وإنشاء التشخيص."
+    );
+
+    try {
+        const response =
+            await fetch(
+                "/api/images",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+        const payload =
+            await response.json();
+
+        console.log(
+            "UPLOAD RESPONSE:",
+            payload
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                payload.message
+                || "فشل فحص الصورة."
+            );
+        }
+
+        if (
+            payload.success !== true
+        ) {
+            throw new Error(
+                payload.message
+                || "Backend رفض الطلب."
+            );
+        }
+
+        renderUploadResult(
+            payload.data
+        );
+
+    } catch (error) {
+        console.error(
+            "EXAMINATION ERROR:",
+            error
+        );
+
+        showError(
+            error.message
+        );
+
+    } finally {
+        setBusy(false);
+    }
+}
+
+
+function renderParameterFields(
+    operationId
+) {
+    elements.manualParameters.innerHTML =
+        "";
+
+    const definitions =
+        operationParameters[
+            operationId
+        ];
+
+    if (!definitions) {
+        updateControls();
+        return;
+    }
+
+    definitions.forEach(
+        (definition) => {
+            const wrapper =
+                document.createElement(
+                    "div"
+                );
+
+            wrapper.className =
+                "parameter-field";
+
+            const label =
+                document.createElement(
+                    "label"
+                );
+
+            const input =
+                document.createElement(
+                    "input"
+                );
+
+            const id =
+                `param-${definition.name}`;
+
+            label.htmlFor = id;
+            label.textContent =
+                definition.label;
+
+            input.id = id;
+            input.type =
+                definition.type;
+
+            input.value =
+                definition.value;
+
+            input.dataset.parameterName =
+                definition.name;
+
+            if (
+                definition.min
+                !== undefined
+            ) {
+                input.min =
+                    definition.min;
+            }
+
+            if (
+                definition.max
+                !== undefined
+            ) {
+                input.max =
+                    definition.max;
+            }
+
+            if (
+                definition.step
+                !== undefined
+            ) {
+                input.step =
+                    definition.step;
+            }
+
+            wrapper.append(
+                label,
+                input
+            );
+
+            elements.manualParameters
+                .appendChild(wrapper);
+        }
+    );
+
+    updateControls();
+}
+
+
+function collectManualParameters() {
+    const parameters = {};
+
+    const inputs =
+        elements.manualParameters
+            .querySelectorAll(
+                "[data-parameter-name]"
+            );
+
+    inputs.forEach(
+        (input) => {
+            const value =
+                Number(input.value);
+
+            if (!Number.isFinite(value)) {
+                throw new Error(
+                    `قيمة ${input.dataset.parameterName} غير صالحة.`
+                );
+            }
+
+            parameters[
+                input.dataset.parameterName
+            ] = value;
+        }
+    );
+
+    return parameters;
+}
+
+
+function preservationMetric(
+    metrics,
+    key
+) {
+    return formatNumber(
+        metrics?.[key],
+        4
+    );
+}
+
+
+function renderPreservation(
+    preservation
+) {
+    resetPreservationMetrics();
+
+    if (!preservation) {
+        hideSection(
+            "verificationSection"
+        );
+
+        return;
+    }
+
+    const metrics =
+        preservation.metrics || {};
+
+    elements.edgeRetentionMetric.textContent =
+        preservationMetric(
+            metrics,
+            "edge_retention"
+        );
+
+    elements.componentRetentionMetric.textContent =
+        preservationMetric(
+            metrics,
+            "component_retention"
+        );
+
+    elements.structureSimilarityMetric.textContent =
+        preservationMetric(
+            metrics,
+            "structure_similarity"
+        );
+
+    elements.edgeInflationMetric.textContent =
+        preservationMetric(
+            metrics,
+            "edge_inflation"
+        );
+
+    elements.preservationWarnings.innerHTML =
+        "";
+
+    const warnings =
+        Array.isArray(
+            preservation.warnings
+        )
+            ? preservation.warnings
+            : [];
+
+    if (warnings.length === 0) {
+        const item =
+            document.createElement(
+                "article"
+            );
+
+        item.className =
+            "warning-item";
+
+        const paragraph =
+            document.createElement(
+                "p"
+            );
+
+        paragraph.textContent =
+            "لم يرجع محرك Preservation تحذيرات إضافية.";
+
+        item.appendChild(
+            paragraph
+        );
+
+        elements.preservationWarnings
+            .appendChild(item);
+    } else {
+        warnings.forEach(
+            (warning) => {
+                const item =
+                    document.createElement(
+                        "article"
+                    );
+
+                item.className =
+                    "warning-item";
+
+                const heading =
+                    document.createElement(
+                        "div"
+                    );
+
+                heading.className =
+                    "item-heading";
+
+                const title =
+                    document.createElement(
+                        "strong"
+                    );
+
+                const severity =
+                    document.createElement(
+                        "span"
+                    );
+
+                if (
+                    typeof warning
+                    === "string"
+                ) {
+                    title.textContent =
+                        "Preservation Warning";
+
+                    severity.textContent =
+                        "warning";
+                } else {
+                    title.textContent =
+                        warning.code
+                        ? humanizeCode(
+                            warning.code
+                        )
+                        : "Preservation Warning";
+
+                    severity.textContent =
+                        warning.severity
+                        || "warning";
+                }
+
+                heading.append(
+                    title,
+                    severity
+                );
+
+                item.appendChild(
+                    heading
+                );
+
+                const message =
+                    typeof warning
+                    === "string"
+                        ? warning
+                        : (
+                            warning.message
+                            || warning.reason
+                            || warning.description
+                        );
+
+                if (message) {
+                    const paragraph =
+                        document.createElement(
+                            "p"
+                        );
+
+                    paragraph.textContent =
+                        message;
+
+                    item.appendChild(
+                        paragraph
+                    );
+                }
+
+                elements.preservationWarnings
+                    .appendChild(item);
+            }
+        );
+    }
+
+    showSection(
+        "verificationSection"
+    );
+}
+
+
+function renderDecision(
+    decision
+) {
+    const safeDecision =
+        decision || {
+            status: "review_required",
+            message: "تحتاج النتيجة إلى مراجعة."
+        };
+
+    const status =
+        safeDecision.status
+        || "review_required";
+
+    elements.decisionCard.className =
+        `decision-card ${safeStatusClass(status)}`;
+
+    elements.decisionStatus.textContent =
+        humanizeCode(status).toUpperCase();
+
+    elements.decisionMessage.textContent =
+        safeDecision.message
+        || "—";
+
+    showSection(
+        "decisionSection"
+    );
+}
+
+
+function showPrimaryResult(
+    result
+) {
+    if (!result?.id) {
+        return;
+    }
+
+    state.resultId =
+        result.id;
+
+    elements.resultPreview.src =
+        `/api/results/${encodeURIComponent(result.id)}`;
+
+    showSection(
+        "comparisonSection"
+    );
+
+    showSection(
+        "downloadSection"
+    );
+
+    updateControls();
+}
+
+
+function renderManualOperationResult(
+    data
+) {
+    showPrimaryResult(
+        data.result
+    );
+
+    if (data.preservation) {
+        renderPreservation(
+            data.preservation
+        );
+
+        renderDecision(
+            data.preservation.assessment
+            || {
+                status: "review_required",
+                message: (
+                    "تم إنشاء النتيجة، لكن لا يوجد "
+                    + "Assessment نهائي في بيانات Preservation."
+                )
+            }
+        );
+    } else {
+        hideSection(
+            "verificationSection"
+        );
+
+        renderDecision({
+            status: "review_required",
+            message:
+                data.verification?.message
+                || (
+                    "تم إنشاء النتيجة، لكن Preservation Verification غير متاح."
+                )
+        });
+    }
+
+    scrollToSection(
+        "decisionSection"
+    );
+}
+
+
+async function applyManualOperation() {
+    if (
+        !state.imageId
+        || !elements.manualOperation.value
+        || state.isBusy
+    ) {
+        return;
+    }
+
+    clearError();
+    clearTreatmentResult();
+
+    let parameters;
+
+    try {
+        parameters =
+            collectManualParameters();
+    } catch (error) {
+        showError(
+            error.message
+        );
+
+        return;
+    }
+
+    const operationId =
+        elements.manualOperation.value;
+
+    setBusy(
+        true,
+        "جاري تنفيذ المعالجة اليدوية",
+        `يتم تطبيق ${humanizeCode(operationId)} ثم فحص أثر النتيجة.`
+    );
+
+    try {
+        const data =
+            await apiRequest(
+                `/api/images/${encodeURIComponent(state.imageId)}/operations`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        operation_id:
+                            operationId,
+
+                        parameters:
+                            parameters
+                    })
+                }
+            );
+
+        renderManualOperationResult(
+            data
+        );
+    } catch (error) {
+        showError(
+            error.message
+        );
+    } finally {
+        setBusy(false);
+    }
+}
+
+
+function renderBinarizationCandidates(
+    candidates
+) {
+    elements.binarizationList.innerHTML =
+        "";
+
+    if (
+        !Array.isArray(candidates)
+        || candidates.length === 0
+    ) {
+        hideSection(
+            "binarizationSection"
+        );
+
+        return;
+    }
+
+    candidates.forEach(
+        (candidate) => {
+            const article =
+                document.createElement(
+                    "article"
+                );
+
+            article.className =
+                "binarization-item";
+
+            const heading =
+                document.createElement(
+                    "div"
+                );
+
+            heading.className =
+                "item-heading";
+
+            const title =
+                document.createElement(
+                    "strong"
+                );
+
+            title.textContent =
+                humanizeCode(
+                    candidate.operation_id
+                );
+
+            const status =
+                document.createElement(
+                    "span"
+                );
+
+            status.textContent =
+                humanizeCode(
+                    candidate.decision?.status
+                    || "review_required"
+                );
+
+            heading.append(
+                title,
+                status
+            );
+
+            article.appendChild(
+                heading
+            );
+
+            if (candidate.result?.id) {
+                const image =
+                    document.createElement(
+                        "img"
+                    );
+
+                image.className =
+                    "binarization-preview";
+
+                image.alt =
+                    `نتيجة ${humanizeCode(candidate.operation_id)}`;
+
+                image.src =
+                    `/api/results/${encodeURIComponent(candidate.result.id)}`;
+
+                article.appendChild(
+                    image
+                );
+            }
+
+            if (candidate.reason) {
+                const reason =
+                    document.createElement(
+                        "p"
+                    );
+
+                reason.textContent =
+                    candidate.reason;
+
+                article.appendChild(
+                    reason
+                );
+            }
+
+            if (
+                candidate.decision?.message
+            ) {
+                const decisionMessage =
+                    document.createElement(
+                        "small"
+                    );
+
+                decisionMessage.className =
+                    "binarization-decision";
+
+                decisionMessage.textContent =
+                    candidate.decision.message;
+
+                article.appendChild(
+                    decisionMessage
+                );
+            }
+
+            elements.binarizationList
+                .appendChild(article);
+        }
+    );
+
+    showSection(
+        "binarizationSection"
+    );
+}
+
+
+function renderPipelineResult(data) {
+    showPrimaryResult(
+        data.result
+    );
+
+    renderDecision(
+        data.decision
+    );
+
+    if (data.preservation) {
+        renderPreservation(
+            data.preservation
+        );
+    } else {
+        hideSection(
+            "verificationSection"
+        );
+    }
+
+    renderBinarizationCandidates(
+        data.binarization_candidates
+    );
+
+    scrollToSection(
+        "decisionSection"
+    );
+}
+
+
+async function runSmartPipeline() {
+    if (
+        !state.imageId
+        || state.isBusy
+    ) {
+        return;
+    }
+
+    clearError();
+    clearTreatmentResult();
+
+    setBusy(
+        true,
+        "جاري تنفيذ Smart Pipeline",
+        "يتم تنفيذ العمليات المؤهلة والتحقق من أثر كل نتيجة قبل اعتمادها."
+    );
+
+    try {
+        const data =
+            await apiRequest(
+                `/api/images/${encodeURIComponent(state.imageId)}/pipeline`,
+                {
+                    method: "POST"
+                }
+            );
+
+        renderPipelineResult(
+            data
+        );
+    } catch (error) {
+        showError(
+            error.message
+        );
+    } finally {
+        setBusy(false);
+    }
+}
+
+
+function downloadCurrentResult() {
+    if (!state.resultId) {
+        return;
+    }
+
+    window.location.href =
+        `/api/results/${encodeURIComponent(state.resultId)}/download`;
+}
+
+
+function startOver() {
+    if (state.isBusy) {
+        return;
+    }
+
+    clearSelectedFile();
+
+    elements.manualOperation.value = "";
+
+    renderParameterFields("");
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 }
 
 
 elements.dropZone.addEventListener(
     "click",
     () => {
-        elements.imageInput.click();
+        if (!state.isBusy) {
+            elements.imageInput.click();
+        }
     }
 );
 
@@ -419,13 +2137,18 @@ elements.dropZone.addEventListener(
     "keydown",
     (event) => {
         if (
-            event.key === "Enter"
-            || event.key === " "
+            state.isBusy
+            || (
+                event.key !== "Enter"
+                && event.key !== " "
+            )
         ) {
-            event.preventDefault();
-
-            elements.imageInput.click();
+            return;
         }
+
+        event.preventDefault();
+
+        elements.imageInput.click();
     }
 );
 
@@ -435,9 +2158,11 @@ elements.dropZone.addEventListener(
     (event) => {
         event.preventDefault();
 
-        elements.dropZone.classList.add(
-            "dragging"
-        );
+        if (!state.isBusy) {
+            elements.dropZone.classList.add(
+                "dragging"
+            );
+        }
     }
 );
 
@@ -461,9 +2186,21 @@ elements.dropZone.addEventListener(
             "dragging"
         );
 
-        handleDroppedFiles(
-            event.dataTransfer.files
-        );
+        if (state.isBusy) {
+            return;
+        }
+
+        const files =
+            event.dataTransfer.files;
+
+        if (
+            files
+            && files.length > 0
+        ) {
+            selectFile(
+                files[0]
+            );
+        }
     }
 );
 
@@ -471,9 +2208,12 @@ elements.dropZone.addEventListener(
 elements.imageInput.addEventListener(
     "change",
     () => {
-        selectFile(
-            elements.imageInput.files[0]
-        );
+        const file =
+            elements.imageInput.files[0];
+
+        if (file) {
+            selectFile(file);
+        }
     }
 );
 
@@ -486,7 +2226,7 @@ elements.removeImageButton.addEventListener(
 
 elements.startExaminationButton.addEventListener(
     "click",
-    previewFrontendState
+    startExamination
 );
 
 
@@ -502,44 +2242,25 @@ elements.manualOperation.addEventListener(
 
 elements.applyManualButton.addEventListener(
     "click",
-    () => {
-        showError(
-            "Manual Processing سيتم ربطه بالـBackend في المرحلة 14."
-        );
-    }
+    applyManualOperation
 );
 
 
 elements.runPipelineButton.addEventListener(
     "click",
-    () => {
-        showError(
-            "Smart Pipeline سيتم ربطه بالـBackend في المرحلة 14."
-        );
-    }
+    runSmartPipeline
 );
 
 
 elements.downloadResultButton.addEventListener(
     "click",
-    () => {
-        showError(
-            "لا توجد نتيجة Backend متاحة للتحميل بعد."
-        );
-    }
+    downloadCurrentResult
 );
 
 
 elements.startOverButton.addEventListener(
     "click",
-    () => {
-        clearSelectedFile();
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    }
+    startOver
 );
 
 
@@ -549,4 +2270,7 @@ window.addEventListener(
 );
 
 
+resetAnalysisUI();
+resetPreservationMetrics();
 renderParameterFields("");
+updateControls();

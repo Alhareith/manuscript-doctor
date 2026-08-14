@@ -15,7 +15,10 @@ from processing.operations import (
     otsu_threshold,
     adaptive_threshold,
     morphological_opening,
-    morphological_closing
+    morphological_closing,
+    bilateral_denoise,
+    non_local_means_denoise,
+    illumination_normalize
 )
 
 
@@ -370,4 +373,239 @@ def test_sharpen_default_matches_evaluated_default():
         default_result,
         explicit_result
     )
-    
+
+def test_bilateral_denoise_preserves_shape():
+    image = np.full(
+        (120, 160),
+        180,
+        dtype=np.uint8
+    )
+
+    result = bilateral_denoise(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_non_local_means_preserves_shape():
+    image = np.full(
+        (120, 160),
+        180,
+        dtype=np.uint8
+    )
+
+    result = non_local_means_denoise(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_bilateral_rejects_invalid_diameter():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        bilateral_denoise(
+            image,
+            diameter=0
+        )
+
+
+def test_nlm_rejects_invalid_template_window():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        non_local_means_denoise(
+            image,
+            template_window_size=6
+        )
+
+
+def test_nlm_rejects_invalid_search_window():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        non_local_means_denoise(
+            image,
+            search_window_size=20
+        )
+def test_illumination_normalize_preserves_shape():
+    image = np.full(
+        (180, 240),
+        180,
+        dtype=np.uint8
+    )
+
+    result = illumination_normalize(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_illumination_normalize_color():
+    image = np.full(
+        (180, 240, 3),
+        180,
+        dtype=np.uint8
+    )
+
+    result = illumination_normalize(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_illumination_normalize_preserves_alpha():
+    image = np.full(
+        (100, 120, 4),
+        180,
+        dtype=np.uint8
+    )
+
+    image[:, :, 3] = 123
+
+    result = illumination_normalize(
+        image
+    )
+
+    assert result.shape == image.shape
+
+    assert np.array_equal(
+        result[:, :, 3],
+        image[:, :, 3]
+    )
+
+
+def test_illumination_normalize_rejects_even_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        illumination_normalize(
+            image,
+            kernel_size=50
+        )
+
+
+def test_illumination_normalize_rejects_small_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        illumination_normalize(
+            image,
+            kernel_size=9
+        )
+
+
+def test_illumination_normalize_rejects_invalid_strength():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        illumination_normalize(
+            image,
+            strength=1.5
+        )
+
+def test_illumination_normalization_reduces_gradient():
+    height = 240
+    width = 400
+
+    gradient = np.linspace(
+        90,
+        220,
+        width,
+        dtype=np.float32
+    )
+
+    image = np.tile(
+        gradient,
+        (height, 1)
+    ).astype(
+        np.uint8
+    )
+
+    cv2.putText(
+        image,
+        "DOCUMENT",
+        (60, 130),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.2,
+        35,
+        3,
+        cv2.LINE_AA
+    )
+
+    result = illumination_normalize(
+        image,
+        kernel_size=51,
+        strength=0.65
+    )
+
+    before_left = float(
+        np.mean(
+            image[:, :50]
+        )
+    )
+
+    before_right = float(
+        np.mean(
+            image[:, -50:]
+        )
+    )
+
+    after_left = float(
+        np.mean(
+            result[:, :50]
+        )
+    )
+
+    after_right = float(
+        np.mean(
+            result[:, -50:]
+        )
+    )
+
+    before_difference = abs(
+        before_left
+        - before_right
+    )
+
+    after_difference = abs(
+        after_left
+        - after_right
+    )
+
+    assert (
+        after_difference
+        < before_difference
+    )

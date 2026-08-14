@@ -311,6 +311,261 @@ def morphological_closing(
         kernel
     )
 
+def bilateral_denoise(
+    image,
+    diameter=5,
+    sigma_color=25,
+    sigma_space=25
+):
+    _validate_image(image)
+
+    if diameter <= 0:
+        raise ValueError(
+            "diameter must be greater than 0."
+        )
+
+    if sigma_color <= 0:
+        raise ValueError(
+            "sigma_color must be greater than 0."
+        )
+
+    if sigma_space <= 0:
+        raise ValueError(
+            "sigma_space must be greater than 0."
+        )
+
+    if image.ndim == 2:
+        return cv2.bilateralFilter(
+            image,
+            diameter,
+            sigma_color,
+            sigma_space
+        )
+
+    if image.shape[2] == 3:
+        return cv2.bilateralFilter(
+            image,
+            diameter,
+            sigma_color,
+            sigma_space
+        )
+
+    if image.shape[2] == 4:
+        bgr = image[:, :, :3]
+        alpha = image[:, :, 3]
+
+        filtered = cv2.bilateralFilter(
+            bgr,
+            diameter,
+            sigma_color,
+            sigma_space
+        )
+
+        return np.dstack(
+            (
+                filtered,
+                alpha
+            )
+        )
+
+    raise ValueError(
+        "Unsupported image format."
+    )
+
+def non_local_means_denoise(
+    image,
+    strength=5,
+    template_window_size=7,
+    search_window_size=21
+):
+    _validate_image(image)
+
+    if strength <= 0:
+        raise ValueError(
+            "strength must be greater than 0."
+        )
+
+    if (
+        template_window_size < 3
+        or template_window_size % 2 == 0
+    ):
+        raise ValueError(
+            "template_window_size must be odd and >= 3."
+        )
+
+    if (
+        search_window_size < 3
+        or search_window_size % 2 == 0
+    ):
+        raise ValueError(
+            "search_window_size must be odd and >= 3."
+        )
+
+    if image.ndim == 2:
+        return cv2.fastNlMeansDenoising(
+            image,
+            None,
+            float(strength),
+            template_window_size,
+            search_window_size
+        )
+
+    if image.shape[2] == 3:
+        return cv2.fastNlMeansDenoisingColored(
+            image,
+            None,
+            float(strength),
+            float(strength),
+            template_window_size,
+            search_window_size
+        )
+
+    if image.shape[2] == 4:
+        bgr = image[:, :, :3]
+        alpha = image[:, :, 3]
+
+        filtered = cv2.fastNlMeansDenoisingColored(
+            bgr,
+            None,
+            float(strength),
+            float(strength),
+            template_window_size,
+            search_window_size
+        )
+
+        return np.dstack(
+            (
+                filtered,
+                alpha
+            )
+        )
+
+    raise ValueError(
+        "Unsupported image format."
+    )
+def illumination_normalize(
+    image,
+    kernel_size=51,
+    strength=0.65
+):
+    _validate_image(image)
+
+    if (
+        kernel_size < 15
+        or kernel_size % 2 == 0
+    ):
+        raise ValueError(
+            "kernel_size must be odd and >= 15."
+        )
+
+    if not 0 < strength <= 1:
+        raise ValueError(
+            "strength must be > 0 and <= 1."
+        )
+
+    def normalize_channel(channel):
+        source = channel.astype(
+            np.float32
+        )
+
+        background = cv2.GaussianBlur(
+            source,
+            (
+                kernel_size,
+                kernel_size
+            ),
+            0
+        )
+
+        background_mean = float(
+            np.mean(background)
+        )
+
+        background = np.maximum(
+            background,
+            1.0
+        )
+
+        corrected = (
+            source
+            / background
+            * background_mean
+        )
+
+        corrected = np.clip(
+            corrected,
+            0,
+            255
+        )
+
+        blended = (
+            source * (1.0 - strength)
+            +
+            corrected * strength
+        )
+
+        return np.clip(
+            blended,
+            0,
+            255
+        ).astype(
+            np.uint8
+        )
+
+    if image.ndim == 2:
+        return normalize_channel(
+            image
+        )
+
+    if image.shape[2] == 3:
+        lab = cv2.cvtColor(
+            image,
+            cv2.COLOR_BGR2LAB
+        )
+
+        l_channel, a_channel, b_channel = (
+            cv2.split(lab)
+        )
+
+        normalized_l = normalize_channel(
+            l_channel
+        )
+
+        result_lab = cv2.merge(
+            (
+                normalized_l,
+                a_channel,
+                b_channel
+            )
+        )
+
+        return cv2.cvtColor(
+            result_lab,
+            cv2.COLOR_LAB2BGR
+        )
+
+    if image.shape[2] == 4:
+        bgr = image[:, :, :3]
+        alpha = image[:, :, 3]
+
+        normalized_bgr = (
+            illumination_normalize(
+                bgr,
+                kernel_size=kernel_size,
+                strength=strength
+            )
+        )
+
+        return np.dstack(
+            (
+                normalized_bgr,
+                alpha
+            )
+        )
+
+    raise ValueError(
+        "Unsupported image format."
+    )
 
 OPERATIONS = {
     "clahe": {
@@ -383,7 +638,51 @@ OPERATIONS = {
         "category": "structure",
         "purpose": "سد فجوات بنيوية صغيرة",
         "description": "عملية بنيوية قد تربط تفاصيل متجاورة ولذلك تحتاج تقييمًا محافظًا."
+    },
+    "bilateral_denoise": {
+        "function": bilateral_denoise,
+        "name": "Bilateral Denoising",
+        "category": "denoising",
+        "purpose": "Reduce noise while preserving important image edges.",
+        "description": "Applies bilateral filtering to reduce noise while preserving edges.",
+        "risk": "medium",
+        "automatic": False,
+        "default_parameters": {
+        "diameter": 5,
+        "sigma_color": 25,
+        "sigma_space": 25
+        }
+    },
+
+    "non_local_means_denoise": {
+        "function": non_local_means_denoise,
+        "name": "Non-Local Means Denoising",
+        "category": "denoising",
+        "purpose": "Reduce image noise while preserving fine image structures.",
+        "description": "Uses Non-Local Means filtering to reduce noise while preserving similar local structures.",
+    "risk": "medium",
+        "automatic": False,
+        "default_parameters": {
+            "strength": 5,
+            "template_window_size": 7,
+            "search_window_size": 21
+        }
+    },
+
+    "illumination_normalize": {
+        "function": illumination_normalize,
+        "name": "Illumination Normalization",
+        "category": "illumination",
+        "purpose": "Reduce uneven spatial illumination across a document image.",
+        "description": "Conservatively normalizes gradual brightness variations while preserving document structure.",
+        "risk": "medium",
+        "automatic": False,
+        "default_parameters": {
+            "kernel_size": 51,
+            "strength": 0.65
+        }
     }
+        
 }
 
 
@@ -434,5 +733,4 @@ def apply_operation(
     return operation["function"](
         image,
         **params
-    )
-
+        )
