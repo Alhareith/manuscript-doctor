@@ -493,4 +493,51 @@ def test_structural_ratios_valid():
 
         assert 0 <= value <= 1
 
-        
+def test_skew_metrics_exist():
+    image = np.full(
+        (300, 400),
+        240,
+        dtype=np.uint8
+    )
+
+    cv2.line(
+        image,
+        (40, 100),
+        (360, 100),
+        30,
+        2
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    metrics = result[
+        "metrics"
+    ]
+
+    assert "skew_angle" in metrics
+    assert "skew_confidence" in metrics
+    assert "skew_line_count" in metrics
+
+
+def test_skew_confidence_valid():
+    image = np.full(
+        (200, 300),
+        220,
+        dtype=np.uint8
+    )
+
+    result = analyze_image(
+        image
+    )
+
+    confidence = (
+        result["metrics"]
+        ["skew_confidence"]
+        ["value"]
+    )
+
+    assert 0 <= confidence <= 1
+
+     

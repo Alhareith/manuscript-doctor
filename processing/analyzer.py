@@ -58,11 +58,7 @@ def _get_dimensions(image):
     else:
         channels = image.shape[2]
 
-    return {
-        "width": int(width),
-        "height": int(height),
-        "channels": int(channels)
-    }
+    return {"width": int(width), "height": int(height), "channels": int(channels)}
 
 
 def _measure_brightness(gray):
@@ -87,41 +83,23 @@ def _measure_sharpness(gray):
 
 
 def _noise_metrics(gray):
-    filtered = cv2.medianBlur(
-        gray,
-        3
-    )
+    filtered = cv2.medianBlur(gray, 3)
 
-    residual = cv2.absdiff(
-        gray,
-        filtered
-    ).astype(np.float32)
+    residual = cv2.absdiff(gray, filtered).astype(np.float32)
 
-    mean_residual = float(
-        np.mean(residual)
-    )
+    mean_residual = float(np.mean(residual))
 
-    percentile_90 = float(
-        np.percentile(
-            residual,
-            90
-        )
-    )
+    percentile_90 = float(np.percentile(residual, 90))
 
-    affected_ratio = float(
-        np.mean(
-            residual >= 5.0
-        )
-    )
+    affected_ratio = float(np.mean(residual >= 5.0))
 
     return {
         "value": mean_residual,
         "unit": "mean_absolute_residual",
         "p90": percentile_90,
         "affected_ratio": affected_ratio,
-        "interpretation": "heuristic"
+        "interpretation": "heuristic",
     }
-
 
 
 def _measure_illumination_variation(gray):
@@ -131,21 +109,14 @@ def _measure_illumination_variation(gray):
 
     sigma = max(shortest_side / 30.0, 3.0)
 
-    illumination = cv2.GaussianBlur(
-        gray,
-        (0, 0),
-        sigmaX=sigma,
-        sigmaY=sigma
-    )
+    illumination = cv2.GaussianBlur(gray, (0, 0), sigmaX=sigma, sigmaY=sigma)
 
     mean_illumination = float(np.mean(illumination))
 
     if mean_illumination <= 1e-6:
         return 0.0
 
-    variation = float(
-        np.std(illumination) / mean_illumination
-    )
+    variation = float(np.std(illumination) / mean_illumination)
 
     return variation
 
@@ -160,11 +131,7 @@ def _measure_edge_density(gray):
         lower = 50
         upper = 150
 
-    edges = cv2.Canny(
-        gray,
-        lower,
-        upper
-    )
+    edges = cv2.Canny(gray, lower, upper)
 
     edge_pixels = np.count_nonzero(edges)
 
@@ -175,32 +142,29 @@ def _build_metrics(gray):
     return {
         "brightness": {
             "value": round(_measure_brightness(gray), 3),
-            "unit": "gray_level"
+            "unit": "gray_level",
         },
         "contrast": {
             "value": round(_measure_contrast(gray), 3),
-            "unit": "gray_level_std"
+            "unit": "gray_level_std",
         },
         "dynamic_range": {
             "value": round(_measure_dynamic_range(gray), 3),
-            "unit": "gray_level"
+            "unit": "gray_level",
         },
         "sharpness": {
             "value": round(_measure_sharpness(gray), 3),
-            "unit": "laplacian_variance"
+            "unit": "laplacian_variance",
         },
         "noise": _noise_metrics(gray),
         "illumination_variation": {
-            "value": round(
-                _measure_illumination_variation(gray),
-                4
-            ),
-            "unit": "coefficient"
+            "value": round(_measure_illumination_variation(gray), 4),
+            "unit": "coefficient",
         },
         "edge_density": {
             "value": round(_measure_edge_density(gray), 4),
-            "unit": "ratio"
-        }
+            "unit": "ratio",
+        },
     }
 
 
@@ -214,100 +178,124 @@ def _diagnose(metrics):
     illumination = metrics["illumination_variation"]["value"]
 
     if brightness < BRIGHTNESS_VERY_LOW:
-        diagnoses.append({
-            "code": "very_dark",
-            "label": "إضاءة منخفضة جدًا",
-            "severity": "high",
-            "message": "تشير القياسات إلى أن الصورة مظلمة بدرجة واضحة."
-        })
+        diagnoses.append(
+            {
+                "code": "very_dark",
+                "label": "إضاءة منخفضة جدًا",
+                "severity": "high",
+                "message": "تشير القياسات إلى أن الصورة مظلمة بدرجة واضحة.",
+            }
+        )
 
     elif brightness < BRIGHTNESS_LOW:
-        diagnoses.append({
-            "code": "dark",
-            "label": "إضاءة منخفضة",
-            "severity": "medium",
-            "message": "تشير القياسات إلى انخفاض مستوى الإضاءة."
-        })
+        diagnoses.append(
+            {
+                "code": "dark",
+                "label": "إضاءة منخفضة",
+                "severity": "medium",
+                "message": "تشير القياسات إلى انخفاض مستوى الإضاءة.",
+            }
+        )
 
     if brightness > BRIGHTNESS_VERY_HIGH:
-        diagnoses.append({
-            "code": "very_bright",
-            "label": "إضاءة مرتفعة جدًا",
-            "severity": "high",
-            "message": "تشير القياسات إلى سطوع مرتفع قد يخفي بعض التفاصيل."
-        })
+        diagnoses.append(
+            {
+                "code": "very_bright",
+                "label": "إضاءة مرتفعة جدًا",
+                "severity": "high",
+                "message": "تشير القياسات إلى سطوع مرتفع قد يخفي بعض التفاصيل.",
+            }
+        )
 
     elif brightness > BRIGHTNESS_HIGH:
-        diagnoses.append({
-            "code": "bright",
-            "label": "إضاءة مرتفعة",
-            "severity": "medium",
-            "message": "تشير القياسات إلى ارتفاع مستوى الإضاءة."
-        })
+        diagnoses.append(
+            {
+                "code": "bright",
+                "label": "إضاءة مرتفعة",
+                "severity": "medium",
+                "message": "تشير القياسات إلى ارتفاع مستوى الإضاءة.",
+            }
+        )
 
     if contrast < CONTRAST_VERY_LOW:
-        diagnoses.append({
-            "code": "very_low_contrast",
-            "label": "تباين منخفض جدًا",
-            "severity": "high",
-            "message": "تظهر الصورة فرقًا محدودًا جدًا بين درجاتها البصرية."
-        })
+        diagnoses.append(
+            {
+                "code": "very_low_contrast",
+                "label": "تباين منخفض جدًا",
+                "severity": "high",
+                "message": "تظهر الصورة فرقًا محدودًا جدًا بين درجاتها البصرية.",
+            }
+        )
 
     elif contrast < CONTRAST_LOW:
-        diagnoses.append({
-            "code": "low_contrast",
-            "label": "تباين منخفض",
-            "severity": "medium",
-            "message": "تشير القياسات إلى انخفاض التباين في الصورة."
-        })
+        diagnoses.append(
+            {
+                "code": "low_contrast",
+                "label": "تباين منخفض",
+                "severity": "medium",
+                "message": "تشير القياسات إلى انخفاض التباين في الصورة.",
+            }
+        )
 
     if sharpness < SHARPNESS_VERY_LOW:
-        diagnoses.append({
-            "code": "very_low_sharpness",
-            "label": "حدة منخفضة جدًا",
-            "severity": "high",
-            "message": "تشير القياسات إلى ضعف واضح في الحواف والتفاصيل."
-        })
+        diagnoses.append(
+            {
+                "code": "very_low_sharpness",
+                "label": "حدة منخفضة جدًا",
+                "severity": "high",
+                "message": "تشير القياسات إلى ضعف واضح في الحواف والتفاصيل.",
+            }
+        )
 
     elif sharpness < SHARPNESS_LOW:
-        diagnoses.append({
-            "code": "low_sharpness",
-            "label": "حدة منخفضة",
-            "severity": "medium",
-            "message": "تشير القياسات إلى انخفاض نسبي في حدة التفاصيل."
-        })
+        diagnoses.append(
+            {
+                "code": "low_sharpness",
+                "label": "حدة منخفضة",
+                "severity": "medium",
+                "message": "تشير القياسات إلى انخفاض نسبي في حدة التفاصيل.",
+            }
+        )
 
     if noise > NOISE_HIGH:
-        diagnoses.append({
-            "code": "high_noise",
-            "label": "ضوضاء مرتفعة",
-            "severity": "high",
-            "message": "تشير القياسات إلى تغيرات محلية قوية قد تمثل ضوضاء."
-        })
+        diagnoses.append(
+            {
+                "code": "high_noise",
+                "label": "ضوضاء مرتفعة",
+                "severity": "high",
+                "message": "تشير القياسات إلى تغيرات محلية قوية قد تمثل ضوضاء.",
+            }
+        )
 
     elif noise > NOISE_MODERATE:
-        diagnoses.append({
-            "code": "moderate_noise",
-            "label": "ضوضاء متوسطة",
-            "severity": "medium",
-            "message": "تشير القياسات إلى وجود قدر متوسط من التغيرات المحلية."
-        })
+        diagnoses.append(
+            {
+                "code": "moderate_noise",
+                "label": "ضوضاء متوسطة",
+                "severity": "medium",
+                "message": "تشير القياسات إلى وجود قدر متوسط من التغيرات المحلية.",
+            }
+        )
 
     if illumination > ILLUMINATION_VARIATION_HIGH:
-        diagnoses.append({
-            "code": "strong_uneven_illumination",
-            "label": "إضاءة غير متجانسة بوضوح",
-            "severity": "high",
-            "message": "توجد فروق واضحة في توزيع الإضاءة عبر الصورة."
-        })
+        diagnoses.append(
+            {
+                "code": "strong_uneven_illumination",
+                "label": "إضاءة غير متجانسة بوضوح",
+                "severity": "high",
+                "message": "توجد فروق واضحة في توزيع الإضاءة عبر الصورة.",
+            }
+        )
 
     elif illumination > ILLUMINATION_VARIATION_MODERATE:
-        diagnoses.append({
-            "code": "uneven_illumination",
-            "label": "إضاءة غير متجانسة",
-            "severity": "medium",
-            "message": "تشير القياسات إلى تفاوت في توزيع الإضاءة عبر الصورة."
-        })
+        diagnoses.append(
+            {
+                "code": "uneven_illumination",
+                "label": "إضاءة غير متجانسة",
+                "severity": "medium",
+                "message": "تشير القياسات إلى تفاوت في توزيع الإضاءة عبر الصورة.",
+            }
+        )
 
     return diagnoses
 
@@ -324,34 +312,42 @@ def _build_preservation_profile(metrics):
     if edge_density >= EDGE_DENSITY_HIGH:
         sensitivity_points += 2
 
-        indicators.append({
-            "code": "dense_edge_structure",
-            "message": "تحتوي الصورة على كثافة حواف مرتفعة نسبيًا، لذلك يفضل تجنب المعالجة العدوانية."
-        })
+        indicators.append(
+            {
+                "code": "dense_edge_structure",
+                "message": "تحتوي الصورة على كثافة حواف مرتفعة نسبيًا، لذلك يفضل تجنب المعالجة العدوانية.",
+            }
+        )
 
     if contrast < CONTRAST_LOW:
         sensitivity_points += 1
 
-        indicators.append({
-            "code": "weak_contrast_details",
-            "message": "قد تكون بعض التفاصيل ضعيفة التباين وأكثر عرضة للاختفاء أثناء المعالجة القوية."
-        })
+        indicators.append(
+            {
+                "code": "weak_contrast_details",
+                "message": "قد تكون بعض التفاصيل ضعيفة التباين وأكثر عرضة للاختفاء أثناء المعالجة القوية.",
+            }
+        )
 
     if sharpness < SHARPNESS_LOW:
         sensitivity_points += 1
 
-        indicators.append({
-            "code": "weak_edge_definition",
-            "message": "الحواف الحالية ضعيفة نسبيًا، لذلك ينبغي التعامل بحذر مع العمليات التي قد تزيل التفاصيل."
-        })
+        indicators.append(
+            {
+                "code": "weak_edge_definition",
+                "message": "الحواف الحالية ضعيفة نسبيًا، لذلك ينبغي التعامل بحذر مع العمليات التي قد تزيل التفاصيل.",
+            }
+        )
 
     if dynamic_range < 60:
         sensitivity_points += 1
 
-        indicators.append({
-            "code": "limited_dynamic_range",
-            "message": "النطاق البصري محدود نسبيًا، وقد توجد تفاصيل متقاربة في الشدة."
-        })
+        indicators.append(
+            {
+                "code": "limited_dynamic_range",
+                "message": "النطاق البصري محدود نسبيًا، وقد توجد تفاصيل متقاربة في الشدة.",
+            }
+        )
 
     if sensitivity_points >= 3:
         level = "high"
@@ -365,108 +361,56 @@ def _build_preservation_profile(metrics):
     messages = {
         "low": "لا تظهر المؤشرات الحالية حساسية مرتفعة للمعالجة، مع بقاء التحقق بعد المعالجة ضروريًا.",
         "moderate": "توجد مؤشرات تستدعي استخدام معالجة متوازنة ومراقبة أثرها على التفاصيل.",
-        "high": "توجد مؤشرات تستدعي معالجة محافظة وتجنب العمليات القوية دون تحقق."
+        "high": "توجد مؤشرات تستدعي معالجة محافظة وتجنب العمليات القوية دون تحقق.",
     }
 
     return {
         "level": level,
         "indicators": indicators,
         "message": messages[level],
-        "interpretation": "heuristic"
+        "interpretation": "heuristic",
     }
-def _clipping_metrics(
-    gray
-):
-    dark_clipped_ratio = float(
-        np.mean(
-            gray <= 5
-        )
-    )
 
-    bright_clipped_ratio = float(
-        np.mean(
-            gray >= 250
-        )
-    )
+
+def _clipping_metrics(gray):
+    dark_clipped_ratio = float(np.mean(gray <= 5))
+
+    bright_clipped_ratio = float(np.mean(gray >= 250))
 
     return {
-        "dark_clipped_ratio": (
-            dark_clipped_ratio
-        ),
-        "bright_clipped_ratio": (
-            bright_clipped_ratio
-        )
+        "dark_clipped_ratio": (dark_clipped_ratio),
+        "bright_clipped_ratio": (bright_clipped_ratio),
     }
+
 
 def _bleed_through_indicators(gray):
-    source = gray.astype(
-        np.float32
-    )
+    source = gray.astype(np.float32)
 
-    background = cv2.GaussianBlur(
-        source,
-        (31, 31),
-        0
-    )
+    background = cv2.GaussianBlur(source, (31, 31), 0)
 
-    residual = np.abs(
-        source - background
-    )
+    residual = np.abs(source - background)
 
-    weak_structure_ratio = float(
-        np.mean(
-            (residual >= 4.0)
-            & (residual <= 18.0)
-        )
-    )
+    weak_structure_ratio = float(np.mean((residual >= 4.0) & (residual <= 18.0)))
 
-    strong_structure_ratio = float(
-        np.mean(
-            residual > 18.0
-        )
-    )
+    strong_structure_ratio = float(np.mean(residual > 18.0))
 
     weak_to_strong_ratio = float(
-        weak_structure_ratio
-        / max(
-            strong_structure_ratio,
-            1e-6
-        )
+        weak_structure_ratio / max(strong_structure_ratio, 1e-6)
     )
 
     return {
-        "weak_structure_ratio": (
-            weak_structure_ratio
-        ),
-        "strong_structure_ratio": (
-            strong_structure_ratio
-        ),
-        "weak_to_strong_ratio": (
-            weak_to_strong_ratio
-        )
+        "weak_structure_ratio": (weak_structure_ratio),
+        "strong_structure_ratio": (strong_structure_ratio),
+        "weak_to_strong_ratio": (weak_to_strong_ratio),
     }
 
+
 def _structural_metrics(gray):
-    blurred = cv2.GaussianBlur(
-        gray,
-        (3, 3),
-        0
-    )
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
 
-    _, binary = cv2.threshold(
-        blurred,
-        0,
-        255,
-        cv2.THRESH_BINARY_INV
-        + cv2.THRESH_OTSU
-    )
+    _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    count, labels, stats, _ = (
-        cv2.connectedComponentsWithStats(
-            binary,
-            connectivity=8
-        )
-    )
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
 
     if count <= 1:
         return {
@@ -475,19 +419,12 @@ def _structural_metrics(gray):
             "mean_component_area": 0.0,
             "median_component_area": 0.0,
             "foreground_ratio": 0.0,
-            "thin_structure_ratio": 0.0
+            "thin_structure_ratio": 0.0,
         }
 
-    areas = stats[
-        1:,
-        cv2.CC_STAT_AREA
-    ].astype(
-        np.float32
-    )
+    areas = stats[1:, cv2.CC_STAT_AREA].astype(np.float32)
 
-    valid_areas = areas[
-        areas > 0
-    ]
+    valid_areas = areas[areas > 0]
 
     if valid_areas.size == 0:
         return {
@@ -496,78 +433,112 @@ def _structural_metrics(gray):
             "mean_component_area": 0.0,
             "median_component_area": 0.0,
             "foreground_ratio": 0.0,
-            "thin_structure_ratio": 0.0
+            "thin_structure_ratio": 0.0,
         }
 
-    small_component_ratio = float(
-        np.mean(
-            valid_areas <= 6
-        )
-    )
+    small_component_ratio = float(np.mean(valid_areas <= 6))
 
-    foreground_ratio = float(
-        np.mean(
-            binary > 0
-        )
-    )
+    foreground_ratio = float(np.mean(binary > 0))
 
-    eroded = cv2.erode(
-        binary,
-        np.ones(
-            (3, 3),
-            dtype=np.uint8
-        ),
-        iterations=1
-    )
+    eroded = cv2.erode(binary, np.ones((3, 3), dtype=np.uint8), iterations=1)
 
-    original_foreground = float(
-        np.count_nonzero(
-            binary
-        )
-    )
+    original_foreground = float(np.count_nonzero(binary))
 
-    eroded_foreground = float(
-        np.count_nonzero(
-            eroded
-        )
-    )
+    eroded_foreground = float(np.count_nonzero(eroded))
 
     if original_foreground == 0:
         thin_structure_ratio = 0.0
     else:
-        thin_structure_ratio = float(
-            1.0
-            - (
-                eroded_foreground
-                / original_foreground
-            )
-        )
+        thin_structure_ratio = float(1.0 - (eroded_foreground / original_foreground))
 
     return {
-        "component_count": int(
-            len(
-                valid_areas
-            )
-        ),
-        "small_component_ratio": (
-            small_component_ratio
-        ),
-        "mean_component_area": float(
-            np.mean(
-                valid_areas
-            )
-        ),
-        "median_component_area": float(
-            np.median(
-                valid_areas
-            )
-        ),
-        "foreground_ratio": (
-            foreground_ratio
-        ),
-        "thin_structure_ratio": (
-            thin_structure_ratio
+        "component_count": int(len(valid_areas)),
+        "small_component_ratio": (small_component_ratio),
+        "mean_component_area": float(np.mean(valid_areas)),
+        "median_component_area": float(np.median(valid_areas)),
+        "foreground_ratio": (foreground_ratio),
+        "thin_structure_ratio": (thin_structure_ratio),
+    }
+
+
+
+def _estimate_skew(gray):
+    if gray is None:
+        return {"angle": 0.0, "confidence": 0.0, "line_count": 0}
+
+    h, w = gray.shape[:2]
+    if h < 30 or w < 30:
+        return {"angle": 0.0, "confidence": 0.0, "line_count": 0}
+
+    # 1. إبراز الحواف الأفقية للنصوص والأسطر
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges = cv2.Canny(blurred, 50, 150, apertureSize=3)
+
+    # 2. البحث عن الخطوط باستخدام HoughLinesP
+    # نحدد طول الخط الأدنى ليلتقط أسطر الكلمات
+    min_line_len = max(40, w // 12)
+    lines = cv2.HoughLinesP(
+        edges,
+        rho=1,
+        theta=np.pi / 180,
+        threshold=70,
+        minLineLength=min_line_len,
+        maxLineGap=15,
+    )
+
+    angles = []
+    line_count = 0
+
+    if lines is not None:
+        line_count = len(lines)
+        for line in lines.reshape(-1, 4):
+            x1, y1, x2, y2 = line
+
+            # حساب الزاوية بالدرجات
+            angle_rad = np.arctan2(float(y2 - y1), float(x2 - x1))
+            angle_deg = np.degrees(angle_rad)
+
+            # تحويل الزاوية لتكون دائماً بين -90 و +90
+            if angle_deg < -90:
+                angle_deg += 180
+            elif angle_deg > 90:
+                angle_deg -= 180
+
+            # نأخذ فقط الزوايا شبه الأفقية (الميلان الطبيعي للوثائق يكون عادة بين -30 و 30)
+            if -35.0 <= angle_deg <= 35.0:
+                angles.append(angle_deg)
+
+    # 3. حساب الزاوية الغالبة
+    if len(angles) >= 3:
+        # استخدام الوسيط لتجاهل القيم الشاذة الناتجة عن تراكيب الحروف
+        detected_angle = float(np.median(angles))
+        confidence = float(min(1.0, len(angles) / 20.0))
+    else:
+        # كشف احتياطي عبر إحداثيات المستطيل الأدنى لكامل بكسلات النص (Foreground Pixels)
+        _, thresh = cv2.threshold(
+            blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
         )
+        pts = cv2.findNonZero(thresh)
+        if pts is not None and len(pts) > 100:
+            rect = cv2.minAreaRect(pts)
+            rect_angle = rect[-1]
+            if rect_angle < -45:
+                rect_angle = -(90 + rect_angle)
+            elif rect_angle > 45:
+                rect_angle = 90 - rect_angle
+            else:
+                rect_angle = -rect_angle
+
+            detected_angle = float(rect_angle)
+            confidence = 0.5
+        else:
+            detected_angle = 0.0
+            confidence = 0.0
+
+    return {
+        "angle": round(detected_angle, 2),
+        "confidence": round(confidence, 4),
+        "line_count": line_count,
     }
 
 def analyze_image(image):
@@ -579,104 +550,75 @@ def analyze_image(image):
 
     clipping = _clipping_metrics(gray)
 
-    bleed_indicators = (
-        _bleed_through_indicators(
-            gray
-        )
-    )
+    bleed_indicators = _bleed_through_indicators(gray)
     structural = _structural_metrics(gray)
-
+    skew = _estimate_skew(gray)
     metrics["dark_clipped_ratio"] = {
-        "value": round(
-            clipping["dark_clipped_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(clipping["dark_clipped_ratio"], 4),
+        "unit": "ratio",
     }
 
     metrics["bright_clipped_ratio"] = {
-        "value": round(
-            clipping["bright_clipped_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(clipping["bright_clipped_ratio"], 4),
+        "unit": "ratio",
     }
 
     metrics["weak_structure_ratio"] = {
-        "value": round(
-            bleed_indicators["weak_structure_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(bleed_indicators["weak_structure_ratio"], 4),
+        "unit": "ratio",
     }
 
     metrics["strong_structure_ratio"] = {
-        "value": round(
-            bleed_indicators["strong_structure_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(bleed_indicators["strong_structure_ratio"], 4),
+        "unit": "ratio",
     }
 
     metrics["weak_to_strong_ratio"] = {
-        "value": round(
-            bleed_indicators["weak_to_strong_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(bleed_indicators["weak_to_strong_ratio"], 4),
+        "unit": "ratio",
     }
 
     metrics["component_count"] = {
         "value": structural["component_count"],
-        "unit": "count"
+        "unit": "count",
     }
     metrics["small_component_ratio"] = {
-        "value": round(
-            structural["small_component_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(structural["small_component_ratio"], 4),
+        "unit": "ratio",
     }
     metrics["mean_component_area"] = {
-        "value": round(
-            structural["mean_component_area"],
-            4
-        ),
-        "unit": "pixels"
+        "value": round(structural["mean_component_area"], 4),
+        "unit": "pixels",
     }
     metrics["median_component_area"] = {
-        "value": round(
-            structural["median_component_area"],
-            4
-        ),
-        "unit": "pixels"
+        "value": round(structural["median_component_area"], 4),
+        "unit": "pixels",
     }
     metrics["foreground_ratio"] = {
-        "value": round(
-            structural["foreground_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(structural["foreground_ratio"], 4),
+        "unit": "ratio",
     }
     metrics["thin_structure_ratio"] = {
-        "value": round(
-            structural["thin_structure_ratio"],
-            4
-        ),
-        "unit": "ratio"
+        "value": round(structural["thin_structure_ratio"], 4),
+        "unit": "ratio",
     }
 
+    metrics["skew_angle"] = {"value": round(skew["angle"], 2), "unit": "degrees"}
+
+    metrics["skew_confidence"] = {
+        "value": round(skew["confidence"], 4),
+        "unit": "ratio",
+    }
+
+    metrics["skew_line_count"] = {"value": skew["line_count"], "unit": "count"}
     diagnoses = _diagnose(metrics)
 
-    preservation_profile = _build_preservation_profile(
-        metrics
-    )
+    preservation_profile = _build_preservation_profile(metrics)
 
     return {
         "dimensions": dimensions,
         "metrics": metrics,
         "diagnoses": diagnoses,
         "preservation_profile": preservation_profile,
-        "clipping": clipping
+        "clipping": clipping,
     }
-

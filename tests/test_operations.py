@@ -25,7 +25,8 @@ from processing.operations import (
     background_suppress,
     weak_structure_suppress,
     morphological_top_hat,
-    morphological_black_hat
+    morphological_black_hat,
+    deskew
 )
 
 
@@ -820,3 +821,51 @@ def test_black_hat_rejects_even_kernel():
             image,
             kernel_size=4
         )
+
+def test_deskew_returns_valid_image():
+    image = np.full(
+        (200, 300),
+        220,
+        dtype=np.uint8
+    )
+
+    result = deskew(
+        image,
+        angle=5
+    )
+
+    assert result is not None
+    assert result.dtype == np.uint8
+    assert result.ndim == image.ndim
+
+
+def test_deskew_zero_angle():
+    image = np.full(
+        (200, 300),
+        220,
+        dtype=np.uint8
+    )
+
+    result = deskew(
+        image,
+        angle=0
+    )
+
+    assert result.shape == image.shape
+
+
+def test_deskew_rejects_extreme_angle():
+    # إنشاء صورة تجريبية
+    image = np.full((200, 300), 220, dtype=np.uint8)
+
+    # 1. اختبار زاوية موجبة متطرفة تتجاوز 45 درجة (مثلاً 50 أو 60)
+    with pytest.raises(
+        ValueError, match="angle must be between -45 and 45 degrees."
+    ):
+        deskew(image, angle=50)
+
+    # 2. اختبار زاوية سالبة متطرفة (اختياري لزيادة التغطية)
+    with pytest.raises(
+        ValueError, match="angle must be between -45 and 45 degrees."
+    ):
+        deskew(image, angle=-60)

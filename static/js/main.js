@@ -370,6 +370,17 @@ const operationParameters = {
             min: 3,
             step: 2
         }
+    ],
+    deskew: [
+        {
+            name: "angle",
+            label: "Angle",
+            type: "number",
+            value: 0,
+            min: -20,
+            max: 20,
+            step: 0.1
+        }
     ]
 
 };
