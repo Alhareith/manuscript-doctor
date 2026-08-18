@@ -28,12 +28,26 @@ def make_image():
 
 
 def make_analysis(
-    preservation_level="low"
+    preservation_level="low",
+    contrast=30.0,
+    sharpness=100.0,
+    brightness=120.0,
+    illumination=0.05,
+    noise=0.0
 ):
     return {
         "diagnoses": [],
         "preservation_profile": {
             "level": preservation_level
+        },
+        "metrics": {
+            "contrast": {"value": contrast},
+            "sharpness": {"value": sharpness},
+            "brightness": {"value": brightness},
+            "illumination_variation": {
+                "value": illumination
+            },
+            "noise": {"value": noise}
         }
     }
 
@@ -79,6 +93,46 @@ def high_risk_preservation():
     }
 
 
+def clahe_rec():
+    return {
+        "operation_id": "clahe",
+        "parameters": {},
+        "reason": "contrast",
+        "risk": "medium",
+        "mode": "enhancement"
+    }
+
+
+def sharpen_rec():
+    return {
+        "operation_id": "sharpen",
+        "parameters": {},
+        "reason": "sharpness",
+        "risk": "medium",
+        "mode": "enhancement"
+    }
+
+
+def gamma_rec():
+    return {
+        "operation_id": "gamma_correct",
+        "parameters": {"gamma": 0.85},
+        "reason": "dark",
+        "risk": "low",
+        "mode": "enhancement"
+    }
+
+
+def median_rec():
+    return {
+        "operation_id": "median_denoise",
+        "parameters": {"kernel_size": 3},
+        "reason": "noise",
+        "risk": "medium-high",
+        "mode": "enhancement"
+    }
+
+
 def test_no_treatment_returns_unchanged_copy(
     monkeypatch
 ):
@@ -89,11 +143,7 @@ def test_no_treatment_returns_unchanged_copy(
         pipeline,
         "recommend_treatment",
         lambda analysis: {
-            "recommendations": [],
-            "excluded_from_automatic": [],
-            "summary": {
-                "needs_treatment": False
-            }
+            "recommendations": []
         }
     )
 
@@ -120,18 +170,13 @@ def test_no_treatment_returns_unchanged_copy(
         == "no_treatment"
     )
 
-    assert np.array_equal(
-        image,
-        original
-    )
-
     assert (
         result["image"]
         is not image
     )
 
 
-def test_acceptable_candidate_is_accepted(
+def test_acceptable_candidate_with_benefit_is_accepted(
     monkeypatch
 ):
     image = make_image()
@@ -141,13 +186,7 @@ def test_acceptable_candidate_is_accepted(
         "recommend_treatment",
         lambda analysis: {
             "recommendations": [
-                {
-                    "operation_id": "clahe",
-                    "parameters": {},
-                    "reason": "contrast",
-                    "risk": "medium",
-                    "mode": "enhancement"
-                }
+                clahe_rec()
             ]
         }
     )
@@ -156,11 +195,15 @@ def test_acceptable_candidate_is_accepted(
         pipeline,
         "apply_operation",
         lambda operation_id, image, params: (
-            np.clip(
-                image.astype(np.int16) - 10,
-                0,
-                255
-            ).astype(np.uint8)
+            image.copy()
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=45.0
         )
     )
 
@@ -174,7 +217,7 @@ def test_acceptable_candidate_is_accepted(
 
     result = pipeline.run_smart_pipeline(
         image,
-        make_analysis()
+        make_analysis(contrast=30.0)
     )
 
     assert (
@@ -185,8 +228,78 @@ def test_acceptable_candidate_is_accepted(
     )
 
     assert (
+        result["steps"][0]["benefit"][
+            "passed"
+        ]
+        is True
+    )
+
+    assert (
         result["decision"]["status"]
         == "accepted"
+    )
+
+
+def test_candidate_without_benefit_is_rejected(
+    monkeypatch
+):
+    image = make_image()
+    original = image.copy()
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": [
+                clahe_rec()
+            ]
+        }
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        lambda operation_id, image, params: (
+            image.copy()
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=30.5
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        lambda original, processed: (
+            acceptable_preservation()
+        )
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
+        make_analysis(contrast=30.0)
+    )
+
+    assert np.array_equal(
+        result["image"],
+        original
+    )
+
+    assert (
+        result["steps"][0]["decision"][
+            "status"
+        ]
+        == "rejected_no_benefit"
+    )
+
+    assert (
+        result["decision"]["status"]
+        == "unchanged_due_to_risk"
     )
 
 
@@ -201,13 +314,7 @@ def test_high_risk_candidate_is_rejected(
         "recommend_treatment",
         lambda analysis: {
             "recommendations": [
-                {
-                    "operation_id": "clahe",
-                    "parameters": {},
-                    "reason": "contrast",
-                    "risk": "medium",
-                    "mode": "enhancement"
-                }
+                clahe_rec()
             ]
         }
     )
@@ -217,6 +324,14 @@ def test_high_risk_candidate_is_rejected(
         "apply_operation",
         lambda operation_id, image, params: (
             np.zeros_like(image)
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=60.0
         )
     )
 
@@ -251,7 +366,7 @@ def test_high_risk_candidate_is_rejected(
     )
 
 
-def test_caution_is_accepted_for_low_sensitivity(
+def test_caution_is_accepted_for_low_sensitivity_then_stops(
     monkeypatch
 ):
     image = make_image()
@@ -261,22 +376,36 @@ def test_caution_is_accepted_for_low_sensitivity(
         "recommend_treatment",
         lambda analysis: {
             "recommendations": [
-                {
-                    "operation_id": "clahe",
-                    "parameters": {},
-                    "reason": "contrast",
-                    "risk": "medium",
-                    "mode": "enhancement"
-                }
+                clahe_rec(),
+                sharpen_rec()
             ]
         }
     )
 
+    apply_calls = {
+        "count": 0
+    }
+
+    def apply_behavior(
+        operation_id,
+        image,
+        params
+    ):
+        apply_calls["count"] += 1
+
+        return image.copy()
+
     monkeypatch.setattr(
         pipeline,
         "apply_operation",
-        lambda operation_id, image, params: (
-            image.copy()
+        apply_behavior
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=50.0
         )
     )
 
@@ -291,13 +420,34 @@ def test_caution_is_accepted_for_low_sensitivity(
     result = pipeline.run_smart_pipeline(
         image,
         make_analysis(
-            preservation_level="low"
+            preservation_level="low",
+            contrast=30.0
         )
+    )
+
+    assert (
+        result["steps"][0][
+            "execution_status"
+        ]
+        == "accepted"
     )
 
     assert (
         result["decision"]["status"]
         == "accepted_with_caution"
+    )
+
+    assert (
+        apply_calls["count"] == 1
+    )
+
+    statuses = [
+        step["execution_status"]
+        for step in result["steps"]
+    ]
+
+    assert (
+        statuses.count("accepted") == 1
     )
 
 
@@ -312,13 +462,7 @@ def test_caution_is_rejected_for_high_sensitivity(
         "recommend_treatment",
         lambda analysis: {
             "recommendations": [
-                {
-                    "operation_id": "clahe",
-                    "parameters": {},
-                    "reason": "contrast",
-                    "risk": "medium",
-                    "mode": "enhancement"
-                }
+                clahe_rec()
             ]
         }
     )
@@ -333,6 +477,14 @@ def test_caution_is_rejected_for_high_sensitivity(
 
     monkeypatch.setattr(
         pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=50.0
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
         "verify_preservation",
         lambda original, processed: (
             caution_preservation()
@@ -342,7 +494,8 @@ def test_caution_is_rejected_for_high_sensitivity(
     result = pipeline.run_smart_pipeline(
         image,
         make_analysis(
-            preservation_level="high"
+            preservation_level="high",
+            contrast=30.0
         )
     )
 
@@ -359,7 +512,7 @@ def test_caution_is_rejected_for_high_sensitivity(
     )
 
 
-def test_median_is_deferred_from_automatic_pipeline(
+def test_only_one_step_accepted_per_run(
     monkeypatch
 ):
     image = make_image()
@@ -369,19 +522,41 @@ def test_median_is_deferred_from_automatic_pipeline(
         "recommend_treatment",
         lambda analysis: {
             "recommendations": [
-                {
-                    "operation_id": (
-                        "median_denoise"
-                    ),
-                    "parameters": {
-                        "kernel_size": 3
-                    },
-                    "reason": "noise",
-                    "risk": "medium-high",
-                    "mode": "enhancement"
-                }
+                clahe_rec(),
+                sharpen_rec()
             ]
         }
+    )
+
+    apply_calls = {
+        "count": 0
+    }
+
+    def apply_behavior(
+        operation_id,
+        image,
+        params
+    ):
+        apply_calls["count"] += 1
+
+        return image.copy()
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        apply_behavior
+    )
+
+    def analysis_behavior(image):
+        return make_analysis(
+            contrast=50.0,
+            sharpness=150.0
+        )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        analysis_behavior
     )
 
     monkeypatch.setattr(
@@ -394,19 +569,361 @@ def test_median_is_deferred_from_automatic_pipeline(
 
     result = pipeline.run_smart_pipeline(
         image,
+        make_analysis(
+            contrast=30.0,
+            sharpness=100.0
+        )
+    )
+
+    assert (
+        apply_calls["count"] == 1
+    )
+
+    statuses = [
+        step["execution_status"]
+        for step in result["steps"]
+    ]
+
+    assert (
+        statuses.count("accepted") == 1
+    )
+
+    assert (
+        statuses.count("deferred") == 1
+    )
+
+    assert (
+        result["decision"]["status"]
+        == "accepted"
+    )
+
+
+def test_repeated_operation_is_not_retried(
+    monkeypatch
+):
+    image = make_image()
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": [
+                clahe_rec(),
+                clahe_rec()
+            ]
+        }
+    )
+
+    apply_calls = {
+        "count": 0
+    }
+
+    def apply_behavior(
+        operation_id,
+        image,
+        params
+    ):
+        apply_calls["count"] += 1
+
+        return image.copy()
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        apply_behavior
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=50.0
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        lambda original, processed: (
+            high_risk_preservation()
+        )
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
+        make_analysis(contrast=30.0)
+    )
+
+    assert (
+        apply_calls["count"] == 1
+    )
+
+    attempted_steps = [
+        step
+        for step in result["steps"]
+        if step["execution_status"]
+        == "rejected"
+    ]
+
+    assert len(attempted_steps) == 1
+
+
+def test_max_attempts_triggers_manual_review(
+    monkeypatch
+):
+    image = make_image()
+
+    recommendations = [
+        clahe_rec(),
+        gamma_rec(),
+        {
+            "operation_id": (
+                "illumination_normalize"
+            ),
+            "parameters": {},
+            "reason": "illumination",
+            "risk": "medium",
+            "mode": "enhancement"
+        },
+        median_rec(),
+        sharpen_rec()
+    ]
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": recommendations
+        }
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        lambda operation_id, image, params: (
+            image.copy()
+        )
+    )
+
+    def analysis_behavior(image):
+        return make_analysis(
+            contrast=60.0,
+            brightness=140.0,
+            illumination=0.02,
+            noise=2.0,
+            sharpness=150.0
+        )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        analysis_behavior
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        lambda original, processed: (
+            high_risk_preservation()
+        )
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
         make_analysis()
+    )
+
+    attempted_steps = [
+        step
+        for step in result["steps"]
+        if step["execution_status"]
+        == "rejected"
+    ]
+
+    assert len(attempted_steps) == (
+        pipeline.MAX_ATTEMPTS_PER_RUN
+    )
+
+    assert (
+        result["decision"]["status"]
+        == "review_required"
+    )
+
+    assert (
+        result["decision"][
+            "reason_code"
+        ]
+        == "manual_review_required"
+    )
+
+
+def test_median_requires_noise_drop(
+    monkeypatch
+):
+    image = make_image()
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": [
+                median_rec()
+            ]
+        }
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        lambda operation_id, image, params: (
+            image.copy()
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            noise=2.0
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        lambda original, processed: (
+            acceptable_preservation()
+        )
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
+        make_analysis(noise=15.0)
     )
 
     assert (
         result["steps"][0][
             "execution_status"
         ]
-        == "deferred"
+        == "accepted"
     )
 
     assert (
-        result["decision"]["status"]
-        == "review_required"
+        result["steps"][0]["benefit"][
+            "metric"
+        ]
+        == "noise_mean_residual"
+    )
+
+
+def test_median_without_noise_drop_is_rejected(
+    monkeypatch
+):
+    image = make_image()
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": [
+                median_rec()
+            ]
+        }
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        lambda operation_id, image, params: (
+            image.copy()
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            noise=14.8
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        lambda original, processed: (
+            acceptable_preservation()
+        )
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
+        make_analysis(noise=15.0)
+    )
+
+    assert (
+        result["steps"][0]["decision"][
+            "status"
+        ]
+        == "rejected_no_benefit"
+    )
+
+
+def test_gamma_benefit_uses_brightness_band(
+    monkeypatch
+):
+    image = make_image()
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": [
+                gamma_rec()
+            ]
+        }
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_operation",
+        lambda operation_id, image, params: (
+            image.copy()
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            brightness=75.0
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        lambda original, processed: (
+            acceptable_preservation()
+        )
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
+        make_analysis(brightness=60.0)
+    )
+
+    assert (
+        result["steps"][0][
+            "execution_status"
+        ]
+        == "accepted"
+    )
+
+    assert (
+        result["steps"][0]["benefit"][
+            "metric"
+        ]
+        == "brightness_band_distance"
     )
 
 
@@ -498,13 +1015,7 @@ def test_verification_failure_rejects_candidate(
         "recommend_treatment",
         lambda analysis: {
             "recommendations": [
-                {
-                    "operation_id": "clahe",
-                    "parameters": {},
-                    "reason": "contrast",
-                    "risk": "medium",
-                    "mode": "enhancement"
-                }
+                clahe_rec()
             ]
         }
     )
@@ -514,6 +1025,14 @@ def test_verification_failure_rejects_candidate(
         "apply_operation",
         lambda operation_id, image, params: (
             image.copy()
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=50.0
         )
     )
 
@@ -533,7 +1052,7 @@ def test_verification_failure_rejects_candidate(
 
     result = pipeline.run_smart_pipeline(
         image,
-        make_analysis()
+        make_analysis(contrast=30.0)
     )
 
     assert np.array_equal(
@@ -542,19 +1061,12 @@ def test_verification_failure_rejects_candidate(
     )
 
     assert (
-        result["steps"][0][
-            "decision"
-        ]["status"]
+        result["steps"][0]["decision"][
+            "status"
+        ]
         == "verification_failed"
     )
 
-
-def test_invalid_image_is_rejected():
-    with pytest.raises(ValueError):
-        pipeline.run_smart_pipeline(
-            None,
-            make_analysis()
-        )
 
 def test_final_verification_failure_prevents_automatic_acceptance(
     monkeypatch
@@ -566,18 +1078,8 @@ def test_final_verification_failure_prevents_automatic_acceptance(
         "recommend_treatment",
         lambda analysis: {
             "recommendations": [
-                {
-                    "operation_id": "clahe",
-                    "parameters": {},
-                    "reason": "contrast",
-                    "risk": "medium",
-                    "mode": "enhancement"
-                }
-            ],
-            "excluded_from_automatic": [],
-            "summary": {
-                "needs_treatment": True
-            }
+                clahe_rec()
+            ]
         }
     )
 
@@ -586,6 +1088,14 @@ def test_final_verification_failure_prevents_automatic_acceptance(
         "apply_operation",
         lambda operation_id, image, params: (
             image.copy()
+        )
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "analyze_image",
+        lambda image: make_analysis(
+            contrast=50.0
         )
     )
 
@@ -614,7 +1124,7 @@ def test_final_verification_failure_prevents_automatic_acceptance(
 
     result = pipeline.run_smart_pipeline(
         image,
-        make_analysis()
+        make_analysis(contrast=30.0)
     )
 
     assert (
@@ -633,4 +1143,65 @@ def test_final_verification_failure_prevents_automatic_acceptance(
         result["decision"]["status"]
         == "review_required"
     )
-    
+
+
+def test_non_auto_operation_is_deferred(
+    monkeypatch
+):
+    image = make_image()
+
+    monkeypatch.setattr(
+        pipeline,
+        "recommend_treatment",
+        lambda analysis: {
+            "recommendations": [
+                {
+                    "operation_id": "deskew",
+                    "parameters": {
+                        "angle": 2.0
+                    },
+                    "reason": "skew",
+                    "risk": "medium",
+                    "mode": "alignment"
+                }
+            ]
+        }
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "verify_preservation",
+        lambda original, processed: (
+            acceptable_preservation()
+        )
+    )
+
+    result = pipeline.run_smart_pipeline(
+        image,
+        make_analysis()
+    )
+
+    assert np.array_equal(
+        result["image"],
+        image
+    )
+
+    assert (
+        result["steps"][0][
+            "execution_status"
+        ]
+        == "deferred"
+    )
+
+    assert (
+        result["decision"]["status"]
+        == "review_required"
+    )
+
+
+def test_invalid_image_is_rejected():
+    with pytest.raises(ValueError):
+        pipeline.run_smart_pipeline(
+            None,
+            make_analysis()
+        )

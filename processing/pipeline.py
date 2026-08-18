@@ -1,28 +1,78 @@
-# → تنظيم Smart Pipeline
-import cv2
+# → Smart Pipeline (Phase C: Diagnose → Treat → Preserve → Verify)
+#
+# المعمارية:
+#   Input → Recommend → [اختيار مرشح واحد → Apply → Re-analyze →
+#   Benefit Gate → Preservation Gate → Accept OR Rollback] → Stop
+#
+# القواعد الصارمة:
+#   * لا Filter Chains: خطوة واحدة مقبولة فقط لكل جلسة (MAX_ACCEPTED_STEPS).
+#   * accepted_image و candidate_image منفصلان دائمًا؛
+#     الرفض يعني تجاهل المرشح والبقاء على accepted_image (Rollback).
+#   * بوابة المنفعة: قبول Preservation لا يكفي؛ يجب أن يتحسن المقياس
+#     المستهدف للعملية نفسها (الضوضاء تنخفض، التباين يرتفع، ...).
+#   * CAUTION بعد القبول = إيقاف فوري مع تحذير ظاهر.
+#   * لا تكرار لنفس العملية أبدًا، وحد أقصى للمحاولات يفرض مراجعة يدوية.
+#   * إعادة التحليل مبررة فقط بقياس المنفعة لكل مرشح.
+#   * Binarization مسار مستقل من الأصل ولا يعتمد تلقائيًا أبدًا.
+
 import numpy as np
 
+from processing.analyzer import analyze_image
 from processing.operations import apply_operation
 from processing.preservation import verify_preservation
 from processing.recommender import recommend_treatment
 
 
-AUTO_ENHANCEMENT_OPERATIONS = {
+# العمليات المؤهلة للتنفيذ التلقائي (المصدر: سياسة Phase B المُثبتة).
+# median_denoise مؤهل فقط عبر توصية impulse_noise المؤكدة من recommender،
+# وتظل بوابتا المنفعة وPreservation حاجزَي أمان إضافيين.
+
+AUTO_ELIGIBLE_OPERATIONS = {
     "clahe",
+    "gamma_correct",
+    "illumination_normalize",
+    "median_denoise",
     "sharpen"
 }
 
-DEFERRED_AUTOMATIC_OPERATIONS = {
-    "median_denoise": (
-        "Automatic median denoising is deferred because "
-        "the current noise indicator is not reliable enough "
-        "for automatic treatment decisions."
-    )
+# عمليات تُعرض للمستخدم لكنها لا تدخل المسار التلقائي أبدًا.
+
+MANUAL_ONLY_OPERATIONS = {
+    "histogram_equalization",
+    "global_threshold",
+    "otsu_threshold",
+    "adaptive_threshold",
+    "bilateral_denoise",
+    "non_local_means_denoise",
+    "background_suppress",
+    "weak_structure_suppress",
+    "faded_text_enhance",
+    "morphological_opening",
+    "morphological_closing",
+    "morphological_top_hat",
+    "morphological_black_hat",
+    "deskew"
 }
 
 BINARIZATION_OPERATIONS = {
     "adaptive_threshold"
 }
+
+# حدود الحلقة (Loop Protection)
+
+MAX_ACCEPTED_STEPS = 1
+MAX_ATTEMPTS_PER_RUN = 4
+
+# عتبات بوابة المنفعة (Benefit Gate)
+
+BRIGHTNESS_LOW_BOUND = 85.0
+BRIGHTNESS_HIGH_BOUND = 200.0
+BRIGHTNESS_MIN_GAIN = 1.0
+
+CONTRAST_MIN_GAIN = 1.0
+SHARPNESS_MIN_GAIN_RATIO = 0.02
+NOISE_MIN_DROP = 0.5
+ILLUMINATION_MIN_DROP = 0.01
 
 
 def _validate_image(image):
@@ -78,6 +128,194 @@ def _preservation_level(analysis):
         return "moderate"
 
     return level
+
+
+def _metric_value(analysis, key):
+    item = analysis.get(
+        "metrics",
+        {}
+    ).get(key)
+
+    if isinstance(item, dict):
+        item = item.get("value", 0.0)
+
+    try:
+        return float(item)
+
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _noise_value(analysis):
+    item = analysis.get(
+        "metrics",
+        {}
+    ).get("noise", {})
+
+    if isinstance(item, dict):
+        item = item.get("value", 0.0)
+
+    try:
+        return float(item)
+
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _brightness_band_distance(analysis):
+    brightness = _metric_value(
+        analysis,
+        "brightness"
+    )
+
+    if brightness < BRIGHTNESS_LOW_BOUND:
+        return BRIGHTNESS_LOW_BOUND - brightness
+
+    if brightness > BRIGHTNESS_HIGH_BOUND:
+        return brightness - BRIGHTNESS_HIGH_BOUND
+
+    return 0.0
+
+
+def _benefit_result(
+    metric,
+    before,
+    after,
+    required,
+    passed
+):
+    return {
+        "metric": metric,
+        "before": round(float(before), 4),
+        "after": round(float(after), 4),
+        "required_change": round(float(required), 4),
+        "passed": bool(passed)
+    }
+
+
+def _measure_benefit(
+    operation_id,
+    before_analysis,
+    after_analysis
+):
+    """قياس المنفعة الفعلية للعملية على مقياسها المستهدف.
+
+    المقارنة دائمًا ضد حالة accepted الحالية (وليست الأصل)
+    لأن المنفعة سؤال تجريبي تدريجي.
+    """
+
+    if operation_id == "gamma_correct":
+        before = _brightness_band_distance(
+            before_analysis
+        )
+
+        after = _brightness_band_distance(
+            after_analysis
+        )
+
+        gain = before - after
+
+        return _benefit_result(
+            "brightness_band_distance",
+            before,
+            after,
+            BRIGHTNESS_MIN_GAIN,
+            gain >= BRIGHTNESS_MIN_GAIN
+        )
+
+    if operation_id == "clahe":
+        before = _metric_value(
+            before_analysis,
+            "contrast"
+        )
+
+        after = _metric_value(
+            after_analysis,
+            "contrast"
+        )
+
+        gain = after - before
+
+        return _benefit_result(
+            "contrast",
+            before,
+            after,
+            CONTRAST_MIN_GAIN,
+            gain >= CONTRAST_MIN_GAIN
+        )
+
+    if operation_id == "sharpen":
+        before = _metric_value(
+            before_analysis,
+            "sharpness"
+        )
+
+        after = _metric_value(
+            after_analysis,
+            "sharpness"
+        )
+
+        required = before * SHARPNESS_MIN_GAIN_RATIO
+
+        gain = after - before
+
+        return _benefit_result(
+            "sharpness",
+            before,
+            after,
+            required,
+            gain >= required
+        )
+
+    if operation_id == "median_denoise":
+        before = _noise_value(
+            before_analysis
+        )
+
+        after = _noise_value(
+            after_analysis
+        )
+
+        drop = before - after
+
+        return _benefit_result(
+            "noise_mean_residual",
+            before,
+            after,
+            NOISE_MIN_DROP,
+            drop >= NOISE_MIN_DROP
+        )
+
+    if operation_id == "illumination_normalize":
+        before = _metric_value(
+            before_analysis,
+            "illumination_variation"
+        )
+
+        after = _metric_value(
+            after_analysis,
+            "illumination_variation"
+        )
+
+        drop = before - after
+
+        return _benefit_result(
+            "illumination_variation",
+            before,
+            after,
+            ILLUMINATION_MIN_DROP,
+            drop >= ILLUMINATION_MIN_DROP
+        )
+
+    # عملية غير معروفة في خريطة المنفعة: نرفض دائمًا (fail-closed).
+
+    return {
+        "metric": "unknown",
+        "before": 0.0,
+        "after": 0.0,
+        "required_change": 0.0,
+        "passed": False
+    }
 
 
 def _candidate_decision(
@@ -159,6 +397,7 @@ def _verify_candidate(
             original,
             candidate
         )
+
     except Exception:
         return {
             "accepted": False,
@@ -190,12 +429,13 @@ def _build_step(
     execution_status,
     preservation=None,
     decision=None,
-    note=None
+    note=None,
+    benefit=None
 ):
     return {
-        "operation_id": recommendation[
+        "operation_id": recommendation.get(
             "operation_id"
-        ],
+        ),
         "parameters": recommendation.get(
             "parameters",
             {}
@@ -212,38 +452,323 @@ def _build_step(
         "execution_status": execution_status,
         "preservation": preservation,
         "decision": decision,
-        "note": note
+        "note": note,
+        "benefit": benefit
     }
 
 
-def _run_enhancement_steps(
+def _run_enhancement_attempt(
     original,
+    accepted_image,
+    accepted_analysis,
+    recommendation,
+    preservation_level
+):
+    """تنفيذ محاولة واحدة: Apply → Re-analyze → Benefit → Preservation."""
+
+    operation_id = recommendation[
+        "operation_id"
+    ]
+
+    try:
+        candidate = apply_operation(
+            operation_id,
+            accepted_image,
+            recommendation.get(
+                "parameters",
+                {}
+            )
+        )
+
+    except Exception:
+        return {
+            "outcome": "rejected",
+            "step": _build_step(
+                recommendation,
+                execution_status="rejected",
+                decision={
+                    "accepted": False,
+                    "status": "execution_failed",
+                    "message": (
+                        "فشل تنفيذ العملية، "
+                        "ولذلك استمرت الصورة كما هي."
+                    )
+                }
+            ),
+            "candidate": None,
+            "candidate_analysis": None
+        }
+
+    if (
+        _spatial_shape(candidate)
+        != _spatial_shape(original)
+    ):
+        return {
+            "outcome": "rejected",
+            "step": _build_step(
+                recommendation,
+                execution_status="rejected",
+                decision={
+                    "accepted": False,
+                    "status": "rejected_dimension_change",
+                    "message": (
+                        "تم رفض النتيجة لأن العملية "
+                        "غيرت أبعاد الصورة."
+                    )
+                }
+            ),
+            "candidate": None,
+            "candidate_analysis": None
+        }
+
+    try:
+        candidate_analysis = analyze_image(
+            candidate
+        )
+
+    except Exception:
+        return {
+            "outcome": "rejected",
+            "step": _build_step(
+                recommendation,
+                execution_status="rejected",
+                decision={
+                    "accepted": False,
+                    "status": "verification_failed",
+                    "message": (
+                        "تعذر إعادة تحليل المرشح لقياس "
+                        "المنفعة، ولذلك لم يعتمد تلقائيًا."
+                    )
+                }
+            ),
+            "candidate": None,
+            "candidate_analysis": None
+        }
+
+    benefit = _measure_benefit(
+        operation_id,
+        accepted_analysis,
+        candidate_analysis
+    )
+
+    if not benefit["passed"]:
+        return {
+            "outcome": "rejected",
+            "step": _build_step(
+                recommendation,
+                execution_status="rejected",
+                decision={
+                    "accepted": False,
+                    "status": "rejected_no_benefit",
+                    "message": (
+                        "لم يتحسن المقياس المستهدف "
+                        f"({benefit['metric']}) بالقدر "
+                        "المطلوب، فتم التراجع عن الخطوة."
+                    )
+                },
+                benefit=benefit
+            ),
+            "candidate": None,
+            "candidate_analysis": None
+        }
+
+    verification = _verify_candidate(
+        original,
+        candidate,
+        preservation_level
+    )
+
+    if verification["accepted"]:
+        return {
+            "outcome": "accepted",
+            "step": _build_step(
+                recommendation,
+                execution_status="accepted",
+                preservation=verification[
+                    "preservation"
+                ],
+                decision=verification[
+                    "decision"
+                ],
+                benefit=benefit
+            ),
+            "candidate": candidate,
+            "candidate_analysis": candidate_analysis
+        }
+
+    return {
+        "outcome": "rejected",
+        "step": _build_step(
+            recommendation,
+            execution_status="rejected",
+            preservation=verification[
+                "preservation"
+            ],
+            decision=verification[
+                "decision"
+            ],
+            benefit=benefit
+        ),
+        "candidate": None,
+        "candidate_analysis": None
+    }
+
+
+def _run_enhancement_loop(
+    original,
+    analysis,
     recommendations,
     preservation_level
 ):
-    working = original.copy()
+    accepted_image = original.copy()
+    accepted_analysis = analysis
+
     steps = []
 
+    attempted = set()
+
+    attempts = 0
     accepted_count = 0
     caution_count = 0
     rejected_count = 0
-    deferred_count = 0
 
-    enhancement_recommendations = [
-        item
-        for item in recommendations
-        if item.get("mode") == "enhancement"
-    ]
+    step_limit_hit = False
+    stopped_after_caution = False
+    stopped_after_accept = False
 
-    for recommendation in enhancement_recommendations:
-        operation_id = recommendation[
+    deferred_ids = set()
+
+    for recommendation in recommendations:
+        mode = recommendation.get("mode")
+
+        if mode != "enhancement":
+            continue
+
+        operation_id = recommendation.get(
             "operation_id"
-        ]
+        )
+
+        if accepted_count >= MAX_ACCEPTED_STEPS:
+            stopped_after_accept = True
+
+            deferred_ids.add(operation_id)
+
+            continue
+
+        if operation_id in attempted:
+            continue
 
         if (
             operation_id
-            in DEFERRED_AUTOMATIC_OPERATIONS
+            not in AUTO_ELIGIBLE_OPERATIONS
         ):
+            attempted.add(operation_id)
+            deferred_ids.add(operation_id)
+
+            steps.append(
+                _build_step(
+                    recommendation,
+                    execution_status="deferred",
+                    note=(
+                        "العملية غير مؤهلة للتنفيذ "
+                        "التلقائي الآمن وفق السياسة الحالية."
+                    )
+                )
+            )
+
+            continue
+
+        if attempts >= MAX_ATTEMPTS_PER_RUN:
+            step_limit_hit = True
+
+            deferred_ids.add(operation_id)
+
+            continue
+
+        attempted.add(operation_id)
+        attempts += 1
+
+        attempt = _run_enhancement_attempt(
+            original,
+            accepted_image,
+            accepted_analysis,
+            recommendation,
+            preservation_level
+        )
+
+        steps.append(attempt["step"])
+
+        if attempt["outcome"] == "accepted":
+            accepted_image = attempt["candidate"]
+            accepted_analysis = (
+                attempt["candidate_analysis"]
+            )
+
+            accepted_count += 1
+
+            if (
+                attempt["step"]["decision"][
+                    "status"
+                ]
+                == "accepted_with_caution"
+            ):
+                caution_count += 1
+                stopped_after_caution = True
+
+        else:
+            rejected_count += 1
+
+    deferred_count = 0
+
+    for recommendation in recommendations:
+        mode = recommendation.get("mode")
+
+        if mode == "enhancement":
+            continue
+
+        operation_id = recommendation.get(
+            "operation_id"
+        )
+
+        if operation_id in attempted:
+            continue
+
+        attempted.add(operation_id)
+        deferred_count += 1
+
+        steps.append(
+            _build_step(
+                recommendation,
+                execution_status="deferred",
+                note=(
+                    "التصحيح الهندسي والمسارات غير "
+                    "التحسينية تبقى للتشغيل اليدوي."
+                )
+            )
+        )
+
+    if stopped_after_accept or stopped_after_caution:
+        for recommendation in recommendations:
+            if (
+                recommendation.get("mode")
+                != "enhancement"
+            ):
+                continue
+
+            operation_id = recommendation.get(
+                "operation_id"
+            )
+
+            if operation_id in attempted:
+                continue
+
+            if (
+                operation_id
+                not in AUTO_ELIGIBLE_OPERATIONS
+            ):
+                continue
+
+            attempted.add(operation_id)
             deferred_count += 1
 
             steps.append(
@@ -251,100 +776,24 @@ def _run_enhancement_steps(
                     recommendation,
                     execution_status="deferred",
                     note=(
-                        DEFERRED_AUTOMATIC_OPERATIONS[
-                            operation_id
-                        ]
+                        "توقفت الجلسة بعد قبول خطوة "
+                        "واحدة وفق سياسة عدم تسلسل "
+                        "الفلاتر (No Filter Chains)."
                     )
-                )
-            )
-
-            continue
-
-        if (
-            operation_id
-            not in AUTO_ENHANCEMENT_OPERATIONS
-        ):
-            deferred_count += 1
-
-            steps.append(
-                _build_step(
-                    recommendation,
-                    execution_status=(
-                        "not_auto_eligible"
-                    ),
-                    note=(
-                        "The operation is not eligible "
-                        "for automatic enhancement."
-                    )
-                )
-            )
-
-            continue
-
-        candidate = apply_operation(
-            operation_id,
-            working,
-            recommendation.get(
-                "parameters",
-                {}
-            )
-        )
-
-        verification = _verify_candidate(
-            original,
-            candidate,
-            preservation_level
-        )
-
-        if verification["accepted"]:
-            working = candidate
-
-            accepted_count += 1
-
-            if (
-                verification["decision"][
-                    "status"
-                ]
-                == "accepted_with_caution"
-            ):
-                caution_count += 1
-
-            steps.append(
-                _build_step(
-                    recommendation,
-                    execution_status="accepted",
-                    preservation=verification[
-                        "preservation"
-                    ],
-                    decision=verification[
-                        "decision"
-                    ]
-                )
-            )
-
-        else:
-            rejected_count += 1
-
-            steps.append(
-                _build_step(
-                    recommendation,
-                    execution_status="rejected",
-                    preservation=verification[
-                        "preservation"
-                    ],
-                    decision=verification[
-                        "decision"
-                    ]
                 )
             )
 
     return {
-        "image": working,
+        "image": accepted_image,
         "steps": steps,
         "accepted_count": accepted_count,
         "caution_count": caution_count,
         "rejected_count": rejected_count,
-        "deferred_count": deferred_count
+        "deferred_count": deferred_count,
+        "step_limit_hit": step_limit_hit,
+        "stopped_after_caution": (
+            stopped_after_caution
+        )
     }
 
 
@@ -445,22 +894,48 @@ def _final_decision(
         if enhancement_result[
             "caution_count"
         ] > 0:
+            message = (
+                "تم اعتماد خطوة معالجة واحدة مع "
+                "مؤشرات تستدعي المراجعة، وتوقفت "
+                "الجلسة تلقائيًا عندها."
+            )
+
+            if enhancement_result[
+                "stopped_after_caution"
+            ]:
+                message += (
+                    " لا تُنفذ خطوات تلقائية "
+                    "إضافية من هذه النتيجة."
+                )
+
             return {
                 "status": (
                     "accepted_with_caution"
                 ),
-                "message": (
-                    "تم اعتماد نتيجة Enhancement "
-                    "مع وجود مؤشرات تستدعي المراجعة."
-                )
+                "message": message
             }
 
         return {
             "status": "accepted",
             "message": (
-                "تم اعتماد نتيجة Enhancement "
-                "ولم تظهر مؤشرات عالية الخطورة "
-                "في الخطوات المقبولة."
+                "تم اعتماد خطوة معالجة واحدة "
+                "محققة للمنفعة وسليمة أمام "
+                "Preservation، ثم توقفت الجلسة."
+            )
+        }
+
+    if enhancement_result[
+        "step_limit_hit"
+    ]:
+        return {
+            "status": "review_required",
+            "reason_code": (
+                "manual_review_required"
+            ),
+            "message": (
+                "بلغت المحاولات التلقائية الحد "
+                "الأقصى دون قبول آمن؛ مطلوبة "
+                "مراجعة يدوية قبل أي معالجة أخرى."
             )
         }
 
@@ -471,8 +946,8 @@ def _final_decision(
             "status": "unchanged_due_to_risk",
             "message": (
                 "لم تعتمد المعالجة التلقائية لأن "
-                "المرشحات المنفذة تجاوزت سياسة "
-                "Preservation الحالية."
+                "المرشحين المجربين تجاوزوا سياسة "
+                "المنفعة أو Preservation."
             )
         }
 
@@ -519,8 +994,9 @@ def run_smart_pipeline(
     )
 
     enhancement_result = (
-        _run_enhancement_steps(
+        _run_enhancement_loop(
             original,
+            analysis,
             recommendation_result[
                 "recommendations"
             ],
@@ -548,8 +1024,9 @@ def run_smart_pipeline(
             verify_preservation(
                 original,
                 final_image
+            )
         )
-    )
+
     except Exception:
         final_preservation = None
         final_verification_available = False
@@ -558,15 +1035,21 @@ def run_smart_pipeline(
         recommendation_result,
         enhancement_result,
         binarization_candidates
-    )   
+    )
 
-    if (not final_verification_available and decision["status"] in { "accepted","accepted_with_caution"}):
+    if (
+        not final_verification_available
+        and decision["status"] in {
+            "accepted",
+            "accepted_with_caution"
+        }
+    ):
         decision = {
             "status": "review_required",
             "message": (
                 "تم تنفيذ المعالجة، لكن تعذر إجراء "
                 "Final Preservation Verification، "
-                "لذلك لا يمكن اعتماد النتيجة تلقائيًا."
+                "ولذلك لا يمكن اعتماد النتيجة تلقائيًا."
             )
         }
 
@@ -586,14 +1069,24 @@ def run_smart_pipeline(
         "policy": {
             "type": "rule_based",
             "preservation_aware": True,
+            "philosophy": (
+                "diagnose_treat_preserve_verify"
+            ),
+            "single_accepted_step_per_run": (
+                MAX_ACCEPTED_STEPS == 1
+            ),
+            "max_attempts_per_run": (
+                MAX_ATTEMPTS_PER_RUN
+            ),
+            "benefit_gate": True,
             "automatic_enhancement_operations": (
                 sorted(
-                    AUTO_ENHANCEMENT_OPERATIONS
+                    AUTO_ELIGIBLE_OPERATIONS
                 )
             ),
-            "deferred_automatic_operations": (
+            "manual_only_operations": (
                 sorted(
-                    DEFERRED_AUTOMATIC_OPERATIONS
+                    MANUAL_ONLY_OPERATIONS
                 )
             )
         }
