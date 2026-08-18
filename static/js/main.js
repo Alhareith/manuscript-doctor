@@ -367,7 +367,7 @@ const operationParameters = {
             name: "kernel_size",
             label: "Kernel Size",
             type: "number",
-            value: 3,
+            value: 5,
             min: 3,
             step: 2
         }
