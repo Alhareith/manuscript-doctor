@@ -117,18 +117,19 @@ const operationParameters = {
             name: "amount",
             label: "Amount",
             type: "number",
-            value: 0.25,
+            value: 0.5,
             min: 0,
             max: 2,
             step: 0.05
         },
         {
-            name: "kernel_size",
-            label: "Kernel Size",
+            name: "sigma",
+            label: "Sigma",
             type: "number",
-            value: 3,
-            min: 3,
-            step: 2
+            value: 1.0,
+            min: 0.1,
+            max: 5,
+            step: 0.1
         }
     ],
 

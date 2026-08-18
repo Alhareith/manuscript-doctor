@@ -1,13 +1,20 @@
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 from processing.analyzer import (
     analyze_image
 )
 
 from processing.operations import (
-    median_denoise
+    median_denoise,
+    bilateral_denoise,
+    non_local_means_denoise
+)
+
+from processing.preservation import (
+    verify_preservation
 )
 
 
@@ -16,7 +23,7 @@ INPUT = Path(
 )
 
 OUTPUT = Path(
-    "evaluation/output"
+    "evaluation/output/denoising"
 )
 
 OUTPUT.mkdir(
@@ -36,62 +43,130 @@ if image is None:
     )
 
 
-original_analysis = (
-    analyze_image(
-        image
+candidates = {
+    "original": image,
+
+    "median_k3": median_denoise(
+        image,
+        kernel_size=3
+    ),
+
+    "median_k5": median_denoise(
+        image,
+        kernel_size=5
+    ),
+
+    "bilateral_weak": bilateral_denoise(
+        image,
+        diameter=5,
+        sigma_color=20,
+        sigma_space=20
+    ),
+
+    "bilateral_default": bilateral_denoise(
+        image,
+        diameter=5,
+        sigma_color=25,
+        sigma_space=25
+    ),
+
+    "nlm_weak": non_local_means_denoise(
+        image,
+        strength=3,
+        template_window_size=7,
+        search_window_size=21
+    ),
+
+    "nlm_default": non_local_means_denoise(
+        image,
+        strength=5,
+        template_window_size=7,
+        search_window_size=21
     )
+}
+
+
+def metric_value(
+    metrics,
+    name
+):
+    value = metrics[name]
+
+    if isinstance(
+        value,
+        dict
+    ):
+        return value["value"]
+
+    return value
+
+
+original_analysis = analyze_image(
+    image
 )
 
 
-median3 = median_denoise(
-    image,
-    kernel_size=3
+print()
+print(
+    "DENOISING COMPARISON"
 )
-
-median5 = median_denoise(
-    image,
-    kernel_size=5
-)
-
-
-cv2.imwrite(
-    str(
-        OUTPUT
-        / "04_noisy_median_k3.png"
-    ),
-    median3
-)
-
-cv2.imwrite(
-    str(
-        OUTPUT
-        / "04_noisy_median_k5.png"
-    ),
-    median5
+print(
+    "=" * 72
 )
 
 
-for name, candidate in [
-    ("original", image),
-    ("median_k3", median3),
-    ("median_k5", median5)
-]:
-    result = analyze_image(
+for name, candidate in candidates.items():
+    if name != "original":
+        cv2.imwrite(
+            str(
+                OUTPUT
+                / f"{name}.png"
+            ),
+            candidate
+        )
+
+    analysis = analyze_image(
         candidate
     )
 
-    noise = result[
-        "metrics"
-    ]["noise"]
-
-    metrics = result[
+    metrics = analysis[
         "metrics"
     ]
 
+    noise = metrics[
+        "noise"
+    ]
+
+    if name == "original":
+        preservation = None
+    else:
+        preservation = verify_preservation(
+            image,
+            candidate
+        )
+
+    difference = cv2.absdiff(
+        image,
+        candidate
+    )
+
+    changed_ratio = float(
+        np.mean(
+            difference > 3
+        )
+    )
+
+    mean_change = float(
+        np.mean(
+            difference
+        )
+    )
+
+    print()
     print(name)
 
     print(
-        " noise =",
+        "  noise:",
         round(
             noise["value"],
             4
@@ -99,7 +174,7 @@ for name, candidate in [
     )
 
     print(
-        " p90 =",
+        "  noise_p90:",
         round(
             noise["p90"],
             4
@@ -107,27 +182,72 @@ for name, candidate in [
     )
 
     print(
-        " affected_ratio =",
+        "  affected_ratio:",
         round(
-            noise[
-                "affected_ratio"
-            ],
+            noise["affected_ratio"],
             4
         )
     )
 
     print(
-        " sharpness =",
-        metrics[
-            "sharpness"
-        ]["value"]
+        "  sharpness:",
+        round(
+            metric_value(
+                metrics,
+                "sharpness"
+            ),
+            4
+        )
     )
 
     print(
-        " edge_density =",
-        metrics[
-            "edge_density"
-        ]["value"]
+        "  edge_density:",
+        round(
+            metric_value(
+                metrics,
+                "edge_density"
+            ),
+            4
+        )
     )
 
-    print()
+    print(
+        "  changed_ratio:",
+        round(
+            changed_ratio,
+            4
+        )
+    )
+
+    print(
+        "  mean_pixel_change:",
+        round(
+            mean_change,
+            4
+        )
+    )
+
+    if name == "original":
+        preservation = None
+    else:
+        preservation = verify_preservation(
+            image,
+            candidate
+        )
+
+        assessment = preservation.get(
+            "assessment",
+            {}
+        )
+
+        print(
+            "  preservation:",
+            assessment.get(
+                "status",
+                "unknown"
+        )
+    )
+
+
+print()
+print("=" * 72)

@@ -119,7 +119,7 @@ def median_denoise(image, kernel_size=3):
     return cv2.medianBlur(image, kernel_size)
 
 
-def sharpen(image, amount=0.25, kernel_size=3):
+def sharpen(image, amount=0.5, sigma=1.0):
     _validate_image(image)
 
     if not isinstance(amount, (int, float)):
@@ -128,12 +128,15 @@ def sharpen(image, amount=0.25, kernel_size=3):
     if amount < 0 or amount > 2:
         raise ValueError("amount must be between 0 and 2.")
 
-    _validate_odd_kernel_size(kernel_size, "kernel_size")
+    if not isinstance(sigma, (int, float)):
+        raise ValueError("sigma must be numeric.")
 
-    blurred = cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
+    if sigma <= 0 or sigma > 5:
+        raise ValueError("sigma must be greater than 0 and at most 5.")
+
+    blurred = cv2.GaussianBlur(image, (0, 0), sigmaX=float(sigma), sigmaY=float(sigma))
 
     return cv2.addWeighted(image, 1.0 + float(amount), blurred, -float(amount), 0)
-
 
 def global_threshold(image, threshold=127):
     gray = _to_gray(image)
@@ -427,7 +430,7 @@ def background_suppress(image, kernel_size=31, strength=0.45):
 
         difference = source - background
 
-        corrected = source + difference * strength
+        corrected = source - difference * strength
 
         return np.clip(corrected, 0, 255).astype(np.uint8)
 

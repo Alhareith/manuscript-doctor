@@ -14,6 +14,26 @@ STRUCTURE_SIMILARITY_HIGH_RISK = 0.55
 EDGE_INFLATION_CAUTION = 1.60
 EDGE_INFLATION_HIGH_RISK = 2.20
 
+CLIPPING_NEW_CAUTION = 0.02
+CLIPPING_NEW_HIGH_RISK = 0.10
+
+SMOOTHING_CAUTION = 0.50
+SMOOTHING_HIGH_RISK = 0.25
+
+INK_RETENTION_CAUTION = 0.80
+INK_RETENTION_HIGH_RISK = 0.60
+INK_INFLATION_CAUTION = 1.80
+
+# Matches the analyzer's high impulse rating. Below this, tiny genuine
+# marks (diacritics) may look like impulses and keep strict protection.
+IMPULSE_NOISE_REFERENCE_THRESHOLD = 0.012
+
+# Isolated impulse pixels separate salt-and-pepper noise from dense
+# thin text, whose residual pixels cluster along strokes. Calibrated
+# on the validation dataset: clean/gaussian sources stay below 0.004
+# while salt-and-pepper cases measure at least 0.006 across sources.
+ISOLATED_IMPULSE_REFERENCE_THRESHOLD = 0.005
+
 
 def _validate_image(image):
     if image is None or not isinstance(image, np.ndarray):
@@ -301,22 +321,214 @@ def _structure_similarity(
     )
 
 
-def _build_metrics(
+def _clipping_change(
     original_gray,
     processed_gray
 ):
-    original_edges = _edge_map(
-        original_gray
+    orig_dark = float(
+        np.mean(original_gray <= 5)
     )
 
-    processed_edges = _edge_map(
-        processed_gray
+    orig_bright = float(
+        np.mean(original_gray >= 250)
     )
+
+    proc_dark = float(
+        np.mean(processed_gray <= 5)
+    )
+
+    proc_bright = float(
+        np.mean(processed_gray >= 250)
+    )
+
+    new_dark = max(0.0, proc_dark - orig_dark)
+    new_bright = max(
+        0.0, proc_bright - orig_bright
+    )
+
+    return {
+        "new_dark_clipped_ratio": round(
+            new_dark, 4
+        ),
+        "new_bright_clipped_ratio": round(
+            new_bright, 4
+        ),
+        "total_new_clipping": round(
+            new_dark + new_bright, 4
+        ),
+    }
+
+
+def _smoothing_ratio(
+    original_gray,
+    processed_gray
+):
+    # Impulse noise inflates Laplacian variance like real structure,
+    # so sharpness is compared on median-suppressed proxies. This keeps
+    # denoisers from being penalized for removing noise pixels.
+    orig_sharpness = cv2.Laplacian(
+        cv2.medianBlur(original_gray, 3),
+        cv2.CV_64F
+    ).var()
+
+    proc_sharpness = cv2.Laplacian(
+        cv2.medianBlur(processed_gray, 3),
+        cv2.CV_64F
+    ).var()
+
+    if orig_sharpness < 1e-6:
+        return 1.0
+
+    return float(
+        np.clip(proc_sharpness / orig_sharpness, 0.0, 2.0)
+    )
+
+
+def _is_near_binary(gray):
+    extreme_ratio = float(
+        np.mean(
+            (gray <= 10) | (gray >= 245)
+        )
+    )
+
+    return extreme_ratio > 0.90
+
+
+def _ink_metrics(
+    original_raw,
+    original_reference,
+    processed_gray
+):
+    # Ink coverage is only comparable when the output is binarized;
+    # enhancement outputs keep grayscale gradation and return 1.0.
+    if not _is_near_binary(processed_gray):
+        return {
+            "ink_retention": 1.0,
+            "ink_inflation_ratio": 1.0,
+        }
+
+    otsu_threshold, _ = cv2.threshold(
+        original_raw,
+        0,
+        255,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU
+    )
+
+    reference_ink = float(
+        np.mean(original_reference < otsu_threshold)
+    )
+
+    raw_ink = float(
+        np.mean(original_raw < otsu_threshold)
+    )
+
+    processed_reference_ink = float(
+        np.mean(processed_gray < otsu_threshold)
+    )
+
+    if reference_ink <= 1e-6 or raw_ink <= 1e-6:
+        return {
+            "ink_retention": 1.0,
+            "ink_inflation_ratio": 1.0,
+        }
+
+    # Loss is judged against the impulse-suppressed reference so
+    # denoising pepper noise is not read as lost text, while
+    # inflation is judged against the raw original so an untouched
+    # noisy image measures exactly 1.0.
+    return {
+        "ink_retention": float(
+            np.clip(
+                processed_reference_ink / reference_ink,
+                0.0,
+                5.0
+            )
+        ),
+        "ink_inflation_ratio": float(
+            np.clip(
+                processed_reference_ink / raw_ink,
+                0.0,
+                5.0
+            )
+        ),
+    }
+
+
+def _isolated_impulse_ratio(gray):
+    residual = cv2.absdiff(
+        gray,
+        cv2.medianBlur(gray, 3)
+    )
+
+    mask = (residual >= 100.0).astype(np.float32)
+
+    neighbor_count = (
+        cv2.filter2D(
+            mask,
+            -1,
+            np.ones((3, 3), dtype=np.float32)
+        )
+        - mask
+    )
+
+    isolated = (mask == 1) & (neighbor_count == 0)
+
+    return float(np.mean(isolated))
+
+
+def _reference_gray(original_gray):
+    # Isolated impulse pixels are noise; clustered residual pixels
+    # belong to dense thin strokes. Only truly impulsive originals
+    # get a suppressed reference so removing noise is not reported
+    # as structure loss.
+    if (
+        _isolated_impulse_ratio(original_gray)
+        >= ISOLATED_IMPULSE_REFERENCE_THRESHOLD
+    ):
+        return cv2.medianBlur(original_gray, 3)
+
+    return original_gray
+
+
+def _build_metrics(
+    original_norm,
+    processed_norm,
+    original_raw,
+    processed_raw,
+    original_reference
+):
+    # Retention metrics are judged against the (impulse-suppressed)
+    # reference so noise removal is not structure loss.
+    reference_edges = _edge_map(original_norm)
+
+    processed_edges = _edge_map(processed_norm)
+
+    # Inflation is judged against the untouched original so an
+    # identical noisy image still measures 1.0.
+    original_edges = _edge_map(original_raw)
+
+    binary_output = _is_near_binary(processed_raw)
+
+    clipping = _clipping_change(
+        original_raw,
+        processed_raw
+    )
+
+    if binary_output:
+        # Binarization saturates pixels by design; ink metrics
+        # govern its interpretation instead of clipping.
+        clipping = {
+            "new_dark_clipped_ratio": 0.0,
+            "new_bright_clipped_ratio": 0.0,
+            "total_new_clipping": 0.0,
+        }
+
+    clipping["binary_output"] = binary_output
 
     return {
         "edge_retention": round(
             _edge_retention(
-                original_edges,
+                reference_edges,
                 processed_edges
             ),
             4
@@ -324,16 +536,16 @@ def _build_metrics(
 
         "component_retention": round(
             _component_retention(
-                original_gray,
-                processed_gray
+                original_norm,
+                processed_norm
             ),
             4
         ),
 
         "structure_similarity": round(
             _structure_similarity(
-                original_gray,
-                processed_gray
+                original_raw,
+                processed_raw
             ),
             4
         ),
@@ -345,6 +557,24 @@ def _build_metrics(
             ),
             4
         ),
+
+        "clipping_change": clipping,
+
+        "smoothing_ratio": round(
+            _smoothing_ratio(
+                original_reference,
+                processed_raw
+            ),
+            4
+        ),
+        **{
+            key: round(value, 4)
+            for key, value in _ink_metrics(
+                original_raw,
+                original_reference,
+                processed_raw
+            ).items()
+        },
     }
 
 
@@ -366,6 +596,10 @@ def _build_warnings(metrics):
     edge_inflation = (
         metrics["edge_inflation"]
     )
+
+    clipping_total = metrics["clipping_change"]["total_new_clipping"]
+
+    smoothing = metrics["smoothing_ratio"]
 
     if (
         edge_retention
@@ -447,6 +681,59 @@ def _build_warnings(metrics):
             "message": "ازدادت كثافة الحواف بعد المعالجة بدرجة تستدعي المراجعة."
         })
 
+    if clipping_total > CLIPPING_NEW_HIGH_RISK:
+        warnings.append({
+            "code": "major_clipping",
+            "severity": "high",
+            "message": "المعالجة تسببت في فقدان عدد كبير من درجات السطوع بسبب التشبع."
+        })
+
+    elif clipping_total > CLIPPING_NEW_CAUTION:
+        warnings.append({
+            "code": "clipping",
+            "severity": "medium",
+            "message": "ظهر بعض التشبع الجديد في درجات السطوع بعد المعالجة."
+        })
+
+    if smoothing < SMOOTHING_HIGH_RISK:
+        warnings.append({
+            "code": "major_smoothing",
+            "severity": "high",
+            "message": "انخفضت حدة الصورة بدرجة كبيرة مما يشير إلى تجانس مفرط قد يفقد تفاصيل."
+        })
+
+    elif smoothing < SMOOTHING_CAUTION:
+        warnings.append({
+            "code": "smoothing",
+            "severity": "medium",
+            "message": "انخفضت حدة الصورة بشكل ملحوظ بعد المعالجة."
+        })
+
+    ink_retention = metrics["ink_retention"]
+
+    if ink_retention < INK_RETENTION_HIGH_RISK:
+        warnings.append({
+            "code": "major_ink_loss",
+            "severity": "high",
+            "message": "فقدت النتيجة جزءًا كبيرًا من تغطية الحبر الأصلية، وقد يشير ذلك إلى فقد حروف أو أجزاء باهتة."
+        })
+
+    elif ink_retention < INK_RETENTION_CAUTION:
+        warnings.append({
+            "code": "ink_loss",
+            "severity": "medium",
+            "message": "انخفضت تغطية الحبر بعد المعالجة بما يستدعي مراجعة فقد أجزاء دقيقة."
+        })
+
+    ink_inflation = metrics["ink_inflation_ratio"]
+
+    if ink_inflation > INK_INFLATION_CAUTION:
+        warnings.append({
+            "code": "ink_inflation",
+            "severity": "medium",
+            "message": "ازدادت تغطية الحبر بدرجة كبيرة، وقد يشير ذلك إلى تحويل خلفية أو نسيج إلى حبر."
+        })
+
     return warnings
 
 
@@ -476,22 +763,27 @@ def verify_preservation(
     original,
     processed
 ):
-    original_gray = _normalize(
-        _to_gray(original)
+    original_raw = _to_gray(original)
+    processed_raw = _to_gray(processed)
+
+    if original_raw.shape != processed_raw.shape:
+        processed_raw = _match_size(
+            original_raw, processed_raw
+        )
+
+    original_reference = _reference_gray(
+        original_raw
     )
 
-    processed_gray = _normalize(
-        _to_gray(processed)
-    )
-
-    processed_gray = _match_size(
-        original_gray,
-        processed_gray
-    )
+    original_norm = _normalize(original_reference)
+    processed_norm = _normalize(processed_raw)
 
     metrics = _build_metrics(
-        original_gray,
-        processed_gray
+        original_norm,
+        processed_norm,
+        original_raw,
+        processed_raw,
+        original_reference
     )
 
     warnings = _build_warnings(
@@ -510,6 +802,7 @@ def verify_preservation(
     "limitations": [
         "The assessment measures visual structure, not textual meaning.",
         "Large appearance changes such as binarization may reduce similarity even when the result is useful.",
-        "Thresholds are provisional and require evaluation on real manuscript images."
+        "Thresholds are provisional and require evaluation on real manuscript images.",
+        "Component counting may treat noise pixels as structure to preserve."
     ]
 }

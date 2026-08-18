@@ -1,338 +1,225 @@
 import pytest
-
 from processing.recommender import (
-    recommend_treatment
+    build_treatment_strategy,
+    recommend_treatment,
 )
 
 
 def make_analysis(
-    diagnosis_codes=None,
-    preservation_level="low"
+    diagnoses=None, preservation_level="moderate", metrics=None
 ):
-    diagnosis_codes = (
-        diagnosis_codes or []
-    )
+    diagnoses = diagnoses or []
+    # تحويل النصوص إلى قواميس متوافقة إذا تم تمريرها كنصوص
+    formatted_diagnoses = []
+    for diag in diagnoses:
+        if isinstance(diag, str):
+            formatted_diagnoses.append({"code": diag, "severity": "medium"})
+        elif isinstance(diag, dict):
+            formatted_diagnoses.append(diag)
 
     return {
-        "diagnoses": [
-            {
-                "code": code,
-                "severity": "medium"
-            }
-            for code in diagnosis_codes
-        ],
-        "preservation_profile": {
-            "level": preservation_level
-        }
+        "diagnoses": formatted_diagnoses,
+        "preservation_profile": {"level": preservation_level},
+        "metrics": metrics or {},
     }
 
 
 def operation_ids(result):
-    return {
-        item["operation_id"]
-        for item in result["recommendations"]
-    }
+    return {item["operation_id"] for item in result["recommendations"]}
 
 
 def avoided_ids(result):
     return {
-        item["operation_id"]
-        for item in result["excluded_from_automatic"]
+        item["operation_id"] for item in result["excluded_from_automatic"]
     }
 
 
-def test_low_contrast_recommends_clahe():
+def test_normal_document_requires_no_treatment():
+    strategy = build_treatment_strategy(make_analysis())
+    assert strategy["requires_treatment"] is False
+    assert strategy["candidate_plan"] == []
+
+
+def test_dark_document_starts_with_gamma():
+    strategy = build_treatment_strategy(make_analysis(["dark"]))
+    assert strategy["candidate_plan"][0]["operation_id"] == "gamma_correct"
+    assert strategy["candidate_plan"][0]["requires_reanalysis"] is True
+
+
+def test_uneven_illumination_precedes_clahe():
+    strategy = build_treatment_strategy(
+        make_analysis(["uneven_illumination", "low_contrast"])
+    )
+    assert (
+        strategy["candidate_plan"][0]["operation_id"]
+        == "illumination_normalize"
+    )
+    assert "clahe" in strategy["blocked_operations"]
+
+
+def test_noise_blocks_sharpening():
+    strategy = build_treatment_strategy(
+        make_analysis(["moderate_noise", "low_sharpness"])
+    )
+    assert "sharpen" in strategy["blocked_operations"]
+    assert not any(
+        item.get("operation_id") == "sharpen"
+        for item in strategy["candidate_plan"]
+    )
+
+
+def test_high_sensitivity_blocks_automatic_denoising():
+    strategy = build_treatment_strategy(
+        make_analysis(["high_noise"], preservation_level="high")
+    )
+    assert "median_denoise" in strategy["blocked_operations"]
+    assert "bilateral_denoise" in strategy["blocked_operations"]
+    assert "non_local_means_denoise" in strategy["blocked_operations"]
+
+
+def test_uneven_illumination_has_priority_over_darkness():
+    strategy = build_treatment_strategy(
+        make_analysis(["dark", "uneven_illumination"])
+    )
+    operations = [
+        item.get("operation_id") for item in strategy["candidate_plan"]
+    ]
+    assert operations[0] == "illumination_normalize"
+    assert "gamma_correct" not in operations
+
+
+def test_bright_document_uses_darkening_gamma_candidate():
+    strategy = build_treatment_strategy(make_analysis(["bright"]))
+    candidate = strategy["candidate_plan"][0]
+    assert candidate["operation_id"] == "gamma_correct"
+    assert candidate["parameters"]["gamma"] > 1.0
+
+
+def test_low_contrast_uses_clahe_when_not_blocked():
+    strategy = build_treatment_strategy(make_analysis(["low_contrast"]))
+    assert strategy["candidate_plan"][0]["operation_id"] == "clahe"
+
+
+def test_unconfirmed_metrics_do_not_create_automatic_treatment():
     analysis = make_analysis(
-        ["low_contrast"]
+        metrics={
+            "weak_to_strong_ratio": {"value": 5.0},
+            "thin_structure_ratio": {"value": 0.9},
+            "skew_angle": {"value": 8.0},
+            "skew_confidence": {"value": 0.9},
+        }
     )
+    strategy = build_treatment_strategy(analysis)
+    assert strategy["requires_treatment"] is False
+    assert strategy["candidate_plan"] == []
 
-    result = recommend_treatment(
-        analysis
-    )
 
-    assert "clahe" in operation_ids(
-        result
-    )
+def test_low_contrast_recommends_clahe():
+    analysis = make_analysis(["low_contrast"])
+    result = recommend_treatment(analysis)
+    assert "clahe" in operation_ids(result)
 
 
 def test_dark_image_recommends_clahe():
-    analysis = make_analysis(
-        ["dark"]
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert "clahe" in operation_ids(
-        result
-    )
+    analysis = make_analysis(["dark"])
+    result = recommend_treatment(analysis)
+    assert "clahe" in operation_ids(result)
 
 
 def test_clahe_is_not_duplicated():
-    analysis = make_analysis(
-        [
-            "dark",
-            "low_contrast"
-        ]
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
+    analysis = make_analysis(["dark", "low_contrast"])
+    result = recommend_treatment(analysis)
     clahe_count = sum(
-        item["operation_id"] == "clahe"
-        for item in result[
-            "recommendations"
-        ]
+        item["operation_id"] == "clahe" for item in result["recommendations"]
     )
-
     assert clahe_count == 1
 
 
 def test_noise_recommends_median():
-    analysis = make_analysis(
-        ["moderate_noise"]
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert (
-        "median_denoise"
-        in operation_ids(result)
-    )
+    analysis = make_analysis(["moderate_noise"])
+    result = recommend_treatment(analysis)
+    assert "median_denoise" in operation_ids(result)
 
 
 def test_high_preservation_avoids_median():
-    analysis = make_analysis(
-        ["high_noise"],
-        preservation_level="high"
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert (
-        "median_denoise"
-        not in operation_ids(result)
-    )
-
-    assert (
-        "median_denoise"
-        in avoided_ids(result)
-    )
+    analysis = make_analysis(["high_noise"], preservation_level="high")
+    result = recommend_treatment(analysis)
+    assert "median_denoise" not in operation_ids(result)
+    assert "median_denoise" in avoided_ids(result)
 
 
 def test_low_sharpness_recommends_sharpen():
-    analysis = make_analysis(
-        ["low_sharpness"]
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert (
-        "sharpen"
-        in operation_ids(result)
-    )
+    analysis = make_analysis(["low_sharpness"])
+    result = recommend_treatment(analysis)
+    assert "sharpen" in operation_ids(result)
 
 
 def test_noise_prevents_sharpen():
-    analysis = make_analysis(
-        [
-            "low_sharpness",
-            "high_noise"
-        ]
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert (
-        "sharpen"
-        not in operation_ids(result)
-    )
-
-    assert (
-        "sharpen"
-        in avoided_ids(result)
-    )
+    analysis = make_analysis(["low_sharpness", "high_noise"])
+    result = recommend_treatment(analysis)
+    assert "sharpen" not in operation_ids(result)
+    assert "sharpen" in avoided_ids(result)
 
 
 def test_high_preservation_prevents_sharpen():
-    analysis = make_analysis(
-        ["low_sharpness"],
-        preservation_level="high"
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert (
-        "sharpen"
-        not in operation_ids(result)
-    )
+    analysis = make_analysis(["low_sharpness"], preservation_level="high")
+    result = recommend_treatment(analysis)
+    assert "sharpen" not in operation_ids(result)
 
 
 def test_uneven_illumination_recommends_adaptive_threshold():
-    analysis = make_analysis(
-        ["uneven_illumination"]
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert (
-        "adaptive_threshold"
-        in operation_ids(result)
-    )
+    analysis = make_analysis(["uneven_illumination"])
+    result = recommend_treatment(analysis)
+    assert "adaptive_threshold" in operation_ids(result)
 
 
 def test_adaptive_threshold_is_binarization():
-    analysis = make_analysis(
-        ["uneven_illumination"]
-    )
-
-    result = recommend_treatment(
-        analysis
-    )
-
+    analysis = make_analysis(["uneven_illumination"])
+    result = recommend_treatment(analysis)
     recommendation = next(
         item
-        for item in result[
-            "recommendations"
-        ]
-        if item["operation_id"]
-        == "adaptive_threshold"
+        for item in result["recommendations"]
+        if item["operation_id"] == "adaptive_threshold"
     )
-
-    assert (
-        recommendation["mode"]
-        == "binarization"
-    )
+    assert recommendation["mode"] == "binarization"
 
 
 def test_manual_only_operations_are_not_recommended():
     analysis = make_analysis(
-        [
-            "low_contrast",
-            "moderate_noise",
-            "low_sharpness"
-        ]
+        ["low_contrast", "moderate_noise", "low_sharpness"]
     )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    recommended = operation_ids(
-        result
-    )
-
-    assert (
-        "histogram_equalization"
-        not in recommended
-    )
-
-    assert (
-        "global_threshold"
-        not in recommended
-    )
-
-    assert (
-        "morphological_opening"
-        not in recommended
-    )
-
-    assert (
-        "morphological_closing"
-        not in recommended
-    )
+    result = recommend_treatment(analysis)
+    recommended = operation_ids(result)
+    assert "histogram_equalization" not in recommended
+    assert "global_threshold" not in recommended
+    assert "morphological_opening" not in recommended
+    assert "morphological_closing" not in recommended
 
 
 def test_manual_only_operations_are_in_avoid_list():
     analysis = make_analysis([])
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    avoided = avoided_ids(
-        result
-    )
-
-    assert (
-        "histogram_equalization"
-        in avoided
-    )
-
-    assert (
-        "global_threshold"
-        in avoided
-    )
-
-    assert (
-        "morphological_opening"
-        in avoided
-    )
-
-    assert (
-        "morphological_closing"
-        in avoided
-    )
+    result = recommend_treatment(analysis)
+    avoided = avoided_ids(result)
+    assert "histogram_equalization" in avoided
+    assert "global_threshold" in avoided
+    assert "morphological_opening" in avoided
+    assert "morphological_closing" in avoided
 
 
 def test_normal_image_needs_no_automatic_treatment():
     analysis = make_analysis([])
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    assert (
-        result["recommendations"]
-        == []
-    )
-
-    assert (
-        result["summary"][
-            "needs_treatment"
-        ]
-        is False
-    )
+    result = recommend_treatment(analysis)
+    assert result["recommendations"] == []
+    assert result["summary"]["needs_treatment"] is False
 
 
 def test_recommendations_are_sorted_by_priority():
     analysis = make_analysis(
-        [
-            "low_contrast",
-            "moderate_noise",
-            "uneven_illumination"
-        ]
+        ["low_contrast", "moderate_noise", "uneven_illumination"]
     )
-
-    result = recommend_treatment(
-        analysis
-    )
-
-    priorities = [
-        item["priority"]
-        for item in result[
-            "recommendations"
-        ]
-    ]
-
-    assert priorities == sorted(
-        priorities
-    )
+    result = recommend_treatment(analysis)
+    priorities = [item["priority"] for item in result["recommendations"]]
+    assert priorities == sorted(priorities)
 
 
 def test_invalid_analysis_is_rejected():
@@ -342,15 +229,9 @@ def test_invalid_analysis_is_rejected():
 
 def test_missing_diagnoses_is_rejected():
     with pytest.raises(ValueError):
-        recommend_treatment({
-            "preservation_profile": {
-                "level": "low"
-            }
-        })
+        recommend_treatment({"preservation_profile": {"level": "low"}})
 
 
 def test_missing_preservation_profile_is_rejected():
     with pytest.raises(ValueError):
-        recommend_treatment({
-            "diagnoses": []
-        })
+        recommend_treatment({"diagnoses": []})

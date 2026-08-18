@@ -17,6 +17,9 @@ SHARPNESS_LOW = 60.0
 NOISE_MODERATE = 12.0
 NOISE_HIGH = 20.0
 
+IMPULSE_RATIO_MODERATE = 0.004
+IMPULSE_RATIO_HIGH = 0.012
+
 ILLUMINATION_VARIATION_MODERATE = 0.10
 ILLUMINATION_VARIATION_HIGH = 0.18
 
@@ -93,11 +96,14 @@ def _noise_metrics(gray):
 
     affected_ratio = float(np.mean(residual >= 5.0))
 
+    impulse_ratio = float(np.mean(residual >= 100.0))
+
     return {
         "value": mean_residual,
         "unit": "mean_absolute_residual",
         "p90": percentile_90,
         "affected_ratio": affected_ratio,
+        "impulse_ratio": impulse_ratio,
         "interpretation": "heuristic",
     }
 
@@ -175,6 +181,7 @@ def _diagnose(metrics):
     contrast = metrics["contrast"]["value"]
     sharpness = metrics["sharpness"]["value"]
     noise = metrics["noise"]["value"]
+    impulse_ratio = metrics["noise"].get("impulse_ratio", 0.0)
     illumination = metrics["illumination_variation"]["value"]
 
     if brightness < BRIGHTNESS_VERY_LOW:
@@ -274,6 +281,34 @@ def _diagnose(metrics):
                 "label": "ضوضاء متوسطة",
                 "severity": "medium",
                 "message": "تشير القياسات إلى وجود قدر متوسط من التغيرات المحلية.",
+            }
+        )
+
+    elif impulse_ratio >= IMPULSE_RATIO_MODERATE:
+        if impulse_ratio >= IMPULSE_RATIO_HIGH:
+            severity = "high"
+            code = "high_noise"
+            label = "ضوضاء نبضية مرتفعة"
+            message = (
+                "تشير القياسات إلى نقاط نبضية كثيفة "
+                "من نوع Salt-and-Pepper."
+            )
+
+        else:
+            severity = "medium"
+            code = "moderate_noise"
+            label = "ضوضاء نبضية"
+            message = (
+                "تشير القياسات إلى نقاط نبضية متفرقة "
+                "من نوع Salt-and-Pepper."
+            )
+
+        diagnoses.append(
+            {
+                "code": code,
+                "label": label,
+                "severity": severity,
+                "message": message,
             }
         )
 

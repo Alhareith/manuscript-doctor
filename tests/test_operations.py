@@ -375,8 +375,8 @@ def test_sharpen_default_matches_evaluated_default():
 
     explicit_result = sharpen(
         image,
-        amount=0.25,
-        kernel_size=3
+        amount=0.5,
+        sigma=1.0
     )
 
     assert np.array_equal(

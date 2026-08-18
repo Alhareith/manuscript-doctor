@@ -69,6 +69,6 @@ dist/
 *.temp
 
 # Local operation evaluation data
-evaluation/input/*
+evaluation/*
 evaluation/output/*
 evaluation/results.csv

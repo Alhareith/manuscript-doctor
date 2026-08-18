@@ -541,3 +541,182 @@ def test_skew_confidence_valid():
     assert 0 <= confidence <= 1
 
      
+
+def _make_salt_pepper(rng, density, shape=(300, 300), base=180):
+    image = np.full(shape, base, dtype=np.uint8)
+
+    mask = rng.random(shape)
+
+    image[mask < density / 2.0] = 0
+    image[mask > 1.0 - density / 2.0] = 255
+
+    return image
+
+
+def test_impulse_ratio_metric_exists():
+    rng = np.random.default_rng(11)
+
+    noisy = _make_salt_pepper(rng, 0.03)
+
+    result = analyze_image(noisy)
+
+    noise = result["metrics"]["noise"]
+
+    assert "impulse_ratio" in noise
+    assert noise["impulse_ratio"] >= 0.012
+
+
+def test_impulse_noise_triggers_high_noise_diagnosis():
+    rng = np.random.default_rng(12)
+
+    noisy = _make_salt_pepper(rng, 0.03)
+
+    codes = {
+        item["code"]
+        for item in analyze_image(noisy)["diagnoses"]
+    }
+
+    assert "high_noise" in codes
+
+
+def test_light_impulse_noise_triggers_moderate_noise_diagnosis():
+    rng = np.random.default_rng(13)
+
+    noisy = _make_salt_pepper(rng, 0.01)
+
+    codes = {
+        item["code"]
+        for item in analyze_image(noisy)["diagnoses"]
+    }
+
+    assert "moderate_noise" in codes
+    assert "high_noise" not in codes
+
+
+def test_clean_flat_image_has_no_impulse_noise_diagnosis():
+    image = np.full((300, 300), 180, dtype=np.uint8)
+
+    result = analyze_image(image)
+
+    noise = result["metrics"]["noise"]
+
+    assert noise["impulse_ratio"] < 0.004
+
+    codes = {
+        item["code"]
+        for item in result["diagnoses"]
+    }
+
+    assert "moderate_noise" not in codes
+    assert "high_noise" not in codes
+
+
+def test_gaussian_noise_has_low_impulse_ratio():
+    rng = np.random.default_rng(14)
+
+    noisy = np.clip(
+        128 + rng.normal(0, 18, (300, 300)),
+        0,
+        255
+    ).astype(np.uint8)
+
+    result = analyze_image(noisy)
+
+    assert (
+        result["metrics"]["noise"]["impulse_ratio"]
+        < 0.004
+    )
+
+    codes = {
+        item["code"]
+        for item in result["diagnoses"]
+    }
+
+    assert "moderate_noise" in codes
+
+
+def _make_text_like_pattern(rng, height=800, width=1100):
+    image = np.full((height, width), 225, dtype=np.uint8)
+
+    for row in range(60, height - 60, 46):
+        x = 50
+
+        while x < width - 90:
+            word_length = int(rng.integers(28, 60))
+            word_height = int(rng.integers(6, 11))
+
+            image[row:row + word_height, x:x + word_length] = (
+                rng.integers(30, 70)
+            )
+
+            x += word_length + int(rng.integers(14, 26))
+
+    return cv2.GaussianBlur(image, (0, 0), 0.6)
+
+
+def _rotate_keep_all(image, angle):
+    height, width = image.shape[:2]
+
+    matrix = cv2.getRotationMatrix2D(
+        (width / 2.0, height / 2.0),
+        angle,
+        1.0
+    )
+
+    cos_value = abs(matrix[0, 0])
+    sin_value = abs(matrix[0, 1])
+
+    new_width = int(
+        (height * sin_value) + (width * cos_value)
+    )
+    new_height = int(
+        (height * cos_value) + (width * sin_value)
+    )
+
+    matrix[0, 2] += (new_width / 2.0) - (width / 2.0)
+    matrix[1, 2] += (new_height / 2.0) - (height / 2.0)
+
+    return cv2.warpAffine(
+        image,
+        matrix,
+        (new_width, new_height),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=255
+    )
+
+
+def test_skew_detection_on_rotated_text_like_image():
+    rng = np.random.default_rng(15)
+
+    pattern = _make_text_like_pattern(rng)
+
+    rotated = _rotate_keep_all(pattern, 3.5)
+
+    metrics = analyze_image(rotated)["metrics"]
+
+    detected = metrics["skew_angle"]["value"]
+
+    assert abs(detected + 3.5) < 0.8
+
+
+def test_deskew_accepts_detected_skew_angle_directly():
+    from processing.operations import deskew
+
+    rng = np.random.default_rng(16)
+
+    pattern = _make_text_like_pattern(rng)
+
+    rotated = _rotate_keep_all(pattern, 3.5)
+
+    detected = analyze_image(rotated)["metrics"][
+        "skew_angle"
+    ]["value"]
+
+    corrected = deskew(rotated, detected)
+
+    residual = analyze_image(corrected)["metrics"][
+        "skew_angle"
+    ]["value"]
+
+    assert abs(residual) < 0.8
