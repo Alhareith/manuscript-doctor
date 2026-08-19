@@ -99,6 +99,7 @@ const elements = {
 
 let manualPreviewTimer = null;
 let manualPreviewSequence = 0;
+let manualPreviewAbortController = null;
 let tonalChartInstance = null;
 let qualityChartInstance = null;
 let cropDragState = null;
@@ -1246,10 +1247,10 @@ function setManualPreviewBusy(busy) {
     }
 }
 
-function scheduleManualPreview(delay = 650) {
+function scheduleManualPreview(delay = 320) {
     if (!state.imageId || !elements.manualOperation?.value || state.isBusy) return;
     clearTimeout(manualPreviewTimer);
-    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "تغيّرت الإعدادات — ستتحدث المعاينة تلقائيًا.";
+    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "تغيّرت الإعدادات — يتم تحديث المعاينة تلقائيًا.";
     manualPreviewTimer = setTimeout(() => applyManualOperation({ live: true }), delay);
 }
 
@@ -1326,60 +1327,80 @@ function updateViewerTabs(hasResult = Boolean(state.resultId)) {
 }
 
 function renderManualOperationResult(data, options = {}) {
-    state.currentOperation = data.operation || null;
     const operationId = data.operation?.id || elements.manualOperation?.value || "";
+    const decisionStatus = data.preservation?.assessment?.status || data.verification?.status || "review_required";
+
+    /* Live preview only updates the image beside the controls. It is not a final result. */
     if (options.live) {
-        state.resultId = data.result?.id || null;
-        state.currentResult = data.result || null;
-        if (elements.resultPreview && data.result?.id) elements.resultPreview.src = `/api/results/${encodeURIComponent(data.result.id)}`;
+        setManualPreviewResult(data.result, operationId, decisionStatus);
         updateControls();
-    } else {
-        showPrimaryResult(data.result, "manual");
+        return;
     }
+
+    state.currentOperation = data.operation || null;
+    showPrimaryResult(data.result, "manual");
+
     if (data.preservation) {
         renderPreservation(data.preservation);
-        renderDecision(data.preservation.assessment || { status: "review_required", message: "تم إنشاء المعاينة، وتحتاج إلى مراجعتك قبل الاعتماد النهائي." });
+        renderDecision(data.preservation.assessment || { status: "review_required", message: "تم إنشاء النتيجة، وتحتاج إلى مراجعتك قبل الاعتماد النهائي." });
     } else {
         hideSection("verificationSection");
-        renderDecision({ status: "review_required", message: data.verification?.message || "تم إنشاء المعاينة لكن التحقق من المحافظة غير متاح." });
+        renderDecision({ status: "review_required", message: data.verification?.message || "تم إنشاء النتيجة لكن التحقق من المحافظة غير متاح." });
     }
-    const decisionStatus = data.preservation?.assessment?.status || data.verification?.status || "review_required";
+
     setManualPreviewResult(data.result, operationId, decisionStatus);
-    setStopExplanation("هذه معاينة لعملية يدوية واحدة على الصورة الأصلية وفق الـAPI الحالية. الاعتماد التراكمي سيُفعّل فقط بعد إضافة Working Image بشكل صريح.");
+    setStopExplanation("هذه نتيجة لعملية يدوية واحدة على الصورة الأصلية وفق الـAPI الحالية. الاعتماد التراكمي سيُفعّل فقط بعد إضافة Working Image بشكل صريح.");
     renderHistory();
     updateTechnicalDetails();
-    if (!options.live) document.querySelector(".manual-editor")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    document.querySelector(".manual-editor")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 async function applyManualOperation(options = {}) {
-    if (!state.imageId || !elements.manualOperation?.value || state.isBusy) return;
     const live = Boolean(options.live);
+    if (!state.imageId || !elements.manualOperation?.value) return;
+    if (!live && state.isBusy) return;
+
     clearError();
     let parameters;
     try { parameters = collectManualParameters(); }
     catch (error) { if (!live) showError(error.message); return; }
+
     const operationId = elements.manualOperation.value;
     const automaticRoute = { auto_crop: "auto-crop", auto_deskew: "auto-deskew" }[operationId];
     const requestId = ++manualPreviewSequence;
-    if (live) setManualPreviewBusy(true);
-    else setBusy(true, "جارٍ إنشاء المعاينة", `يتم تطبيق ${operationLabel(operationId)} ثم التحقق من أثرها على التفاصيل.`);
+
+    if (live) {
+        if (manualPreviewAbortController) manualPreviewAbortController.abort();
+        manualPreviewAbortController = new AbortController();
+        setManualPreviewBusy(true);
+    } else {
+        setBusy(true, "جارٍ إنشاء المعاينة", `يتم تطبيق ${operationLabel(operationId)} ثم التحقق من أثرها على التفاصيل.`);
+    }
+
     setWorkflow("treat");
+
     try {
+        const signal = live ? manualPreviewAbortController.signal : undefined;
         const data = automaticRoute
-            ? await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/${automaticRoute}`, { method: "POST" })
+            ? await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/${automaticRoute}`, { method: "POST", signal })
             : await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/operations`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ operation_id: operationId, parameters })
+                body: JSON.stringify({ operation_id: operationId, parameters }),
+                signal
             });
+
         if (requestId !== manualPreviewSequence) return;
         renderManualOperationResult(data, { live });
     } catch (error) {
+        if (error?.name === "AbortError") return;
         if (!live) showError(error.message);
         else if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `تعذر تحديث المعاينة: ${error.message}`;
     } finally {
         if (live) {
             if (requestId === manualPreviewSequence) setManualPreviewBusy(false);
-        } else setBusy(false);
+        } else {
+            setBusy(false);
+        }
     }
 }
 function renderBinarizationCandidates(candidates) {
@@ -1615,13 +1636,30 @@ async function previewQuickAdjustments() {
 
 function selectOperationCard(operationId) {
     if (!operationId || !state.imageId || state.isBusy || !elements.manualOperation) return;
-    const resolvedOperationId = operationId === "perspective_crop" ? "auto_crop" : operationId === "deskew" ? "auto_deskew" : operationId;
+
+    /* Keep the existing compatibility mapping, but use the real manual deskew operation as-is. */
+    const resolvedOperationId = operationId === "perspective_crop" ? "auto_crop" : operationId;
     elements.manualOperation.value = resolvedOperationId;
     renderParameterFields(resolvedOperationId);
-    document.querySelectorAll("[data-operation-card]").forEach((button) => button.classList.toggle("is-selected", button.dataset.operationCard === operationId));
+
+    document.querySelectorAll("[data-operation-card]").forEach((button) => {
+        const selected = button.dataset.operationCard === operationId;
+        button.classList.toggle("is-selected", selected);
+        button.classList.toggle("is-active", selected);
+        button.setAttribute("aria-pressed", String(selected));
+    });
+
     updateControls();
-    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationId === "perspective_crop" ? "سيكتشف النظام أركان الوثيقة ويصحح المنظور فعلياً" : operationLabel(resolvedOperationId)} — جارٍ تجهيز المعاينة.`;
-    scheduleManualPreview(220);
+
+    if (elements.manualPreviewStatus) {
+        elements.manualPreviewStatus.innerHTML = '<i class="bi bi-arrow-repeat"></i> جارٍ تطبيق العملية';
+    }
+    if (elements.manualPreviewNote) {
+        elements.manualPreviewNote.textContent = `${operationLabel(resolvedOperationId)} — يتم إنشاء المعاينة الآن.`;
+    }
+
+    clearTimeout(manualPreviewTimer);
+    applyManualOperation({ live: true });
 }
 
 function setOperationGroup(group) {
@@ -1647,9 +1685,14 @@ function bindEvents() {
     elements.startExaminationButton?.addEventListener("click", startExamination);
     elements.manualOperation?.addEventListener("change", () => {
         renderParameterFields(elements.manualOperation.value);
-        document.querySelectorAll("[data-operation-card]").forEach((button) => button.classList.toggle("is-selected", button.dataset.operationCard === elements.manualOperation.value));
+        document.querySelectorAll("[data-operation-card]").forEach((button) => {
+            const selected = button.dataset.operationCard === elements.manualOperation.value;
+            button.classList.toggle("is-selected", selected);
+            button.classList.toggle("is-active", selected);
+        });
         updateControls();
-        scheduleManualPreview(220);
+        clearTimeout(manualPreviewTimer);
+        applyManualOperation({ live: true });
     });
     elements.manualCropGuide?.addEventListener("pointerdown", beginCropDrag);
     elements.manualCropGuide?.addEventListener("pointermove", moveCropDrag);

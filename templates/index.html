@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="طبيب الوثائق — مساحة عمل احترافية لفحص الوثائق المصورة ومعالجتها والتحقق من أثر المعالجة مع المحافظة على التفاصيل الأصلية.">
     <meta name="theme-color" content="#3b241c">
-
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa+Ink:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -25,7 +23,7 @@
     <header class="app-header">
         <div class="container-fluid app-header-inner">
             <a class="app-brand" href="#workspace" aria-label="طبيب الوثائق">
-                <span class="brand-mark brand-mark-document" aria-hidden="true"><i class="bi bi-file-earmark-text-fill"></i><b>✦</b></span>
+                <span class="brand-mark brand-mark-document" aria-hidden="true"><i class="bi bi-file-earmark-text-fill"></i><i class="bi bi-stars brand-spark"></i></span>
                 <span class="brand-copy">
                     <strong>طبيب الوثائق</strong>
                     <small>شخّص ← عالج ← حافظ ← تحقق</small>
@@ -185,20 +183,20 @@
                 <div class="dashboard-analytics-pair">
                     <section class="dashboard-chart-card tonal-card" aria-labelledby="tonalChartTitle">
                         <div class="chart-card-head">
-                            <div><small>TONAL RANGE</small><h3 id="tonalChartTitle">تدرجات الإضاءة في الوثيقة</h3></div>
-                            <span class="chart-live"><i class="bi bi-bar-chart-fill"></i> التوزيع الفعلي</span>
+                            <div><small>TONAL RANGE</small><h3 id="tonalChartTitle">توازن الظلال والإضاءات</h3></div>
+                            <span class="chart-live"><i class="bi bi-bar-chart-fill"></i> نطاقات فعلية</span>
                         </div>
-                        <p class="chart-intro">قراءة مباشرة لتوازن الظلال والدرجات الوسطى والإضاءات في الصورة الحالية.</p>
+                        <p class="chart-intro">تقسيم فعلي للصورة إلى مناطق شديدة الظلمة، نطاق وسطي، ومناطق شديدة السطوع — وليس Histogram كاملًا.</p>
                         <div class="chart-stage"><canvas id="tonalDistributionChart" aria-label="رسم بياني لتدرجات الإضاءة"></canvas></div>
                         <div class="chart-axis-labels" aria-hidden="true"><span>الظلال</span><span>الدرجات الوسطى</span><span>الإضاءات</span></div>
                     </section>
 
                     <section class="dashboard-chart-card dashboard-chart-card-secondary quality-card" aria-labelledby="qualityChartTitle">
                         <div class="chart-card-head">
-                            <div><small>QUALITY SIGNALS</small><h3 id="qualityChartTitle">مقارنة مؤشرات الجودة</h3></div>
+                            <div><small>QUALITY SIGNALS</small><h3 id="qualityChartTitle">مستويات المؤشرات المقننة</h3></div>
                             <span class="chart-live"><i class="bi bi-graph-up"></i> قراءة مقننة</span>
                         </div>
-                        <p class="chart-intro">تظهر المؤشرات في جانب رسم التدرجات لتسهيل اتخاذ القرار قبل بدء المعالجة.</p>
+                        <p class="chart-intro">مقارنة بصرية مقننة للقراءات؛ لا تعني أن القيمة الأعلى أفضل في جميع المؤشرات.</p>
                         <div class="chart-stage chart-stage-secondary"><canvas id="qualityMetricsChart" aria-label="مقارنة مؤشرات جودة الوثيقة"></canvas></div>
                     </section>
                 </div>
@@ -248,10 +246,6 @@
                         </div>
                         <div class="manual-preview-stage">
                             <img id="manualLivePreview" alt="معاينة مباشرة للمعالجة اليدوية">
-                            <div id="manualCropGuide" class="manual-crop-guide hidden" aria-label="مربع اقتصاص قابل للتحريك والتعديل">
-                                <span class="crop-grid-lines" aria-hidden="true"></span>
-                                <span class="crop-handle crop-handle-nw" data-crop-handle="nw"></span><span class="crop-handle crop-handle-n" data-crop-handle="n"></span><span class="crop-handle crop-handle-ne" data-crop-handle="ne"></span><span class="crop-handle crop-handle-e" data-crop-handle="e"></span><span class="crop-handle crop-handle-se" data-crop-handle="se"></span><span class="crop-handle crop-handle-s" data-crop-handle="s"></span><span class="crop-handle crop-handle-sw" data-crop-handle="sw"></span><span class="crop-handle crop-handle-w" data-crop-handle="w"></span>
-                            </div>
                             <div id="manualPreviewOverlay" class="manual-preview-overlay hidden" aria-live="polite"><span class="processing-spinner"></span><strong>جارٍ تحديث المعاينة...</strong></div>
                         </div>
                         <div class="manual-preview-footer">
@@ -314,9 +308,8 @@
                             </div>
 
                             <div class="operation-group" data-operation-group-panel="page">
-                                <button class="operation-row" data-operation-card="deskew" type="button"><i class="bi bi-rulers"></i><span><strong>تصحيح الميل تلقائياً</strong><small>Auto Deskew · يكتشف الزاوية ثم يصححها</small></span><i class="bi bi-chevron-left"></i></button>
-                                <button class="operation-row" data-operation-card="crop" type="button"><i class="bi bi-crop"></i><span><strong>اقتصاص الوثيقة</strong><small>Crop · حدد منطقة الوثيقة بدقة</small></span><i class="bi bi-chevron-left"></i></button>
-                                <button class="operation-row" data-operation-card="perspective_crop" type="button"><i class="bi bi-bounding-box-circles"></i><span><strong>تصحيح المنظور تلقائياً</strong><small>Perspective rectify · يكتشف أركان الوثيقة ويعيد تسويتها</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="deskew" type="button"><i class="bi bi-rulers"></i><span><strong>تصحيح الميل</strong><small>Deskew · اضبط زاوية الميل يدويًا</small></span><i class="bi bi-chevron-left"></i></button>
+                                <div class="capability-note"><i class="bi bi-info-circle"></i><span>الاقتصاص وتصحيح المنظور ضمن مرحلة التهيئة القادمة، ولن تظهر كأدوات قابلة للتنفيذ قبل دعمها فعليًا في الـBackend.</span></div>
                             </div>
                         </div>
 
@@ -350,24 +343,10 @@
                                 <option value="background_suppress">Background Suppression</option>
                                 <option value="weak_structure_suppress">Weak Structure Suppression</option>
                                 <option value="deskew">Deskew</option>
-                                <option value="crop">Document Crop</option>
-                                <option value="auto_deskew">Auto Deskew</option>
-                                <option value="auto_crop">Auto Perspective Crop</option>
                             </select>
 
                             <div id="manualParameters" class="manual-parameters slider-parameters" aria-live="polite"></div>
                             <button id="applyManualButton" class="button button-secondary full-button" type="button" disabled><i class="bi bi-play-fill"></i> تنفيذ العملية الحالية</button>
-                        </div>
-
-                        <!-- Existing quick-adjustment contract retained for JS transition -->
-                        <div class="quick-adjustment-compatibility" aria-hidden="true">
-                            <input id="quickBrightness" type="range" min="-100" max="100" value="0" disabled>
-                            <output id="quickBrightnessValue">0</output>
-                            <input id="quickContrast" type="range" min="10" max="300" value="100" disabled>
-                            <output id="quickContrastValue">1.00</output>
-                            <p id="quickAdjustmentStatus">—</p>
-                            <button id="quickResetButton" type="button" disabled>إعادة ضبط</button>
-                            <button id="quickPreviewButton" type="button" disabled>إنشاء معاينة</button>
                         </div>
                     </section>
                 </div>
@@ -423,12 +402,6 @@
         <!-- Preview decision reserved for true working-image flow -->
         <section class="preview-decision hidden" data-preview-decision aria-live="polite">
             <div><strong>معاينة غير معتمدة</strong><small>ستُفعّل دورة الاعتماد التراكمية بعد إضافة Working Image API.</small></div>
-        </section>
-
-        <!-- Kept intentionally hidden: no technical drawer in ordinary UI -->
-        <section class="technical-details hidden" data-technical-details aria-hidden="true">
-            <header><strong>التفاصيل التقنية</strong><button type="button" aria-label="إغلاق">×</button></header>
-            <div class="technical-details-body"></div>
         </section>
 
         <section id="errorSection" class="error-section hidden" role="alert">
