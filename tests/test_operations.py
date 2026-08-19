@@ -21,7 +21,12 @@ from processing.operations import (
     illumination_normalize,
     gamma_correct,
     intensity_adjust,
-    faded_text_enhance
+    faded_text_enhance,
+    background_suppress,
+    weak_structure_suppress,
+    morphological_top_hat,
+    morphological_black_hat,
+    deskew
 )
 
 
@@ -159,7 +164,9 @@ def test_morphological_closing_returns_grayscale():
         otsu_threshold,
         adaptive_threshold,
         morphological_opening,
-        morphological_closing
+        morphological_closing,
+        morphological_top_hat,
+        morphological_black_hat
     ]
 )
 def test_operations_do_not_modify_original(operation):
@@ -368,8 +375,8 @@ def test_sharpen_default_matches_evaluated_default():
 
     explicit_result = sharpen(
         image,
-        amount=0.25,
-        kernel_size=3
+        amount=0.5,
+        sigma=1.0
     )
 
     assert np.array_equal(
@@ -698,3 +705,167 @@ def test_faded_text_enhance_preserves_shape():
 
     assert result.shape == image.shape
     assert result.dtype == np.uint8
+
+def test_background_suppress_preserves_shape():
+    image = np.full(
+        (160, 220),
+        180,
+        dtype=np.uint8
+    )
+
+    result = background_suppress(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_background_suppress_rejects_even_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        background_suppress(
+            image,
+            kernel_size=30
+        )
+
+
+def test_weak_structure_suppress_preserves_shape():
+    image = np.full(
+        (160, 220),
+        180,
+        dtype=np.uint8
+    )
+
+    result = weak_structure_suppress(
+        image
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_weak_structure_suppress_invalid_threshold():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        weak_structure_suppress(
+            image,
+            threshold=0
+        )
+
+def test_top_hat_preserves_dimensions():
+    image = np.full(
+        (120, 160),
+        180,
+        dtype=np.uint8
+    )
+
+    result = morphological_top_hat(
+        image,
+        kernel_size=3
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_black_hat_preserves_dimensions():
+    image = np.full(
+        (120, 160),
+        180,
+        dtype=np.uint8
+    )
+
+    result = morphological_black_hat(
+        image,
+        kernel_size=5
+    )
+
+    assert result.shape == image.shape
+    assert result.dtype == np.uint8
+
+
+def test_top_hat_rejects_even_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        morphological_top_hat(
+            image,
+            kernel_size=4
+        )
+
+
+def test_black_hat_rejects_even_kernel():
+    image = np.full(
+        (100, 100),
+        180,
+        dtype=np.uint8
+    )
+
+    with pytest.raises(ValueError):
+        morphological_black_hat(
+            image,
+            kernel_size=4
+        )
+
+def test_deskew_returns_valid_image():
+    image = np.full(
+        (200, 300),
+        220,
+        dtype=np.uint8
+    )
+
+    result = deskew(
+        image,
+        angle=5
+    )
+
+    assert result is not None
+    assert result.dtype == np.uint8
+    assert result.ndim == image.ndim
+
+
+def test_deskew_zero_angle():
+    image = np.full(
+        (200, 300),
+        220,
+        dtype=np.uint8
+    )
+
+    result = deskew(
+        image,
+        angle=0
+    )
+
+    assert result.shape == image.shape
+
+
+def test_deskew_rejects_extreme_angle():
+    # إنشاء صورة تجريبية
+    image = np.full((200, 300), 220, dtype=np.uint8)
+
+    # 1. اختبار زاوية موجبة متطرفة تتجاوز 45 درجة (مثلاً 50 أو 60)
+    with pytest.raises(
+        ValueError, match="angle must be between -45 and 45 degrees."
+    ):
+        deskew(image, angle=50)
+
+    # 2. اختبار زاوية سالبة متطرفة (اختياري لزيادة التغطية)
+    with pytest.raises(
+        ValueError, match="angle must be between -45 and 45 degrees."
+    ):
+        deskew(image, angle=-60)
