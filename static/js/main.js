@@ -432,7 +432,9 @@ const operationParameters = {
         { name: "y", label: "بداية القص عمودياً", type: "number", value: 0, min: 0, max: 10000, step: 1 },
         { name: "width", label: "عرض منطقة القص", type: "number", value: 1000, min: 1, max: 10000, step: 1 },
         { name: "height", label: "ارتفاع منطقة القص", type: "number", value: 1000, min: 1, max: 10000, step: 1 }
-    ]
+    ],
+    auto_deskew: [],
+    auto_crop: []
 
 };
 
@@ -457,7 +459,9 @@ const operationNames = {
     morphological_top_hat: ["إبراز البنى الفاتحة", "Morphological Top-Hat"],
     morphological_black_hat: ["إبراز البنى الداكنة", "Morphological Black-Hat"],
     deskew: ["تصحيح الميل", "Deskew"],
-    crop: ["اقتصاص الوثيقة", "Document Crop"]
+    crop: ["اقتصاص الوثيقة", "Document Crop"],
+    auto_deskew: ["تصحيح الميل تلقائياً", "Auto Deskew"],
+    auto_crop: ["تصحيح المنظور تلقائياً", "Automatic Perspective Rectification"]
 };
 
 const statusLabels = {
@@ -1078,8 +1082,11 @@ function renderParameterFields(operationId) {
     if (!fields.length) {
         const note = document.createElement("p");
         note.className = "parameter-note";
-        note.textContent = "هذه العملية محسومة الإعدادات في الـBackend الحالي؛ اختيارها ينشئ معاينة مباشرة دون قيمة رقمية مصطنعة.";
+        note.textContent = ["auto_crop", "auto_deskew"].includes(operationId)
+            ? "سيحلل النظام الوثيقة تلقائياً ثم ينشئ نتيجة قابلة للمراجعة: تصحيح أركان الوثيقة للمنظور أو تقدير زاوية الميل بحسب العملية المختارة."
+            : "هذه العملية محسومة الإعدادات في الـBackend الحالي؛ اختيارها ينشئ معاينة مباشرة دون قيمة رقمية مصطنعة.";
         elements.manualParameters.appendChild(note);
+        syncCropGuide();
         return;
     }
     fields.forEach((field) => {
@@ -1351,16 +1358,19 @@ async function applyManualOperation(options = {}) {
     try { parameters = collectManualParameters(); }
     catch (error) { if (!live) showError(error.message); return; }
     const operationId = elements.manualOperation.value;
+    const automaticRoute = { auto_crop: "auto-crop", auto_deskew: "auto-deskew" }[operationId];
     const requestId = ++manualPreviewSequence;
     if (live) setManualPreviewBusy(true);
     else setBusy(true, "جارٍ إنشاء المعاينة", `يتم تطبيق ${operationLabel(operationId)} ثم التحقق من أثرها على التفاصيل.`);
     setWorkflow("treat");
     try {
-        const data = await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/operations`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation_id: operationId, parameters })
-        });
+        const data = automaticRoute
+            ? await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/${automaticRoute}`, { method: "POST" })
+            : await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/operations`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ operation_id: operationId, parameters })
+            });
         if (requestId !== manualPreviewSequence) return;
         renderManualOperationResult(data, { live });
     } catch (error) {
@@ -1505,6 +1515,36 @@ function toggleExclusions(button) {
     elements.automaticExclusionList.classList.toggle("hidden", expanded);
 }
 
+function bindFooterNavigation() {
+    const links = [...document.querySelectorAll("[data-footer-nav]")];
+    const footer = document.querySelector(".app-footer-fixed");
+    if (!links.length || !footer) return;
+    links.forEach((link) => link.addEventListener("click", (event) => {
+        const target = document.querySelector(link.getAttribute("href"));
+        if (!target) return;
+        event.preventDefault();
+        const offset = footer.getBoundingClientRect().height + 20;
+        const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
+        window.scrollTo({ top, behavior: "smooth" });
+        links.forEach((item) => item.classList.toggle("is-active", item === link));
+    }));
+}
+
+function bindWorkflowNavigation() {
+    const links = [...document.querySelectorAll("[data-workflow-nav]")];
+    const header = document.querySelector(".app-header");
+    const workflow = document.querySelector(".workflow-bar");
+    if (!links.length || !header || !workflow) return;
+    links.forEach((link) => link.addEventListener("click", (event) => {
+        const target = document.querySelector(link.getAttribute("href"));
+        if (!target || target.classList.contains("hidden")) return;
+        event.preventDefault();
+        const offset = header.getBoundingClientRect().height + workflow.getBoundingClientRect().height + 18;
+        const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
+        window.scrollTo({ top, behavior: "smooth" });
+    }));
+}
+
 
 function applyTheme(theme) {
     const normalized = theme === "dark" ? "dark" : "light";
@@ -1575,12 +1615,12 @@ async function previewQuickAdjustments() {
 
 function selectOperationCard(operationId) {
     if (!operationId || !state.imageId || state.isBusy || !elements.manualOperation) return;
-    const resolvedOperationId = operationId === "perspective_crop" ? "crop" : operationId;
+    const resolvedOperationId = operationId === "perspective_crop" ? "auto_crop" : operationId === "deskew" ? "auto_deskew" : operationId;
     elements.manualOperation.value = resolvedOperationId;
     renderParameterFields(resolvedOperationId);
     document.querySelectorAll("[data-operation-card]").forEach((button) => button.classList.toggle("is-selected", button.dataset.operationCard === operationId));
     updateControls();
-    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationId === "perspective_crop" ? "تصحيح المنظور عبر إطار القص" : operationLabel(resolvedOperationId)} — جارٍ تجهيز المعاينة.`;
+    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationId === "perspective_crop" ? "سيكتشف النظام أركان الوثيقة ويصحح المنظور فعلياً" : operationLabel(resolvedOperationId)} — جارٍ تجهيز المعاينة.`;
     scheduleManualPreview(220);
 }
 
@@ -1637,6 +1677,8 @@ function initialize() {
     renderParameterFields(elements.manualOperation?.value || "");
     renderHistory();
     updateControls();
+    bindFooterNavigation();
+    bindWorkflowNavigation();
     setWorkflow("upload");
     if (elements.automaticExclusionList) elements.automaticExclusionList.classList.add("hidden");
 }

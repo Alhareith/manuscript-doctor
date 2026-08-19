@@ -6,7 +6,7 @@
     <meta name="description" content="طبيب الوثائق — مساحة عمل احترافية لفحص الوثائق المصورة ومعالجتها والتحقق من أثر المعالجة مع المحافظة على التفاصيل الأصلية.">
     <meta name="theme-color" content="#3b241c">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa+Ink:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -45,12 +45,12 @@
     <nav id="workflow" class="workflow-bar" aria-label="مراحل معالجة الوثيقة">
         <div class="container-fluid">
             <ol class="workflow-list">
-                <li class="workflow-item is-current" data-workflow-step="upload"><span>01</span><strong>رفع</strong></li>
-                <li class="workflow-item" data-workflow-step="prepare"><span>02</span><strong>تهيئة</strong></li>
-                <li class="workflow-item" data-workflow-step="diagnose"><span>03</span><strong>تشخيص</strong></li>
-                <li class="workflow-item" data-workflow-step="treat"><span>04</span><strong>معالجة</strong></li>
-                <li class="workflow-item" data-workflow-step="verify"><span>05</span><strong>تحقق</strong></li>
-                <li class="workflow-item" data-workflow-step="output"><span>06</span><strong>إخراج</strong></li>
+                <li class="workflow-item is-current" data-workflow-step="upload"><a href="#uploadSection" data-workflow-nav aria-label="الانتقال إلى رفع الوثيقة"><span>01</span><strong>رفع</strong></a></li>
+                <li class="workflow-item" data-workflow-step="prepare"><a href="#documentPreviewSection" data-workflow-nav aria-label="الانتقال إلى معاينة الوثيقة"><span>02</span><strong>تهيئة</strong></a></li>
+                <li class="workflow-item" data-workflow-step="diagnose"><a href="#examinationSection" data-workflow-nav aria-label="الانتقال إلى فحص الوثيقة"><span>03</span><strong>تشخيص</strong></a></li>
+                <li class="workflow-item" data-workflow-step="treat"><a href="#treatmentSection" data-workflow-nav aria-label="الانتقال إلى المعالجة"><span>04</span><strong>معالجة</strong></a></li>
+                <li class="workflow-item" data-workflow-step="verify"><a href="#verificationSection" data-workflow-nav aria-label="الانتقال إلى التحقق"><span>05</span><strong>تحقق</strong></a></li>
+                <li class="workflow-item" data-workflow-step="output"><a href="#downloadSection" data-workflow-nav aria-label="الانتقال إلى النتيجة"><span>06</span><strong>إخراج</strong></a></li>
             </ol>
         </div>
     </nav>
@@ -314,9 +314,9 @@
                             </div>
 
                             <div class="operation-group" data-operation-group-panel="page">
-                                <button class="operation-row" data-operation-card="deskew" type="button"><i class="bi bi-rulers"></i><span><strong>تصحيح الميل</strong><small>Deskew</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="deskew" type="button"><i class="bi bi-rulers"></i><span><strong>تصحيح الميل تلقائياً</strong><small>Auto Deskew · يكتشف الزاوية ثم يصححها</small></span><i class="bi bi-chevron-left"></i></button>
                                 <button class="operation-row" data-operation-card="crop" type="button"><i class="bi bi-crop"></i><span><strong>اقتصاص الوثيقة</strong><small>Crop · حدد منطقة الوثيقة بدقة</small></span><i class="bi bi-chevron-left"></i></button>
-                                <button class="operation-row" data-operation-card="perspective_crop" type="button"><i class="bi bi-bounding-box-circles"></i><span><strong>تصحيح المنظور</strong><small>Perspective guide · اضبط إطار الوثيقة المائل</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="perspective_crop" type="button"><i class="bi bi-bounding-box-circles"></i><span><strong>تصحيح المنظور تلقائياً</strong><small>Perspective rectify · يكتشف أركان الوثيقة ويعيد تسويتها</small></span><i class="bi bi-chevron-left"></i></button>
                             </div>
                         </div>
 
@@ -351,6 +351,8 @@
                                 <option value="weak_structure_suppress">Weak Structure Suppression</option>
                                 <option value="deskew">Deskew</option>
                                 <option value="crop">Document Crop</option>
+                                <option value="auto_deskew">Auto Deskew</option>
+                                <option value="auto_crop">Auto Perspective Crop</option>
                             </select>
 
                             <div id="manualParameters" class="manual-parameters slider-parameters" aria-live="polite"></div>
@@ -434,8 +436,19 @@
         </section>
     </main>
 
-    <footer class="app-footer">
-        <div class="container-fluid"><div class="footer-brand"><span class="brand-mark"><i class="bi bi-file-earmark-medical-fill"></i></span><div><strong>طبيب الوثائق</strong><small>Diagnose · Treat · Preserve · Verify</small></div></div><div class="footer-credits"><div><span>تطوير</span><strong>الحارث الداهية</strong></div><div><span>إشراف</span><strong>المهندس مالك المصنف</strong></div></div><p>مساحة عمل محافظة لتحليل الوثائق المصورة وتحسينها دون معالجة عمياء.</p></div>
+    <footer class="app-footer app-footer-fixed" aria-label="تنقل سريع بين أقسام مساحة العمل">
+        <div class="container-fluid footer-fixed-inner">
+            <div class="footer-brand"><span class="brand-mark"><i class="bi bi-file-earmark-medical-fill"></i></span><div><strong>طبيب الوثائق</strong><small>تنقّل سريع بين مراحل العمل</small></div></div>
+            <nav class="footer-section-nav" aria-label="أقسام الموقع">
+                <a href="#workspace" data-footer-nav><i class="bi bi-house-door"></i><span>البداية</span></a>
+                <a href="#documentPreviewSection" data-footer-nav><i class="bi bi-image"></i><span>المعاينة</span></a>
+                <a href="#examinationSection" data-footer-nav><i class="bi bi-activity"></i><span>الفحص</span></a>
+                <a href="#treatmentSection" data-footer-nav><i class="bi bi-magic"></i><span>المعالجة</span></a>
+                <a href="#manualEditor" data-footer-nav><i class="bi bi-sliders"></i><span>التحرير</span></a>
+                <a href="#downloadSection" data-footer-nav><i class="bi bi-download"></i><span>النتيجة</span></a>
+            </nav>
+            <div class="footer-credits"><div><span>تطوير</span><strong>الحارث الداهية</strong></div><div><span>إشراف</span><strong>المهندس مالك المصنف</strong></div></div>
+        </div>
     </footer>
 </div>
 </body>
