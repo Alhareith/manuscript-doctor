@@ -245,11 +245,48 @@
                             <span class="live-pill"><i class="bi bi-lightning-charge-fill"></i> LIVE</span>
                         </div>
                         <div class="manual-preview-stage">
-                            <img id="manualLivePreview" alt="معاينة مباشرة للمعالجة اليدوية">
-                            <div id="manualPreviewOverlay" class="manual-preview-overlay hidden" aria-live="polite"><span class="processing-spinner"></span><strong>جارٍ تحديث المعاينة...</strong></div>
+                            <div class="manual-preview-pair" aria-label="مقارنة المعاينة قبل وبعد">
+                                <figure class="manual-preview-card">
+                                    <figcaption>قبل — الأصل</figcaption>
+                                    <div class="manual-preview-image-wrap">
+                                        <img id="manualOriginalPreview" alt="الصورة الأصلية قبل المعالجة اليدوية">
+                                    </div>
+                                </figure>
+                                <figure class="manual-preview-card">
+                                    <figcaption>بعد — المعاينة الحالية</figcaption>
+                                    <div class="manual-preview-image-wrap">
+                                        <img id="manualLivePreview" alt="المعاينة الحالية للمعالجة اليدوية">
+                                    </div>
+                                </figure>
+                            </div>
+                            <div id="manualPreviewOverlay" class="manual-preview-overlay hidden" aria-live="polite">
+                                <span class="processing-spinner"></span>
+                                <strong>جارٍ تحديث المعاينة...</strong>
+                            </div>
                         </div>
+
                         <div class="manual-preview-footer">
                             <span><i class="bi bi-info-circle"></i> المعاينة لا تصبح نتيجة نهائية حتى تنفذ العملية.</span>
+                        </div>
+                        <div class="manual-approval-bar" aria-live="polite">
+                            <div class="manual-chain-status">
+                                <span class="status-dot"></span>
+                                <div>
+                                    <strong id="manualChainStatus">لا توجد عملية معتمدة</strong>
+                                    <small id="manualChainList">المعاينة الحالية غير محفوظة بعد.</small>
+                                </div>
+                            </div>
+
+                            <div class="manual-approval-actions">
+                                <button id="manualApprovalButton" class="button button-primary" type="button" disabled>
+                                    <i class="bi bi-check2-circle"></i>
+                                    اعتماد العملية وإضافتها للسلسلة
+                                </button>
+                                <button id="manualManualDownloadButton" class="button button-ghost" type="button" disabled>
+                                    <i class="bi bi-download"></i>
+                                    تنزيل آخر عملية معتمدة
+                                </button>
+                            </div>
                         </div>
                     </section>
 
