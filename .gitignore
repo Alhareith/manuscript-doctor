@@ -72,3 +72,5 @@ dist/
 evaluation/*
 evaluation/output/*
 evaluation/results.csv
+
+*.zip

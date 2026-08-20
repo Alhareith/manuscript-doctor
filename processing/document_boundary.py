@@ -824,6 +824,102 @@ def _extract_region_document_candidates(image, gray):
 
     return candidates
 
+def _extract_guided_region_candidate(image, guide_candidate):
+    if guide_candidate is None:
+        return None
+
+    height, width = image.shape[:2]
+    image_area = float(width * height)
+
+    corners = np.asarray(guide_candidate["corners"], dtype=np.float32).reshape(4, 2)
+    center = np.mean(corners, axis=0)
+
+    expanded = center + (corners - center) * 1.18
+    expanded[:, 0] = np.clip(expanded[:, 0], 0, width - 1)
+    expanded[:, 1] = np.clip(expanded[:, 1], 0, height - 1)
+
+    inner = center + (corners - center) * 0.72
+    inner[:, 0] = np.clip(inner[:, 0], 0, width - 1)
+    inner[:, 1] = np.clip(inner[:, 1], 0, height - 1)
+
+    mask = np.full((height, width), cv2.GC_PR_BGD, dtype=np.uint8)
+
+    border_x = max(5, int(width * 0.025))
+    border_y = max(5, int(height * 0.025))
+
+    mask[:border_y, :] = cv2.GC_BGD
+    mask[-border_y:, :] = cv2.GC_BGD
+    mask[:, :border_x] = cv2.GC_BGD
+    mask[:, -border_x:] = cv2.GC_BGD
+
+    cv2.fillConvexPoly(mask, np.round(expanded).astype(np.int32), cv2.GC_PR_FGD)
+    cv2.fillConvexPoly(mask, np.round(inner).astype(np.int32), cv2.GC_FGD)
+
+    bg_model = np.zeros((1, 65), dtype=np.float64)
+    fg_model = np.zeros((1, 65), dtype=np.float64)
+
+    try:
+        cv2.grabCut(image, mask, None, bg_model, fg_model, 7, cv2.GC_INIT_WITH_MASK)
+    except cv2.error:
+        return None
+
+    foreground = np.where((mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD), 255, 0).astype(np.uint8)
+
+    kernel_size = max(5, int(round(min(height, width) * 0.015)))
+
+    if kernel_size % 2 == 0:
+        kernel_size += 1
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+
+    foreground = cv2.morphologyEx(foreground, cv2.MORPH_CLOSE, kernel, iterations=2)
+    foreground = cv2.morphologyEx(foreground, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)), iterations=1)
+
+    contours, _ = cv2.findContours(foreground, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+
+    candidates = []
+
+    for contour in contours:
+        contour_area = float(cv2.contourArea(contour))
+
+        if contour_area / image_area < MIN_AREA_RATIO:
+            continue
+
+        hull = cv2.convexHull(contour)
+        perimeter = float(cv2.arcLength(hull, True))
+
+        if perimeter <= 0:
+            continue
+
+        quadrilateral = None
+
+        for epsilon_ratio in (0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05):
+            approximation = cv2.approxPolyDP(hull, epsilon_ratio * perimeter, True)
+
+            if len(approximation) == 4:
+                quadrilateral = approximation.reshape(4, 2).astype(np.float32)
+                break
+
+        if quadrilateral is None:
+            continue
+
+        candidate, _ = _candidate_from_contour(quadrilateral.reshape(-1, 1, 2), width, height, image_area)
+
+        if candidate is None:
+            continue
+
+        candidate["touches_frame"] = False
+        candidate = _rank_boundary_candidate(image, candidate)
+        candidates.append(candidate)
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda item: item["final_score"], reverse=True)
+
+    return candidates[0]
+
 
 def detect_document_boundary(image):
     gray = _to_gray(image)
@@ -934,12 +1030,16 @@ def detect_document_boundary(image):
 
     if best_candidate is None or best_candidate["final_score"] < MIN_CONFIDENCE:
         hough_candidate = _extract_hough_document_candidate(image, gray)
+        guided_candidate = _extract_guided_region_candidate(image, hough_candidate)
 
-        if hough_candidate is not None and (
-            best_candidate is None
-            or hough_candidate["final_score"] > best_candidate["final_score"]
-        ):
-            best_candidate = hough_candidate
+        if guided_candidate is not None:
+            if best_candidate is None or guided_candidate["final_score"] > best_candidate["final_score"]:
+                best_candidate = guided_candidate
+                if hough_candidate is not None and (
+                    best_candidate is None
+                    or hough_candidate["final_score"] > best_candidate["final_score"]
+                ):
+                    best_candidate = hough_candidate
 
     if best_candidate is None:
         return {
