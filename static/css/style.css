@@ -1703,3 +1703,1294 @@ html { scroll-padding-top: 168px; }
 .app-footer.app-footer-fixed { position: relative; right: auto; bottom: auto; left: auto; z-index: auto; min-height: 118px; padding-block: 24px; box-shadow: none; backdrop-filter: none; }
 .app-footer.app-footer-fixed .footer-fixed-inner { display: grid; grid-template-columns: minmax(170px, .7fr) minmax(420px, 1.8fr) minmax(250px, .9fr); }
 @media (max-width: 767.98px) { html { scroll-padding-top: 132px; }.workflow-bar { top: 72px; }.app-footer.app-footer-fixed .footer-fixed-inner { grid-template-columns: 1fr; }.app-footer.app-footer-fixed .footer-brand, .app-footer.app-footer-fixed .footer-credits { display: flex; }.footer-section-nav { justify-content: flex-start; } }
+
+/* ========================================================================== */
+/* Manual Treatment Studio — focused editor redesign                          */
+/* ========================================================================== */
+.manual-editor {
+    --manual-gap: 18px;
+    --tool-accent: var(--brand);
+    margin-top: 4px;
+    padding-top: 24px;
+}
+
+.manual-editor-head {
+    margin-bottom: 16px;
+    padding: 0 2px;
+}
+
+.manual-editor-head > div:first-child {
+    max-width: 820px;
+}
+
+.manual-editor-head p {
+    max-width: 760px;
+    margin-top: 4px;
+}
+
+.preview-status {
+    min-height: 34px;
+    padding: 7px 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid color-mix(in srgb, var(--success) 28%, var(--line));
+    border-radius: 999px;
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: .71rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.preview-status .bi-arrow-repeat,
+.manual-preview-overlay .bi-arrow-repeat {
+    animation: spin .75s linear infinite;
+}
+
+.manual-editor-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.62fr) minmax(365px, .92fr);
+    gap: var(--manual-gap);
+    align-items: stretch;
+}
+
+.manual-preview-pane,
+.manual-controls-pane {
+    min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--line) 82%, var(--brand) 18%);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--surface) 96%, var(--success-soft) 4%);
+    box-shadow: 0 12px 34px rgba(25, 42, 33, .065);
+}
+
+.manual-preview-pane {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+}
+
+.manual-preview-toolbar {
+    min-height: 52px;
+    padding: 4px 4px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.manual-preview-toolbar > div {
+    min-width: 0;
+}
+
+.manual-preview-toolbar small {
+    display: block;
+    color: var(--muted);
+    font-size: .63rem;
+}
+
+.manual-preview-toolbar strong {
+    display: block;
+    max-width: 620px;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-strong);
+    font-size: .82rem;
+    font-weight: 650;
+}
+
+.live-pill {
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border: 1px solid color-mix(in srgb, var(--success) 25%, var(--line));
+    border-radius: 999px;
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: .61rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+
+.manual-preview-stage {
+    position: relative;
+    flex: 1;
+    min-height: 610px;
+    margin-top: 12px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background-color: var(--surface-2);
+}
+
+.manual-preview-stage > img {
+    width: 100%;
+    height: 100%;
+    max-height: 760px;
+    object-fit: contain;
+    display: block;
+}
+
+.manual-preview-overlay {
+    position: absolute;
+    z-index: 12;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 11px;
+    padding: 22px;
+    background: color-mix(in srgb, var(--surface) 73%, transparent);
+    backdrop-filter: blur(4px);
+    color: var(--ink-strong);
+    text-align: center;
+}
+
+.manual-preview-overlay .processing-spinner {
+    width: 34px;
+    height: 34px;
+}
+
+.manual-preview-overlay strong {
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.manual-preview-footer {
+    min-height: 38px;
+    padding: 9px 5px 0;
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+    font-size: .67rem;
+}
+
+.manual-preview-footer i {
+    margin-inline-end: 5px;
+    color: var(--brand);
+}
+
+.manual-controls-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Categories become a compact editor toolbar rather than large tiles. */
+.operation-category-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 97%, var(--accent-soft) 3%);
+    scrollbar-width: thin;
+}
+
+.category-tab {
+    flex: 0 0 auto;
+    min-width: 74px;
+    min-height: 42px;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--muted);
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: .66rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.category-tab i {
+    font-size: 14px;
+}
+
+.category-tab:hover:not(:disabled) {
+    color: var(--brand);
+    border-color: var(--line);
+    background: var(--surface-2);
+    transform: none;
+}
+
+.category-tab.is-active {
+    color: var(--brand-strong);
+    border-color: color-mix(in srgb, var(--brand) 24%, var(--line));
+    background: var(--success-soft);
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--brand) 78%, transparent);
+}
+
+/* Operations become compact visual cards in a two-column grid. */
+.operation-browser {
+    max-height: 366px;
+    padding: 10px;
+    overflow: auto;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg-soft) 84%, var(--surface) 16%);
+}
+
+.operation-group {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.operation-group.is-active {
+    display: grid;
+}
+
+.operation-row {
+    position: relative;
+    min-width: 0;
+    min-height: 78px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    align-items: center;
+    gap: 9px;
+    text-align: start;
+    box-shadow: 0 2px 8px rgba(28, 43, 35, .025);
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.operation-row > i:first-child {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--accent-soft) 72%, var(--surface));
+    color: var(--accent);
+    font-size: 16px;
+    transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+
+.operation-row > span {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.operation-row strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-strong);
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.operation-row small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: .56rem;
+    direction: ltr;
+    text-align: right;
+}
+
+.operation-row > i:last-child {
+    display: none;
+}
+
+.operation-row:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--brand) 25%, var(--line));
+    background: color-mix(in srgb, var(--surface) 92%, var(--success-soft) 8%);
+    box-shadow: 0 8px 18px rgba(11, 122, 98, .07);
+}
+
+.operation-row.is-selected,
+.operation-row.is-active {
+    border-color: color-mix(in srgb, var(--brand) 58%, var(--line));
+    background: linear-gradient(145deg, color-mix(in srgb, var(--success-soft) 82%, var(--surface)), var(--surface));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 12%, transparent), 0 9px 20px rgba(11, 122, 98, .08);
+}
+
+.operation-row.is-selected::after,
+.operation-row.is-active::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    inset-inline-end: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.operation-row.is-selected > i:first-child,
+.operation-row.is-active > i:first-child {
+    color: #fff;
+    background: var(--brand);
+    transform: scale(1.03);
+}
+
+.operation-row:disabled {
+    opacity: .48;
+    cursor: not-allowed;
+}
+
+/* Selected operation becomes the visual focus of the controls column. */
+.selected-operation-panel {
+    flex: 1;
+    min-height: 285px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: auto;
+    background: var(--surface);
+}
+
+.selected-operation-head {
+    padding: 0 0 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+}
+
+.selected-operation-head > div {
+    min-width: 0;
+}
+
+.selected-operation-head small {
+    color: var(--accent);
+    font-size: .61rem;
+    font-weight: 700;
+}
+
+.selected-operation-head strong {
+    display: block;
+    margin-top: 1px;
+    color: var(--ink-strong);
+    font-size: .91rem;
+    font-weight: 750;
+}
+
+.selected-operation-head span {
+    display: block;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: .61rem;
+    direction: ltr;
+    text-align: right;
+}
+
+.selected-operation-head > i {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: var(--brand);
+    background: var(--success-soft);
+    font-size: 17px;
+}
+
+.slider-parameters {
+    display: grid;
+    gap: 13px;
+}
+
+.parameter-slider {
+    padding: 12px 13px 10px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--bg-soft) 86%, var(--surface));
+}
+
+.parameter-slider-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 9px;
+}
+
+.parameter-slider-head label {
+    color: var(--ink);
+    font-size: .72rem;
+    font-weight: 650;
+}
+
+.parameter-slider-head output {
+    min-width: 48px;
+    padding: 3px 8px;
+    border: 1px solid color-mix(in srgb, var(--brand) 20%, var(--line));
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--brand);
+    font-size: .65rem;
+    font-weight: 750;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.parameter-slider input[type="range"] {
+    width: 100%;
+    margin: 0;
+}
+
+.parameter-slider-meta {
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: .54rem;
+    direction: ltr;
+}
+
+.parameter-note {
+    margin: 0;
+    padding: 13px;
+    border: 1px dashed color-mix(in srgb, var(--brand) 24%, var(--line));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--success-soft) 45%, var(--surface));
+    color: var(--ink-soft);
+    font-size: .7rem;
+    line-height: 1.7;
+}
+
+.selected-operation-panel .full-button {
+    margin-top: auto;
+    min-height: 44px;
+}
+
+html[data-theme="dark"] .manual-preview-pane,
+html[data-theme="dark"] .manual-controls-pane,
+html[data-theme="dark"] .selected-operation-panel,
+html[data-theme="dark"] .operation-row,
+html[data-theme="dark"] .parameter-slider {
+    background: var(--surface);
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .operation-browser,
+html[data-theme="dark"] .operation-category-strip {
+    background: var(--bg-soft);
+}
+
+html[data-theme="dark"] .operation-row.is-selected,
+html[data-theme="dark"] .operation-row.is-active {
+    background: color-mix(in srgb, var(--success-soft) 76%, var(--surface));
+    border-color: color-mix(in srgb, var(--brand) 70%, var(--line));
+}
+
+html[data-theme="dark"] .manual-preview-overlay {
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+@media (max-width: 1199.98px) {
+    .manual-editor-shell {
+        grid-template-columns: 1fr;
+    }
+    .manual-preview-pane {
+        order: 1;
+    }
+    .manual-controls-pane {
+        order: 2;
+    }
+    .manual-preview-stage {
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .manual-editor {
+        --manual-gap: 12px;
+        padding-top: 18px;
+    }
+    .preview-status {
+        width: 100%;
+        justify-content: center;
+    }
+    .manual-preview-pane,
+    .manual-controls-pane {
+        border-radius: 15px;
+    }
+    .manual-preview-stage {
+        min-height: 350px;
+    }
+    .operation-category-strip {
+        padding: 8px;
+    }
+    .category-tab {
+        min-width: 70px;
+        min-height: 40px;
+        padding-inline: 8px;
+    }
+    .operation-browser {
+        max-height: none;
+        overflow: visible;
+        padding: 8px;
+    }
+    .operation-group.is-active {
+        grid-template-columns: 1fr;
+    }
+    .operation-row {
+        min-height: 64px;
+        grid-template-columns: 36px minmax(0, 1fr);
+    }
+    .selected-operation-panel {
+        min-height: 0;
+        padding: 13px;
+    }
+}
+
+@media (max-width: 420px) {
+    .manual-preview-stage {
+        min-height: 300px;
+    }
+    .manual-preview-toolbar {
+        align-items: flex-start;
+    }
+    .live-pill {
+        padding-inline: 7px;
+    }
+}
+
+
+/* ---------- Compact before/after manual preview ---------- */
+/* ---------- Small complete document preview ---------- */
+.document-stage {
+    min-height: 0;
+    width: 100%;
+    height: 280px;
+    max-height: 280px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+}
+
+.document-stage img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 320px;
+    max-height: 220px;
+    object-fit: contain;
+}
+
+
+
+
+.manual-preview-stage {
+    flex: 0 0 auto;
+    min-height: 0;
+    height: auto;
+    margin-top: 12px;
+}
+
+.manual-preview-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
+}
+
+.manual-preview-card {
+    min-width: 0;
+    margin: 0;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+}
+
+.manual-preview-card figcaption {
+    margin-bottom: 7px;
+    color: var(--ink-soft);
+    font-size: .72rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.manual-preview-image-wrap {
+    display: grid;
+    place-items: center;
+    height: clamp(170px, 26vw, 320px);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+}
+
+.manual-preview-image-wrap img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 88%;
+    max-height: 88%;
+    object-fit: contain;
+}
+
+
+@media (max-width: 420px) {
+    .manual-preview-pair {
+        gap: 6px;
+    }
+
+    .manual-preview-card {
+        padding: 5px;
+    }
+
+    .manual-preview-card figcaption {
+        font-size: .64rem;
+    }
+
+    .manual-preview-image-wrap {
+        height: 155px;
+    }
+}
+
+/* ---------- Small complete document preview ---------- */
+
+
+@media (max-width: 767.98px) {
+    .document-stage {
+        height: 220px;
+        max-height: 220px;
+    }
+
+    .document-stage img {
+        max-width: 260px;
+        max-height: 175px;
+    }
+}
+
+
+/* ---------- Analysis workspace: preview left, results right ---------- */
+@media (min-width: 1200px) {
+    .analysis-stage-card {
+        direction: ltr;
+        display: grid;
+        grid-template-columns: minmax(320px, .78fr) minmax(440px, 1.22fr);
+        gap: 16px;
+        align-items: start;
+    }
+
+    .analysis-stage-card .document-viewer-main {
+        grid-column: 1;
+        grid-row: 1;
+        direction: rtl;
+        width: 100%;
+    }
+
+    .analysis-stage-card .after-exam-deck {
+        grid-column: 2;
+        grid-row: 1;
+        direction: rtl;
+        grid-template-columns: 1fr;
+        align-content: start;
+        width: 100%;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .analysis-stage-card {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+
+/* ---------- Desktop document preview fills the left column ---------- */
+@media (min-width: 1200px) {
+    .analysis-stage-card .document-viewer-main {
+        height: 100%;
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .analysis-stage-card .document-stage {
+        flex: 1 1 auto;
+        min-height: 560px;
+        height: 560px;
+        max-height: 560px;
+    }
+
+    .analysis-stage-card .document-stage img {
+        width: auto;
+        height: auto;
+        max-width: calc(100% - 28px);
+        max-height: calc(100% - 28px);
+        object-fit: contain;
+    }
+}
+
+
+/* ---------- Compact layout for sticky header ---------- */
+@media (min-width: 992px) {
+    .app-header,
+    .app-header-inner {
+        min-height: 78px;
+    }
+
+    .workflow-bar {
+        top: 78px;
+    }
+
+    .workflow-list {
+        min-height: 44px;
+    }
+
+    html {
+        scroll-padding-top: 126px;
+    }
+
+    .workspace {
+        padding-top: 8px;
+    }
+
+    .section-head {
+        margin-bottom: 11px;
+    }
+
+    .analysis-stage-card {
+        gap: 10px;
+    }
+
+    .analysis-stage-card .document-viewer-main,
+    .analysis-stage-card .after-exam-deck,
+    .document-dashboard,
+    .treatment-studio,
+    .treatment-history,
+    .verification-panel,
+    .decision-section,
+    .comparison-section,
+    .binarization-section,
+    .download-section {
+        padding: 14px;
+    }
+
+    .analysis-stage-card .after-exam-deck {
+        gap: 8px;
+        padding: 9px;
+    }
+
+    .after-exam-deck .analysis-summary-card,
+    .after-exam-deck .analysis-compact-panel {
+        padding: 10px;
+    }
+
+    .document-dashboard,
+    .treatment-studio,
+    .treatment-history,
+    .verification-panel,
+    .decision-section,
+    .comparison-section,
+    .binarization-section,
+    .download-section {
+        margin-top: 16px;
+    }
+
+    .dashboard-head {
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+
+    .metric-card {
+        min-height: 112px;
+        padding: 10px;
+    }
+
+    .dashboard-analytics-pair .dashboard-chart-card {
+        min-height: 270px;
+        padding: 13px;
+    }
+
+    .tonal-card .chart-stage,
+    .quality-card .chart-stage {
+        height: 190px;
+        min-height: 190px;
+    }
+
+    .manual-editor {
+        padding-top: 16px;
+    }
+
+    .manual-editor-head {
+        margin-bottom: 11px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    html {
+        scroll-padding-top: 128px;
+    }
+
+    .workspace {
+        padding-top: 6px;
+    }
+
+    .section-head {
+        margin-bottom: 9px;
+    }
+
+    .document-dashboard,
+    .treatment-studio,
+    .treatment-history,
+    .verification-panel,
+    .decision-section,
+    .comparison-section,
+    .binarization-section,
+    .download-section {
+        margin-top: 14px;
+        padding: 13px;
+    }
+}
+
+
+/* ---------- Compact sticky workflow bar ---------- */
+@media (min-width: 992px) {
+    .workflow-bar {
+        top: 78px;
+        height: 40px;
+    }
+
+    .workflow-list {
+        min-height: 40px;
+        height: 40px;
+        gap: 4px;
+        padding-block: 3px;
+    }
+
+    .workflow-item {
+        min-width: 88px;
+        padding: 4px 9px;
+        font-size: .72rem;
+        line-height: 1.1;
+    }
+
+    .workflow-item span {
+        font-size: .65rem;
+    }
+
+    html {
+        scroll-padding-top: 122px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .workflow-bar {
+        top: 72px;
+        height: 38px;
+    }
+
+    .workflow-list {
+        min-height: 38px;
+        height: 38px;
+        gap: 3px;
+        padding-block: 2px;
+    }
+
+    .workflow-item {
+        min-width: 78px;
+        padding: 4px 7px;
+        font-size: .67rem;
+        line-height: 1.1;
+    }
+
+    html {
+        scroll-padding-top: 116px;
+    }
+}
+
+/*
+ * طبيب الوثائق — Dashboard + tall before/after preview patch
+ * Safe override layer: append to the end of static/css/style.css.
+ * No backend/API/data contract changes.
+ */
+
+/* ---------- Manual before/after preview: preserve full tall images ---------- */
+.manual-preview-stage {
+    position: relative;
+    display: grid;
+    place-items: stretch;
+    min-height: clamp(420px, 58vh, 620px);
+    height: auto;
+    padding: 12px;
+    overflow: hidden;
+}
+
+.manual-preview-pair {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: stretch;
+}
+
+.manual-preview-card {
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--surface) 94%, var(--success-soft) 6%);
+}
+
+.manual-preview-card figcaption {
+    flex: 0 0 auto;
+    margin: 0 0 7px;
+    color: var(--ink-soft);
+    font-size: .7rem;
+    font-weight: 750;
+    text-align: center;
+}
+
+.manual-preview-image-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    display: grid;
+    place-items: center;
+    padding: 8px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+}
+
+.manual-preview-image-wrap img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* ---------- Dashboard visual hierarchy ---------- */
+.document-dashboard {
+    padding: clamp(16px, 2vw, 24px);
+    border-radius: var(--radius-lg);
+    background:
+        radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--accent-soft) 72%, transparent), transparent 22rem),
+        linear-gradient(145deg, color-mix(in srgb, var(--surface) 92%, var(--success-soft) 8%), var(--surface));
+}
+
+.dashboard-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.dashboard-head h2 {
+    margin-top: 3px;
+    font-size: clamp(1.55rem, 2.7vw, 2.25rem);
+}
+
+.dashboard-badge,
+.chart-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--line));
+    color: var(--brand);
+    background: color-mix(in srgb, var(--success-soft) 70%, var(--surface));
+    box-shadow: 0 4px 12px rgba(11, 122, 98, .06);
+}
+
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+.dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.metric-card {
+    min-width: 0;
+    min-height: 124px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: linear-gradient(155deg, var(--surface), color-mix(in srgb, var(--surface-2) 62%, var(--surface)));
+    box-shadow: 0 8px 18px rgba(29, 52, 39, .045);
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
+    box-shadow: 0 12px 24px rgba(11, 122, 98, .09);
+}
+
+.metric-ring,
+.analysis-summary-icon,
+.analysis-compact-panel header > span:first-child,
+.reading-icon,
+.mode-card-icon {
+    box-shadow: 0 6px 14px rgba(11, 122, 98, .10), inset 0 1px rgba(255,255,255,.7);
+}
+
+.metric-ring {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 8px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    color: var(--brand);
+    background: linear-gradient(145deg, var(--success-soft), var(--accent-soft));
+}
+
+.metric-ring i,
+.analysis-summary-icon i,
+.analysis-compact-panel header > span:first-child i,
+.reading-icon i,
+.mode-card-icon i {
+    font-size: 1rem;
+    filter: drop-shadow(0 2px 3px rgba(11, 72, 53, .12));
+}
+
+.metric-copy {
+    min-width: 0;
+}
+
+.metric-copy small {
+    font-size: .62rem;
+}
+
+.metric-copy strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .78rem;
+}
+
+.health-scale {
+    inset-inline: 12px;
+    bottom: 10px;
+    height: 4px;
+}
+
+.dashboard-analytics-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+    gap: 12px;
+}
+
+.dashboard-analytics-pair .dashboard-chart-card {
+    min-width: 0;
+    min-height: 292px;
+    margin: 0;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 94%, var(--bg-soft) 6%);
+    box-shadow: 0 10px 24px rgba(29, 52, 39, .045);
+}
+
+.chart-card-head {
+    margin-bottom: 8px;
+}
+
+.chart-card-head h3 {
+    margin-top: 3px;
+    font-size: .98rem;
+}
+
+.chart-intro {
+    min-height: 34px;
+    margin: 0 0 8px;
+    font-size: .68rem;
+    line-height: 1.55;
+}
+
+.tonal-card .chart-stage,
+.quality-card .chart-stage {
+    height: 205px;
+    min-height: 205px;
+}
+
+.dashboard-reading-card {
+    min-height: 72px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+    border-inline-start: 4px solid var(--accent);
+    border-radius: 15px;
+    background: linear-gradient(110deg, color-mix(in srgb, var(--accent-soft) 80%, var(--surface)), var(--surface));
+}
+
+/* ---------- Existing Bootstrap Icons: consistent visual treatment ---------- */
+.button i,
+.workflow-item i,
+.dashboard-badge i,
+.chart-live i,
+.eyebrow i,
+.stage-badge i,
+.live-pill i,
+.preview-status i {
+    line-height: 1;
+    transition: transform .18s ease, filter .18s ease;
+}
+
+.button:hover:not(:disabled) i,
+.workflow-item a:hover i,
+.category-tab:hover i {
+    transform: translateY(-1px) scale(1.05);
+}
+
+/* ---------- Dark mode alignment ---------- */
+html[data-theme="dark"] .document-dashboard {
+    background:
+        radial-gradient(circle at 92% 0%, rgba(227, 170, 69, .14), transparent 22rem),
+        linear-gradient(145deg, #23352b, #1b2821);
+}
+
+html[data-theme="dark"] .metric-card,
+html[data-theme="dark"] .dashboard-analytics-pair .dashboard-chart-card,
+html[data-theme="dark"] .manual-preview-card {
+    background: #233129;
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .manual-preview-image-wrap {
+    background: #29362f;
+    border-color: var(--line);
+}
+
+/* ---------- Responsive safety ---------- */
+@media (max-width: 1199.98px) {
+    .dashboard-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-analytics-pair {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .manual-preview-stage {
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .dashboard-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .metric-card {
+        min-height: 112px;
+        padding: 10px;
+    }
+
+    .dashboard-analytics-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-analytics-pair .dashboard-chart-card {
+        min-height: 260px;
+        padding: 12px;
+    }
+
+    .tonal-card .chart-stage,
+    .quality-card .chart-stage {
+        height: 185px;
+        min-height: 185px;
+    }
+
+    .manual-preview-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .manual-preview-stage {
+        min-height: 420px;
+    }
+}
+
+@media (max-width: 420px) {
+    .manual-preview-stage {
+        min-height: 360px;
+    }
+
+    .manual-preview-card {
+        padding: 6px;
+    }
+}
+
+
+/* ---------- Interactive Dashboard metric focus ---------- */
+.metric-card[data-metric] {
+    position: relative;
+    cursor: pointer;
+}
+
+.metric-card[data-metric]:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--brand) 32%, transparent);
+    outline-offset: 3px;
+}
+
+.metric-card[data-metric].is-active {
+    border-color: var(--brand);
+    background: linear-gradient(145deg, var(--success-soft), var(--surface));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent), 0 14px 28px rgba(11, 122, 98, .12);
+    transform: translateY(-2px);
+}
+
+.metric-card[data-metric].is-active::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 10px;
+    top: 10px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+html[data-theme="dark"] .metric-card[data-metric].is-active {
+    background: linear-gradient(145deg, #2c5b49, #233129);
+    border-color: #77c6a8;
+}

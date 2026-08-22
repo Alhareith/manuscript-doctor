@@ -17,8 +17,13 @@ const state = {
     lastDecisionStatus: null,
     uiMode: "standard",
     activeEditorTab: "advanced",
+    manualChain: [],
+    manualWorkingResultId: null,
+    manualApprovedResult: null,
+    manualPreviewCandidate: null,
     isBusy: false
 };
+    
 
 const elements = {
     dropZone: document.getElementById("dropZone"),
@@ -87,6 +92,12 @@ const elements = {
     quickPreviewButton: document.getElementById("quickPreviewButton"),
     quickAdjustmentStatus: document.getElementById("quickAdjustmentStatus"),
     manualLivePreview: document.getElementById("manualLivePreview"),
+    manualOriginalPreview: document.getElementById("manualOriginalPreview"),
+    manualApprovalButton: document.getElementById("manualApprovalButton"),
+    manualManualDownloadButton: document.getElementById("manualManualDownloadButton"),
+    manualChainStatus: document.getElementById("manualChainStatus"),
+    manualChainList: document.getElementById("manualChainList"),
+
     manualCropGuide: document.getElementById("manualCropGuide"),
     manualPreviewOverlay: document.getElementById("manualPreviewOverlay"),
     manualPreviewStatus: document.getElementById("manualPreviewStatus"),
@@ -99,9 +110,30 @@ const elements = {
 
 let manualPreviewTimer = null;
 let manualPreviewSequence = 0;
+let manualPreviewAbortController = null;
 let tonalChartInstance = null;
 let qualityChartInstance = null;
 let cropDragState = null;
+let activeDashboardMetric = null;
+let dashboardMetricValues = {};
+
+const dashboardMetricLabels = {
+    brightness: "السطوع",
+    contrast: "التباين",
+    noise: "الضوضاء",
+    sharpness: "الحدة",
+    illumination: "تجانس الإضاءة",
+    edges: "كثافة الحواف"
+};
+
+const dashboardMetricSourceKeys = {
+    brightness: "brightness",
+    contrast: "contrast",
+    noise: "noise",
+    sharpness: "sharpness",
+    illumination: "illumination_variation",
+    edges: "edge_density"
+};
 
 const operationParameters = {
     clahe: [
@@ -608,7 +640,48 @@ function resetResultUI() {
     updateControls();
 }
 
+function updateManualApprovalUI() {
+    const count = state.manualChain.length;
+    const hasCandidate = Boolean(state.manualPreviewCandidate);
+    const hasApproved = Boolean(state.manualApprovedResult?.id);
+
+    if (elements.manualChainStatus) {
+        elements.manualChainStatus.textContent = hasApproved
+            ? `تم اعتماد ${count} ${count === 1 ? "عملية" : "عمليات"}`
+            : "لا توجد عملية معتمدة";
+    }
+
+    if (elements.manualChainList) {
+        elements.manualChainList.textContent = hasApproved
+            ? `آخر نتيجة معتمدة: ${operationLabel(state.manualApprovedResult.operation?.id || "manual_operation")}`
+            : hasCandidate
+                ? "توجد معاينة غير معتمدة — راجعها قبل الاعتماد."
+                : "المعاينة الحالية غير محفوظة بعد.";
+    }
+
+    if (elements.manualApprovalButton) {
+        elements.manualApprovalButton.disabled = !hasCandidate || state.isBusy;
+    }
+
+    if (elements.manualManualDownloadButton) {
+        elements.manualManualDownloadButton.disabled = !hasApproved || state.isBusy;
+    }
+}
+
+function resetManualChain() {
+    state.manualChain = [];
+    state.manualWorkingResultId = null;
+    state.manualApprovedResult = null;
+    state.manualPreviewCandidate = null;
+    updateManualApprovalUI();
+}
+
+
 function resetAll() {
+    clearTimeout(manualPreviewTimer);
+    manualPreviewSequence += 1;
+    manualPreviewAbortController?.abort();
+    manualPreviewAbortController = null;
     revokePreviewUrl();
     state.selectedFile = null;
     state.imageId = null;
@@ -619,6 +692,8 @@ function resetAll() {
     state.recommendations = [];
     state.exclusions = [];
     resetResultUI();
+    resetManualChain();
+
     if (elements.imageInput) elements.imageInput.value = "";
     hide(elements.selectedFile);
     hide(elements.documentPreviewSection);
@@ -629,6 +704,7 @@ function resetAll() {
     if (elements.originalPreview) elements.originalPreview.removeAttribute("src");
     if (elements.comparisonOriginal) elements.comparisonOriginal.removeAttribute("src");
     if (elements.manualLivePreview) elements.manualLivePreview.removeAttribute("src");
+    if (elements.manualOriginalPreview) elements.manualOriginalPreview.removeAttribute("src");
     resetDashboard();
     clearError();
     setWorkflow("upload");
@@ -650,6 +726,7 @@ function selectFile(file) {
     if (elements.originalPreview) elements.originalPreview.src = state.previewUrl;
     if (elements.comparisonOriginal) elements.comparisonOriginal.src = state.previewUrl;
     if (elements.manualLivePreview) elements.manualLivePreview.src = state.previewUrl;
+    if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = state.previewUrl;
     if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "الصورة الأصلية — اختر عملية لبدء المعاينة.";
     show(elements.selectedFile);
     show(elements.documentPreviewSection);
@@ -824,6 +901,44 @@ function renderTonalDistributionChart(metrics) {
     });
 }
 
+function focusDashboardMetric(metricKey) {
+    if (!dashboardMetricLabels[metricKey]) return;
+
+    activeDashboardMetric = metricKey;
+    document.querySelectorAll(".metric-card[data-metric]").forEach((card) => {
+        const active = card.dataset.metric === metricKey;
+        card.classList.toggle("is-active", active);
+        card.setAttribute("aria-pressed", String(active));
+    });
+
+    const sourceKey = dashboardMetricSourceKeys[metricKey];
+    const rawValue = metricValue(dashboardMetricValues, sourceKey);
+    const card = document.querySelector(`.metric-card[data-metric="${CSS.escape(metricKey)}"]`);
+    const humanValue = card?.querySelector("[data-human-metric]")?.textContent?.trim();
+    const readableValue = humanValue && humanValue !== "بانتظار الفحص"
+        ? humanValue
+        : formatNumber(rawValue, metricKey === "illumination" || metricKey === "edges" ? 4 : 2);
+
+    if (elements.dashboardInterpretation) {
+        elements.dashboardInterpretation.textContent = `القياس المحدد: ${dashboardMetricLabels[metricKey]}. القراءة الحالية: ${readableValue}. استخدم هذه القراءة مع التشخيص والتوصيات، ولا تعتبرها وحدها قرارًا للمعالجة.`;
+    }
+}
+
+function bindDashboardMetricCards() {
+    document.querySelectorAll(".metric-card[data-metric]").forEach((card) => {
+        const metricKey = card.dataset.metric;
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        card.setAttribute("aria-pressed", "false");
+        card.addEventListener("click", () => focusDashboardMetric(metricKey));
+        card.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            focusDashboardMetric(metricKey);
+        });
+    });
+}
+
 function renderQualityMetricsChart(metrics) {
     if (!elements.qualityMetricsChart || typeof Chart === "undefined") return;
     if (qualityChartInstance) qualityChartInstance.destroy();
@@ -880,6 +995,14 @@ function renderQualityMetricsChart(metrics) {
                     }
                 }
             },
+            onClick: (_event, activeElements) => {
+                const point = activeElements?.[0];
+                if (point) focusDashboardMetric(rows[point.index][1]);
+            },
+            onHover: (_event, activeElements) => {
+                const canvas = elements.qualityMetricsChart;
+                if (canvas) canvas.style.cursor = activeElements?.length ? "pointer" : "default";
+            },
             scales: {
                 x: {
                     beginAtZero: true,
@@ -905,6 +1028,7 @@ function renderDashboardCharts(metrics) {
 
 function renderDashboard(analysis, diagnoses = []) {
     const metrics = analysis?.metrics || {};
+    dashboardMetricValues = metrics;
     updateMetricCard("brightness", metricValue(metrics, "brightness"));
     updateMetricCard("contrast", metricValue(metrics, "contrast"));
     updateMetricCard("noise", metricValue(metrics, "noise"));
@@ -919,6 +1043,12 @@ function renderDashboard(analysis, diagnoses = []) {
 }
 
 function resetDashboard() {
+    activeDashboardMetric = null;
+    dashboardMetricValues = {};
+    document.querySelectorAll(".metric-card[data-metric]").forEach((card) => {
+        card.classList.remove("is-active");
+        card.setAttribute("aria-pressed", "false");
+    });
     destroyDashboardCharts();
     ["brightness", "contrast", "noise", "sharpness", "illumination", "edges"].forEach((key) => {
         const raw = byId({ brightness: "brightnessMetric", contrast: "contrastMetric", noise: "noiseMetric", sharpness: "sharpnessMetric", illumination: "illuminationMetric", edges: "edgeDensityMetric" }[key]);
@@ -1027,6 +1157,7 @@ function renderUploadData(data) {
     elements.originalPreview.src = originalUrl;
     elements.comparisonOriginal.src = originalUrl;
     if (elements.manualLivePreview) elements.manualLivePreview.src = originalUrl;
+    if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = originalUrl;
     if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "الصورة الأصلية — اختر عملية من المحرر.";
     if (state.imageData && elements.selectedFileMeta) elements.selectedFileMeta.textContent = `${state.imageData.width}×${state.imageData.height} · ${String(state.imageData.format || "").toUpperCase()}`;
     renderDashboard(state.analysis, state.diagnoses);
@@ -1050,6 +1181,8 @@ async function startExamination() {
     if (!state.selectedFile || state.isBusy) return;
     clearError();
     resetResultUI();
+    resetManualChain();
+
     const body = new FormData();
     body.append("image", state.selectedFile);
     setBusy(true, "جارٍ فحص الوثيقة", "يتم تحليل الإضاءة والتباين والضوضاء والحدة وحساسية التفاصيل وإنشاء التوصيات.");
@@ -1246,10 +1379,10 @@ function setManualPreviewBusy(busy) {
     }
 }
 
-function scheduleManualPreview(delay = 650) {
+function scheduleManualPreview(delay = 120) {
     if (!state.imageId || !elements.manualOperation?.value || state.isBusy) return;
     clearTimeout(manualPreviewTimer);
-    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "تغيّرت الإعدادات — ستتحدث المعاينة تلقائيًا.";
+    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "تغيّرت الإعدادات — يتم تحديث المعاينة تلقائيًا.";
     manualPreviewTimer = setTimeout(() => applyManualOperation({ live: true }), delay);
 }
 
@@ -1259,6 +1392,17 @@ function setManualPreviewResult(result, operationId, decisionStatus = null) {
     if (elements.manualPreviewNote) {
         const decisionText = decisionStatus ? ` · ${statusLabel(decisionStatus)}` : "";
         elements.manualPreviewNote.textContent = `${operationLabel(operationId)}${decisionText}`;
+    }
+    updateManualApprovalUI();
+
+}
+
+function setManualPreviewData(preview, operationId) {
+    if (!preview?.data_url || !elements.manualLivePreview) return;
+
+    elements.manualLivePreview.src = preview.data_url;
+    if (elements.manualPreviewNote) {
+        elements.manualPreviewNote.textContent = `${operationLabel(operationId)} · معاينة لحظية`;
     }
 }
 
@@ -1326,62 +1470,194 @@ function updateViewerTabs(hasResult = Boolean(state.resultId)) {
 }
 
 function renderManualOperationResult(data, options = {}) {
-    state.currentOperation = data.operation || null;
     const operationId = data.operation?.id || elements.manualOperation?.value || "";
+    const decisionStatus = data.preservation?.assessment?.status || data.verification?.status || "review_required";
+
+    /* Live preview only updates the image beside the controls. It is not a final result. */
     if (options.live) {
-        state.resultId = data.result?.id || null;
-        state.currentResult = data.result || null;
-        if (elements.resultPreview && data.result?.id) elements.resultPreview.src = `/api/results/${encodeURIComponent(data.result.id)}`;
+        state.manualPreviewCandidate = {
+            result: data.result || data.preview || null,
+            operation: data.operation || {
+                id: operationId,
+                parameters: collectManualParameters()
+            },
+            data
+        };
+        if (data.preview?.data_url) {
+            setManualPreviewData(data.preview, operationId);
+        } else {
+            setManualPreviewResult(data.result, operationId, decisionStatus);
+        }
+
+        updateManualApprovalUI();
         updateControls();
-    } else {
-        showPrimaryResult(data.result, "manual");
+        return;
     }
+
+    state.currentOperation = data.operation || null;
+    showPrimaryResult(data.result, "manual");
+
     if (data.preservation) {
         renderPreservation(data.preservation);
-        renderDecision(data.preservation.assessment || { status: "review_required", message: "تم إنشاء المعاينة، وتحتاج إلى مراجعتك قبل الاعتماد النهائي." });
+        renderDecision(data.preservation.assessment || { status: "review_required", message: "تم إنشاء النتيجة، وتحتاج إلى مراجعتك قبل الاعتماد النهائي." });
     } else {
         hideSection("verificationSection");
-        renderDecision({ status: "review_required", message: data.verification?.message || "تم إنشاء المعاينة لكن التحقق من المحافظة غير متاح." });
+        renderDecision({ status: "review_required", message: data.verification?.message || "تم إنشاء النتيجة لكن التحقق من المحافظة غير متاح." });
     }
-    const decisionStatus = data.preservation?.assessment?.status || data.verification?.status || "review_required";
+
     setManualPreviewResult(data.result, operationId, decisionStatus);
-    setStopExplanation("هذه معاينة لعملية يدوية واحدة على الصورة الأصلية وفق الـAPI الحالية. الاعتماد التراكمي سيُفعّل فقط بعد إضافة Working Image بشكل صريح.");
+    setStopExplanation("هذه نتيجة لعملية يدوية واحدة على الصورة الأصلية وفق الـAPI الحالية. الاعتماد التراكمي سيُفعّل فقط بعد إضافة Working Image بشكل صريح.");
     renderHistory();
     updateTechnicalDetails();
-    if (!options.live) document.querySelector(".manual-editor")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    document.querySelector(".manual-editor")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
+
 async function applyManualOperation(options = {}) {
-    if (!state.imageId || !elements.manualOperation?.value || state.isBusy) return;
     const live = Boolean(options.live);
+    if (!state.imageId || !elements.manualOperation?.value) return;
+    if (!live && state.isBusy) return;
+
     clearError();
     let parameters;
     try { parameters = collectManualParameters(); }
     catch (error) { if (!live) showError(error.message); return; }
+
     const operationId = elements.manualOperation.value;
     const automaticRoute = { auto_crop: "auto-crop", auto_deskew: "auto-deskew" }[operationId];
+    const previewRoute = live && !automaticRoute;
     const requestId = ++manualPreviewSequence;
-    if (live) setManualPreviewBusy(true);
-    else setBusy(true, "جارٍ إنشاء المعاينة", `يتم تطبيق ${operationLabel(operationId)} ثم التحقق من أثرها على التفاصيل.`);
+
+    if (live) {
+        if (manualPreviewAbortController) manualPreviewAbortController.abort();
+        manualPreviewAbortController = new AbortController();
+        setManualPreviewBusy(true);
+    } else {
+        setBusy(true, "جارٍ إنشاء المعاينة", `يتم تطبيق ${operationLabel(operationId)} ثم التحقق من أثرها على التفاصيل.`);
+    }
+
     setWorkflow("treat");
+
     try {
-        const data = automaticRoute
-            ? await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/${automaticRoute}`, { method: "POST" })
-            : await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/operations`, {
+        const signal = live ? manualPreviewAbortController.signal : undefined;
+        const data = previewRoute
+            ? await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/preview`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ operation_id: operationId, parameters })
-            });
+                body: JSON.stringify({
+                    operation_id: operationId,
+                    parameters,
+                    source_result_id: state.manualWorkingResultId || null
+                }),
+                signal
+            })
+            : automaticRoute
+                ? await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/${automaticRoute}`, {
+                    method: "POST",
+                    signal
+                })
+                : await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/operations`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ operation_id: operationId, parameters }),
+                    signal
+                });
+
         if (requestId !== manualPreviewSequence) return;
         renderManualOperationResult(data, { live });
     } catch (error) {
+        if (error?.name === "AbortError") return;
         if (!live) showError(error.message);
         else if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `تعذر تحديث المعاينة: ${error.message}`;
     } finally {
         if (live) {
             if (requestId === manualPreviewSequence) setManualPreviewBusy(false);
-        } else setBusy(false);
+        } else {
+            setBusy(false);
+        }
     }
 }
+
+async function approveManualOperation() {
+    const candidate = state.manualPreviewCandidate;
+    const operationId = candidate?.operation?.id || elements.manualOperation?.value || "";
+
+    if (!state.imageId || !operationId || !candidate || state.isBusy) return;
+
+    clearError();
+    let parameters = candidate.operation?.parameters;
+
+    if (!parameters || typeof parameters !== "object") {
+        try {
+            parameters = collectManualParameters();
+        } catch (error) {
+            showError(error.message);
+            return;
+        }
+    }
+
+    setBusy(true, "جارٍ اعتماد العملية", `يتم اعتماد ${operationLabel(operationId)} وإضافتها إلى سلسلة المعالجة.`);
+    setWorkflow("treat");
+
+    try {
+        const data = await apiRequest(
+            `/api/images/${encodeURIComponent(state.imageId)}/operations`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    operation_id: operationId,
+                    parameters,
+                    source_result_id: state.manualWorkingResultId || null
+                })
+            }
+        );
+
+        if (!data?.result?.id) {
+            throw new Error("لم يُرجع Backend نتيجة صالحة للاعتماد.");
+        }
+
+        state.manualWorkingResultId = data.result.id;
+        state.manualApprovedResult = {
+            ...data.result,
+            operation: data.operation || { id: operationId, parameters }
+        };
+        state.manualChain.push({
+            result: data.result,
+            operation: data.operation || { id: operationId, parameters },
+            source_result_id: data.source_result_id || null
+        });
+        state.manualPreviewCandidate = null;
+
+        setManualPreviewResult(
+            data.result,
+            operationId,
+            data.preservation?.assessment?.status || data.verification?.status
+        );
+        const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}?approved=${Date.now()}`;
+
+        if (elements.manualOriginalPreview) {
+            elements.manualOriginalPreview.src = approvedUrl;
+        }
+
+        if (elements.manualLivePreview) {
+            elements.manualLivePreview.src = approvedUrl;
+        }
+
+        if (elements.manualPreviewNote) {
+            elements.manualPreviewNote.textContent = `${operationLabel(operationId)} · تم الاعتماد، وهذه هي الصورة الحالية للسلسلة.`;
+        }
+
+
+        updateManualApprovalUI();
+        updateTechnicalDetails();
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        setBusy(false);
+        updateManualApprovalUI();
+    }
+}
+
 function renderBinarizationCandidates(candidates) {
     elements.binarizationList.innerHTML = "";
     if (!Array.isArray(candidates) || candidates.length === 0) { hideSection("binarizationSection"); return; }
@@ -1497,6 +1773,13 @@ function downloadCurrentResult() {
     if (!state.resultId) return;
     window.location.href = `/api/results/${encodeURIComponent(state.resultId)}/download`;
 }
+function downloadApprovedManualResult() {
+    const resultId = state.manualApprovedResult?.id;
+    if (!resultId) return;
+
+    window.location.href = `/api/results/${encodeURIComponent(resultId)}/download`;
+}
+
 
 function switchViewer(view) {
     if (view === "original") {
@@ -1615,13 +1898,30 @@ async function previewQuickAdjustments() {
 
 function selectOperationCard(operationId) {
     if (!operationId || !state.imageId || state.isBusy || !elements.manualOperation) return;
-    const resolvedOperationId = operationId === "perspective_crop" ? "auto_crop" : operationId === "deskew" ? "auto_deskew" : operationId;
+
+    /* Keep the existing compatibility mapping, but use the real manual deskew operation as-is. */
+    const resolvedOperationId = operationId === "perspective_crop" ? "auto_crop" : operationId;
     elements.manualOperation.value = resolvedOperationId;
     renderParameterFields(resolvedOperationId);
-    document.querySelectorAll("[data-operation-card]").forEach((button) => button.classList.toggle("is-selected", button.dataset.operationCard === operationId));
+
+    document.querySelectorAll("[data-operation-card]").forEach((button) => {
+        const selected = button.dataset.operationCard === operationId;
+        button.classList.toggle("is-selected", selected);
+        button.classList.toggle("is-active", selected);
+        button.setAttribute("aria-pressed", String(selected));
+    });
+
     updateControls();
-    if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationId === "perspective_crop" ? "سيكتشف النظام أركان الوثيقة ويصحح المنظور فعلياً" : operationLabel(resolvedOperationId)} — جارٍ تجهيز المعاينة.`;
-    scheduleManualPreview(220);
+
+    if (elements.manualPreviewStatus) {
+        elements.manualPreviewStatus.innerHTML = '<i class="bi bi-arrow-repeat"></i> جارٍ تطبيق العملية';
+    }
+    if (elements.manualPreviewNote) {
+        elements.manualPreviewNote.textContent = `${operationLabel(resolvedOperationId)} — يتم إنشاء المعاينة الآن.`;
+    }
+
+    clearTimeout(manualPreviewTimer);
+    applyManualOperation({ live: true });
 }
 
 function setOperationGroup(group) {
@@ -1636,7 +1936,7 @@ function bindEvents() {
     elements.quickPreviewButton?.addEventListener("click", previewQuickAdjustments);
     document.querySelectorAll("[data-operation-card]").forEach((button) => button.addEventListener("click", () => selectOperationCard(button.dataset.operationCard)));
     document.querySelectorAll("[data-operation-group]").forEach((button) => button.addEventListener("click", () => setOperationGroup(button.dataset.operationGroup)));
-
+    bindDashboardMetricCards();
     elements.dropZone?.addEventListener("click", () => { if (!state.isBusy) elements.imageInput?.click(); });
     elements.dropZone?.addEventListener("keydown", (event) => { if ((event.key === "Enter" || event.key === " ") && !state.isBusy) { event.preventDefault(); elements.imageInput?.click(); } });
     ["dragenter", "dragover"].forEach((name) => elements.dropZone?.addEventListener(name, (event) => { event.preventDefault(); elements.dropZone.classList.add("is-dragging"); }));
@@ -1647,9 +1947,14 @@ function bindEvents() {
     elements.startExaminationButton?.addEventListener("click", startExamination);
     elements.manualOperation?.addEventListener("change", () => {
         renderParameterFields(elements.manualOperation.value);
-        document.querySelectorAll("[data-operation-card]").forEach((button) => button.classList.toggle("is-selected", button.dataset.operationCard === elements.manualOperation.value));
+        document.querySelectorAll("[data-operation-card]").forEach((button) => {
+            const selected = button.dataset.operationCard === elements.manualOperation.value;
+            button.classList.toggle("is-selected", selected);
+            button.classList.toggle("is-active", selected);
+        });
         updateControls();
-        scheduleManualPreview(220);
+        clearTimeout(manualPreviewTimer);
+        applyManualOperation({ live: true });
     });
     elements.manualCropGuide?.addEventListener("pointerdown", beginCropDrag);
     elements.manualCropGuide?.addEventListener("pointermove", moveCropDrag);
@@ -1659,6 +1964,9 @@ function bindEvents() {
     elements.runPipelineButton?.addEventListener("click", runSmartPipeline);
     elements.downloadResultButton?.addEventListener("click", downloadCurrentResult);
     elements.startOverButton?.addEventListener("click", resetAll);
+    elements.manualApprovalButton?.addEventListener("click", approveManualOperation);
+    elements.manualManualDownloadButton?.addEventListener("click", downloadApprovedManualResult);
+
     document.querySelectorAll("[data-ui-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.uiMode)));
     document.querySelectorAll("[data-editor-tab]").forEach((button) => button.addEventListener("click", () => setEditorTab(button.dataset.editorTab)));
     document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => switchViewer(button.dataset.view)));
