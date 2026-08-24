@@ -11,6 +11,7 @@
 [![OpenCV](https://img.shields.io/badge/OpenCV-Image%20Processing-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
 [![NumPy](https://img.shields.io/badge/NumPy-Numerical%20Processing-013243?logo=numpy&logoColor=white)](https://numpy.org/)
 [![Tests](https://img.shields.io/badge/Tests-333%20passed-0B7A62)](#التحقق)
+[![Release](https://img.shields.io/github/v/release/Alhareith/manuscript-doctor?display_name=tag&style=flat-square&color=C7983D)](https://github.com/Alhareith/manuscript-doctor/releases/latest)
 
 </div>
 
@@ -21,6 +22,12 @@
 <p align="center">
   <a href="https://manuscript-doctor.onrender.com/" target="_blank" rel="noopener noreferrer">
     <img src="static/assets/live-demo-button.svg" alt="جرّب الموقع الحي الآن — افتح Manuscript Doctor" width="720">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Alhareith/manuscript-doctor/releases/latest">
+    <strong>الإصدار الحالي · v1.0.0 · نسخة العرض الأكاديمية</strong>
   </a>
 </p>
 
