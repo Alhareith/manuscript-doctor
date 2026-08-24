@@ -7,6 +7,7 @@ from processing.skew_detector import detect_skew
 MAX_GOOD_RESIDUAL_SKEW = 0.75
 MAX_CAUTION_RESIDUAL_SKEW = 2.0
 MIN_GOOD_BOUNDARY_CONFIDENCE = 0.68
+MIN_DESKEW_ONLY_CONFIDENCE = 0.80
 MIN_SAFE_RETENTION = 0.95
 
 
@@ -108,9 +109,23 @@ def verify_preparation(result):
     checks = []
 
     boundary_ok, boundary_reason = _verify_boundary(result["boundary"])
-    checks.append({"check": "boundary", "passed": boundary_ok, "reason": boundary_reason})
-
     perspective_ok, perspective_reason = _verify_perspective(result["perspective"])
+
+    deskew = result.get("deskew") if isinstance(result.get("deskew"), dict) else {}
+    deskew_only_ok = (
+        not result.get("boundary", {}).get("detected", False)
+        and bool(deskew.get("applied"))
+        and float(deskew.get("confidence", 0.0)) >= MIN_DESKEW_ONLY_CONFIDENCE
+        and not bool(deskew.get("crop_applied", False))
+        and result.get("perspective") in (None, {})
+    )
+    if deskew_only_ok:
+        boundary_ok = True
+        boundary_reason = "deskew-only accepted: automatic angle confidence is high and no crop was attempted"
+        perspective_ok = True
+        perspective_reason = "perspective crop not required: the verified result preserves the original frame"
+
+    checks.append({"check": "boundary", "passed": boundary_ok, "reason": boundary_reason})
     checks.append({"check": "perspective", "passed": perspective_ok, "reason": perspective_reason})
 
     crop_ok, crop_reason = _verify_crop(result["deskew"])

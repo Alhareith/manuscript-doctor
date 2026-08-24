@@ -10,6 +10,9 @@ storage/uploads/*
 storage/results/*
 !storage/results/.gitkeep
 !storage/results/README.md
+storage/preparation_previews/*
+!storage/preparation_previews/.gitkeep
+!storage/preparation_previews/README.md
 
 # Editor and operating system
 .vscode/
@@ -44,10 +47,13 @@ desktop.ini
 # Runtime uploads and generated results
 storage/uploads/*
 storage/results/*
+storage/preparation_previews/*
 
 # Keep the runtime directories in Git
 !storage/uploads/.gitkeep
 !storage/results/.gitkeep
+!storage/preparation_previews/.gitkeep
+!storage/preparation_previews/README.md
 
 # Python test / tooling caches
 .pytest_cache/
@@ -69,7 +75,11 @@ dist/
 *.temp
 
 # Local operation evaluation data
+# Keep reproducible input fixtures used directly by the automated tests.
 evaluation/*
+!evaluation/
+!evaluation/input/
+!evaluation/input/**
 evaluation/output/*
 evaluation/results.csv
 

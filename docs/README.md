@@ -1,201 +1,224 @@
-docs/README.md
-
 <div dir="rtl" align="right">
 
-# 📚 Manuscript Doctor — دليل الوثائق
+<div align="center">
 
-> **الغرض من هذا الملف:** أن يكون نقطة الدخول لجميع وثائق المشروع، ويوضح وظيفة كل وثيقة ومتى نرجع إليها.
+# 🩺 Manuscript Doctor
 
----
+### طبيب الوثائق · Diagnose · Treat · Preserve · Verify
 
-## 1. خريطة الوثائق
+**نظام ويب عربي لتشخيص صور الوثائق ومعالجتها والتحقق من أثر المعالجة قبل اعتمادها**
 
-```mermaid
-flowchart TD
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-Backend-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-Image%20Processing-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
+[![NumPy](https://img.shields.io/badge/NumPy-Numerical%20Processing-013243?logo=numpy&logoColor=white)](https://numpy.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-RTL%20Frontend-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Tests](https://img.shields.io/badge/Tests-333%20passed-0B7A62)](#التحقق)
 
-    A["README.md<br/>مدخل المشروع"]
+</div>
 
-    B["docs/overview.md<br/>فهم الفكرة"]
+<p align="center">
+  <img src="../static/assets/header-workspace-background.png" alt="هوية طبيب الوثائق ومعالجة الوثائق" width="100%">
+</p>
 
-    C["docs/requirements.md<br/>ماذا يجب أن يفعل النظام؟"]
-
-    D["docs/architecture.md<br/>كيف بُني النظام؟"]
-
-    E["docs/decisions.md<br/>لماذا اتخذنا هذه القرارات؟"]
-
-    F["docs/workflow.md<br/>كيف يتحرك المستخدم والنظام؟"]
-
-    G["docs/wireframes.md<br/>كيف ستُرتب الواجهة؟"]
-
-    H["docs/ui-states.md<br/>كيف تتغير الواجهة حسب الحالة؟"]
-
-    I["docs/frontend-components.md<br/>ما مكونات الواجهة؟"]
-
-    J["docs/testing.md<br/>كيف نتحقق من صحة النظام؟"]
-
-    K["docs/research-plan.md<br/>كيف نقيم الخوارزميات والعتبات؟"]
-
-    L["docs/roadmap.md<br/>ما مراحل التنفيذ؟"]
-
-    M["docs/git-guide.md<br/>كيف ندير التغييرات؟"]
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
-    J --> K
-    K --> L
-    L --> M
-```
+<p align="center">
+  <strong>صورة واضحة، قرار قابل للتفسير، ونتيجة لا تُعتمد قبل مراجعتها.</strong>
+</p>
 
 ---
 
-## 2. وظيفة كل وثيقة
+## قبل المعالجة وبعدها
 
-| الملف                         | وظيفته                                             |
-| ----------------------------- | -------------------------------------------------- |
-| `README.md`                   | تعريف مختصر بالمشروع وطريقة تشغيله والوصول لوثائقه |
-| `docs/overview.md`            | شرح المشكلة والقيمة والنطاق والحدود                |
-| `docs/requirements.md`        | المتطلبات الوظيفية وغير الوظيفية والأمنية          |
-| `docs/architecture.md`        | المعمارية والوحدات والـAPI ومسؤوليات النظام        |
-| `docs/decisions.md`           | توثيق القرارات الهندسية وأسبابها                   |
-| `docs/workflow.md`            | تدفق المستخدم والنظام من الرفع حتى التنزيل         |
-| `docs/wireframes.md`          | المخطط البنيوي المعتمد للواجهة                     |
-| `docs/ui-states.md`           | حالات الواجهة والانتقالات بينها                    |
-| `docs/frontend-components.md` | مكونات Frontend ووظيفة كل مكوّن                    |
-| `docs/testing.md`             | استراتيجية الاختبارات وبوابات الجودة               |
-| `docs/research-plan.md`       | خطة تقييم Metrics وThresholds وOperations          |
-| `docs/roadmap.md`             | مراحل تنفيذ المشروع حتى الإصدار                    |
-| `docs/git-guide.md`           | أسلوب استخدام Git داخل المشروع                     |
+<p align="center">
+  <img src="../evaluation/output/auto_deskew/b01_before.jpg" alt="وثيقة قبل تصحيح الميل" width="220">
+  &nbsp;&nbsp;&nbsp;
+  <img src="../evaluation/output/auto_deskew/b01_after.jpg" alt="وثيقة بعد تصحيح الميل" width="220">
+</p>
+
+<p align="center">
+  <sub>مثال من نتائج التقييم: تصحيح الميل مع إبقاء النتيجة قابلة للمقارنة مع الأصل.</sub>
+</p>
 
 ---
 
-## 3. من أين أبدأ؟
+## الفكرة في سطر واحد
 
-### لفهم المشروع
-
-```text
-README.md
-↓
-overview.md
-↓
-requirements.md
-```
-
-### لفهم التصميم الهندسي
-
-```text
-architecture.md
-↓
-decisions.md
-↓
-workflow.md
-```
-
-### للعمل على الواجهة
-
-```text
-wireframes.md
-↓
-ui-states.md
-↓
-frontend-components.md
-```
-
-### للتنفيذ والتحقق
-
-```text
-roadmap.md
-↓
-testing.md
-↓
-research-plan.md
-```
-
----
-
-## 4. مصدر الحقيقة لكل نوع من المعلومات
-
-| السؤال                        | الوثيقة                  |
-| ----------------------------- | ------------------------ |
-| ما فكرة المشروع؟              | `overview.md`            |
-| ما المطلوب تنفيذه؟            | `requirements.md`        |
-| أين توضع الوظائف؟             | `architecture.md`        |
-| لماذا اخترنا هذا الحل؟        | `decisions.md`           |
-| ما ترتيب سير النظام؟          | `workflow.md`            |
-| كيف ترتب الواجهة؟             | `wireframes.md`          |
-| متى يظهر كل جزء؟              | `ui-states.md`           |
-| ما مكونات Frontend؟           | `frontend-components.md` |
-| كيف نختبر؟                    | `testing.md`             |
-| كيف نضبط Metrics وThresholds؟ | `research-plan.md`       |
-| ما المرحلة التالية؟           | `roadmap.md`             |
-| كيف نحفظ التغييرات؟           | `git-guide.md`           |
-
----
-
-## 5. التقدم الفعلي
-
-هذه الوثائق لا تعتبر سجل إنجاز للمراحل.
-
-مصدر التتبع الرسمي هو:
-
-```text
-project-plan.md
-```
-
-ولا توضع علامة إنجاز إلا بعد تنفيذ المهمة واختبارها فعليًا.
-
----
-
-## 6. عند تغيير قرار مهم
-
-إذا تغير قرار يؤثر على أكثر من جزء، نراجع الوثائق المتأثرة فقط.
+> **ليس المسار: صورة ← فلتر ← نتيجة.**
+>
+> **بل: فحص ← تشخيص ← معالجة ← تحقق ← اعتماد.**
 
 ```mermaid
 flowchart LR
-
-    A["قرار جديد"] --> B["Requirements"]
-    A --> C["Architecture"]
-    A --> D["Decisions"]
-    A --> E["Workflow"]
-    A --> F["Testing"]
-
-    B --> G["تنفيذ"]
-    C --> G
-    D --> G
-    E --> G
-    F --> G
+    A["رفع الوثيقة"] --> B["تحليل الصورة"]
+    B --> C{"المسار المناسب"}
+    C -->|"يدوي"| D["معاينة سريعة"]
+    C -->|"ذكي"| E["Smart Pipeline"]
+    D --> F["مراجعة before / after"]
+    E --> F
+    F --> G["اعتماد Flask + OpenCV"]
+    G --> H["تحقق وتنزيل"]
 ```
-
-الهدف هو إبقاء الوثائق والكود متطابقين، لا زيادة عدد الملفات.
 
 ---
 
-## 7. قاعدة التوثيق
+## ماذا يطبق المشروع؟
 
-كل وثيقة يجب أن:
+| المجال | التقنيات الموجودة فعلياً |
+| --- | --- |
+| تجهيز الوثيقة | تصحيح الميل، الاقتصاص التلقائي المحافظ، الاقتصاص اليدوي، التدوير، القلب الأفقي والرأسي |
+| تحسين الصورة | ضبط الشدة، Gamma، CLAHE، Histogram Equalization، الإضاءة، الشحذ |
+| إزالة العيوب | Median، Bilateral، Non-Local Means، إزالة الخلفية والبنية الضعيفة |
+| فصل النص | Global، Otsu، Adaptive Threshold |
+| العمليات البنيوية | Opening، Closing، Top-Hat، Black-Hat |
+| تحسين الدقة | **Super Resolution** اختيارية مستقلة بتكبير Lanczos وUnsharp Masking |
+| التحقق | Preservation، مقارنة الأصل بالنتيجة، Benefit Gate، Rollback، وتحذيرات المخاطر |
 
-* تغطي مسؤوليتها فقط.
-* لا تكرر محتوى وثيقة أخرى دون حاجة.
-* تستخدم نفس أسماء الوحدات والحالات والمراحل.
-* لا تصف ميزة غير معتمدة كأنها موجودة.
-* لا تعتبر Threshold أو Parameter نهائية قبل التقييم.
-* تتغير عندما يتغير السلوك الفعلي للنظام.
+---
+
+## المعاينة ليست الاعتماد
+
+```mermaid
+sequenceDiagram
+    participant U as المستخدم
+    participant UI as الواجهة
+    participant C as Canvas
+    participant API as Flask
+    participant CV as OpenCV
+
+    U->>UI: اختيار العملية
+    alt عملية خفيفة
+        UI->>C: معاينة محلية
+        C-->>UI: نتيجة فورية
+    else عملية ثقيلة
+        UI->>API: Preview JPEG اختياري
+        API->>CV: تطبيق على نسخة مصغرة
+        CV-->>UI: معاينة للمراجعة
+    end
+    U->>UI: اعتماد
+    UI->>API: العملية والمعاملات
+    API->>CV: النتيجة الدقيقة
+    CV-->>UI: artifact قابل للحفظ والتنزيل
+```
+
+المعاينة المحلية مخصصة لسرعة التفاعل في التدوير والقلب وضبط الشدة وتصحيح جاما. أما الاعتماد النهائي، ونتيجة Super Resolution، والتنزيل، فتُنفذ خادمياً عبر Flask/OpenCV حتى تبقى النتيجة حقيقية وقابلة للتحقق.
+
+---
+
+## Super Resolution
+
+عملية اختيارية يدوية لتحسين قابلية قراءة النص الصغير أو منخفض الدقة. تستخدم حالياً:
+
+| المعامل | القيم المتاحة |
+| --- | --- |
+| `scale` | `2×` أو `3×` |
+| `amount` | من `0` إلى `1` |
+| `sigma` | من `0.5` إلى `3` |
+
+> لا تستعيد العملية حروفاً فُقدت تماماً بسبب الضبابية أو انخفاض الدقة الشديد؛ إنها تحسن الحواف وقابلية القراءة، ولا تُعد استرجاعاً مؤكداً للمعلومات المفقودة.
+
+---
+
+## المعمارية
+
+```mermaid
+flowchart LR
+    UI["HTML + CSS Parts + JS Parts"] --> API["Flask / app.py"]
+    API --> AN["Analyzer"]
+    API --> OP["Operations Registry"]
+    API --> PP["Preparation + Smart Pipeline"]
+    OP --> CV["OpenCV / NumPy"]
+    PP --> CV
+    CV --> PR["Preservation Verification"]
+    PR --> API
+    API --> UI
+```
+
+| الطبقة | المسؤولية |
+| --- | --- |
+| `templates/index.html` | هيكل الصفحة العربية RTL |
+| `static/css/parts/` | التخطيط، الثيمات، التجاوب، ومحرر المعالجة |
+| `static/js/parts/` | الحالة، الأحداث، المعاينة، المعاملات، الاعتماد والسلسلة |
+| `app.py` | HTTP ورفع الصور وPreview وApprove والتنزيل |
+| `processing/ops/` | عمليات الصور المستقلة وسجل العمليات |
+| `processing/pipeline.py` | المسار الذكي وبوابات القرار |
+| `processing/preservation.py` | قياس المحافظة على التفاصيل |
+| `tests/` | اختبارات الوحدة والتكامل والمسارات الكاملة |
+
+---
+
+## التشغيل المحلي
+
+```bash
+cd image_project_split
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 -m flask --app 'app:create_app()' run --host 0.0.0.0 --port 5002
+```
+
+افتح بعد ذلك:
+
+```text
+http://127.0.0.1:5002/
+```
+
+> لا يحتاج التشغيل المحلي إلى Docker.
+
+---
+
+## التحقق
+
+```bash
+PYTHONPATH=. pytest -q tests
+
+for f in static/js/parts/*.js; do
+  node --check "$f"
+done
+```
+
+النتيجة الموثقة حالياً:
+
+```text
+333 passed, 16 skipped
+```
+
+وشملت المراجعة الفعلية C05 وC06، المعاينات المحلية، before/after، Undo/Redo، الاقتصاص اليدوي، Smart Pipeline، وSuper Resolution.
+
+---
+
+## خريطة التوثيق
+
+| الوثيقة | ما الذي تجيبه؟ |
+| --- | --- |
+| [`overview.md`](overview.md) | لماذا بُني المشروع وما حدوده؟ |
+| [`requirements.md`](requirements.md) | ماذا يجب أن يفعل النظام؟ |
+| [`architecture.md`](architecture.md) | كيف تتوزع الطبقات وواجهات API؟ |
+| [`split-structure.md`](split-structure.md) | لماذا قُسمت ملفات CSS وJavaScript؟ |
+| [`workflow.md`](workflow.md) | كيف يتحرك المستخدم والنظام؟ |
+| [`frontend-components.md`](frontend-components.md) | ما وظيفة مكونات الواجهة؟ |
+| [`ui-states.md`](ui-states.md) | كيف تتغير الواجهة حسب الحالة؟ |
+| [`decisions.md`](decisions.md) | لماذا اتُخذت القرارات الهندسية؟ |
+| [`testing.md`](testing.md) | كيف يتم التحقق من صحة المشروع؟ |
+| [`e2e-testing.md`](e2e-testing.md) | كيف تُختبر التجربة كاملة؟ |
+| [`operation-evaluation.md`](operation-evaluation.md) | كيف تُقاس آثار العمليات؟ |
+| [`phase-c-report.md`](phase-c-report.md) | كيف يعمل Smart Pipeline؟ |
+| [`research-plan.md`](research-plan.md) | كيف تُقيّم Metrics وThresholds؟ |
+| [`roadmap.md`](roadmap.md) | ما مراحل التطوير القادمة؟ |
+| [`git-guide.md`](git-guide.md) | كيف تُدار التغييرات؟ |
+
+---
+
+## الحدود العلمية
+
+المشروع أداة **لمعالجة الصور ودعم قرار المعالجة**، وليس أداة OCR أو ترميماً توليدياً. لا يدعي معرفة النص الأصلي عندما تكون معلوماته قد فُقدت، ولا يعتبر ارتفاع التباين وحده دليلاً على جودة أفضل. النتيجة النهائية تحتاج دائماً إلى مراجعة المستخدم قبل اعتمادها.
 
 ---
 
 <div align="center">
 
-## 🩺 Manuscript Doctor
+### Manuscript Doctor
 
-**One project.
-One consistent design.
-One clear source for every decision.**
+**Enhance what is hidden. Preserve what matters.**
 
 </div>
 

@@ -1,621 +1,342 @@
-# Manuscript Doctor — End-to-End Validation
+<div dir="rtl" align="right">
 
-## Test Environment
+# 🧪 Manuscript Doctor — اختبار المسار الكامل
 
-- Date:
-- OS:
-- Python:
-- Flask:
-- OpenCV:
-- Browser:
+> **الغرض:** التحقق من تجربة المستخدم من اختيار الصورة حتى إنشاء النتيجة والتحقق منها وتنزيلها، مع فحص الصورة الفعلية في المتصفح وليس API وحده.
+>
+> الاختبارات الآلية المفصلة في [`testing.md`](testing.md)، أما هذه الوثيقة فتركز على تكامل المسار والحالة المرئية.
 
 ---
 
-## Automated Validation
+## 1. بيئة الاختبار المرجعية
 
-Command:
+| العنصر | القيمة |
+| --- | --- |
+| Backend | Flask محلي |
+| Image Engine | Python + OpenCV + NumPy |
+| Frontend | HTML + CSS + Vanilla JavaScript RTL |
+| Browser | Chromium |
+| الاختبار الآلي | `PYTHONPATH=. pytest -q tests` |
+| فحص JavaScript | `node --check static/js/parts/*.js` |
+| النتيجة الآلية المرجعية | `333 passed, 16 skipped` |
 
-`python -m pytest tests/test_end_to_end.py -q`
-
-Result:
-
-- Passed:
-- Failed:
-
-Full Suite:
-
-`python -m pytest -q`
-
-Result:
-
-- Passed:
-- Failed:
+النتيجة الآلية لا تغني عن اختبار المتصفح؛ فمشكلة before/after أو Crop قد تظهر في العرض رغم نجاح API.
 
 ---
 
-## Test Status Values
+## 2. تعريف الحالة
 
-- PASS
-- FAIL
-- KNOWN LIMITATION
-- NOT APPLICABLE
+| الرمز | الاستخدام |
+| --- | --- |
+| `PASS` | السلوك تحقق بالدليل المطلوب |
+| `FAIL` | السلوك خالف العقد أو منع إكمال المسار |
+| `RETEST` | يحتاج إعادة اختبار بعد تغيير قريب |
+| `KNOWN LIMITATION` | حد موثق لا يمثل عطلاً |
+| `NOT RUN` | لم يدخل في الجولة الحالية |
 
----
-
-# Real Image Validation
-
-## 01 — Normal Document
-
-Image:
-
-`01_normal.jpg`
-
-Checks:
-
-- [ ] Upload successful
-- [ ] Original displayed
-- [ ] Examination values displayed
-- [ ] Diagnosis displayed correctly
-- [ ] Preservation Profile displayed
-- [ ] Smart Pipeline executes
-- [ ] Decision displayed
-- [ ] Result displayed
-- [ ] Download works
-
-Observed Decision:
-
-Result:
-
-Status:
+لا تسجل الحالة `PASS` لمجرد أن الصفحة فتحت؛ يجب تحديد الدليل، مثل `result_id` أو `src` فعلي أو أبعاد النتيجة.
 
 ---
 
-## 02 — Dark Document
+## 3. المسار الكامل
 
-Image:
+```mermaid
+flowchart LR
+    A["اختيار صورة"] --> B["رفع وفحص"]
+    B --> C["Analysis + Diagnosis"]
+    C --> D{"Manual أو Smart"}
+    D --> E["Preview / Pipeline"]
+    E --> F["Approve"]
+    F --> G["Result + Preservation"]
+    G --> H["Comparison"]
+    H --> I["Decision + Download"]
+```
 
-`02_dark.jpg`
+### معيار النجاح
 
-Checks:
+يعد المسار ناجحاً عندما تتحقق الشروط التالية معاً:
 
-- [ ] Darkness diagnosis appears
-- [ ] Recommendation is logical
-- [ ] CLAHE uses conservative settings when recommended
-- [ ] Smart Pipeline executes
-- [ ] Preservation Verification runs
-- [ ] Original remains unchanged
-
-Result:
-
-Status:
-
----
-
-## 03 — Low Contrast
-
-Image:
-
-`03_low_contrast.jpg`
-
-Checks:
-
-- [ ] Low contrast diagnosed
-- [ ] CLAHE recommended
-- [ ] clip_limit = 1.5
-- [ ] tile_grid_size = 8
-- [ ] Smart Pipeline executes
-- [ ] Result displayed
-- [ ] Preservation result displayed
-
-Result:
-
-Status:
+```text
+لا Crash
++ لا بيانات من صورة سابقة
++ Original ثابت
++ Result محفوظة بمعرف
++ before/after للخطوة الصحيحة
++ Verification ظاهر أو موضح كغير متاح
++ التنزيل يستخدم Result الحقيقية
+```
 
 ---
 
-## 04 — Noise
+## 4. سيناريو الرفع والفحص
 
-Image:
+```mermaid
+sequenceDiagram
+    participant U as المستخدم
+    participant UI as الواجهة
+    participant API as Flask
 
-`04_noisy.jpg`
+    U->>UI: اختيار JPG/PNG
+    UI->>UI: Local Preview
+    U->>UI: فحص الوثيقة
+    UI->>API: POST /api/images
+    API-->>UI: image_id + analysis
+    UI->>UI: إظهار Workspace
+```
 
-Checks:
+### خطوات التحقق
 
-- [ ] Current Noise Metric value recorded
-- [ ] Actual visual noise reviewed
-- [ ] Median recommendation behavior recorded
-- [ ] Median is not automatically executed by Smart Pipeline
-- [ ] No claim that noise is completely removed
+| الخطوة | الدليل المطلوب |
+| --- | --- |
+| اختيار الملف | اسم الملف ومعاينة محلية |
+| الرفع | `image_id` صالح |
+| التحليل | Metrics وDiagnosis ظاهرة |
+| المحافظة | Profile ظاهرة قبل العلاج |
+| التوصية | مرتبطة بالتحليل وليست نصاً عاماً |
 
-Noise Metric:
-
-Observed visual noise:
-
-Pipeline behavior:
-
-Status:
-
----
-
-## 05 — Uneven Illumination
-
-Image:
-
-`05_uneven_lighting.jpg`
-
-Checks:
-
-- [ ] Uneven illumination diagnosed
-- [ ] Recommendation displayed
-- [ ] Adaptive Threshold remains Binarization
-- [ ] Binary Candidate separate from primary result
-- [ ] Candidate marked review_required
-
-Status:
+عند فشل الملف، تبقى رسالة مفهومة وإجراء تعافٍ، ولا تظهر بيانات الخادم القديمة كأنها مرتبطة بالملف الجديد.
 
 ---
 
-## 06 — Fine Details
+## 5. حالات الاختبار الواقعية
 
-Image:
-
-`06_fine_details.jpg`
-
-Checks:
-
-- [ ] Preservation sensitivity displayed
-- [ ] Original available for comparison
-- [ ] Sharpen 0.25 tested manually
-- [ ] Thin details reviewed
-- [ ] No obvious strong halos
-- [ ] Preservation warnings visible
-
-Visual observation:
-
-Status:
+| الحالة | الهدف | الدليل |
+| --- | --- | --- |
+| وثيقة طبيعية | التأكد من المسار الأساسي | Workspace ونتيجة قابلة للمراجعة |
+| صورة داكنة | التحقق من Brightness وCLAHE المشروط | Recommendation ومرشح قابل للفحص |
+| تباين منخفض | اختبار Contrast | تحسن مستهدف دون قبول أعمى |
+| ضوضاء | اختبار Median وNoise Indicator | مراجعة بصرية للضوضاء والتفاصيل |
+| إضاءة غير متجانسة | اختبار Binarization وIllumination | Candidate منفصل وليس Enhancement مؤكداً |
+| تفاصيل دقيقة | اختبار Sharpen وPreservation | عدم ظهور halos أو فقد ظاهر |
+| Bleed-through | اختبار حدود النظام | لا يدعي إزالة مخصصة للتسرب |
+| C05 | Preparation وSmart وSuper Resolution | deskew-only عند الثقة العالية، ونتيجة 2× عند الاعتماد |
+| C06 | Chain وCrop وUndo/Redo | before/after والمؤشر يطابقان الخطوة النشطة |
 
 ---
 
-## 07 — Bleed-through Boundary Case
+## 6. C05 — اختبار حي موثق
 
-Image:
+**المدخل:** صورة C05 بأبعاد `960×1280` وحجم يقارب `158 KB`.
 
-`07_bleed_through.jpg`
+```mermaid
+flowchart TD
+    A["رفع C05"] --> B["فحص الصورة"]
+    B --> C["Smart Pipeline"]
+    C --> D{"Preparation verification"}
+    D -->|"accepted"| E["document_prepare: deskew-only"]
+    D -->|"deferred"| F["Keep original"]
+    E --> G["Smart result"]
+    F --> G
+    B --> H["Local rotate / flip / intensity / gamma"]
+    H --> I["Server Approve"]
+    B --> J["Super Resolution 2×"]
+    J --> K["1920×2560 result"]
+```
 
-Checks:
+### النتائج المثبتة
 
-- [ ] Image uploads and analyzes normally
-- [ ] System does not claim dedicated bleed-through diagnosis
-- [ ] System does not claim bleed-through removal
-- [ ] Enhancement behavior reviewed visually
-- [ ] Limitation remains explicit
+| الفحص | النتيجة |
+| --- | --- |
+| Local `rotate_right` | مرشح Canvas دون طلب `/preview` |
+| Local `intensity_adjust` | مرشح سريع دون طلب `/preview` |
+| تغييرات معاملات متتابعة | آخر معاملات تصبح المرشح الحالي |
+| Smart Preparation | قبول `deskew-only` عند الثقة العالية دون Crop غير موثوق |
+| Super Resolution | اعتماد خادمي ونتيجة 2× بأبعاد `1920×2560` |
+| قبل/بعد بعد الاعتماد | النتيجة الحالية ظهرت في after والمصدر الصحيح في before |
 
-Visual observation:
-
-Status:
-
----
-
-# Manual Operations
-
-## CLAHE
-
-Parameters:
-
-- clip_limit: 1.5
-- tile_grid_size: 8
-
-Checks:
-
-- [ ] HTTP success
-- [ ] Result displayed
-- [ ] Result PNG
-- [ ] Preservation returned
-- [ ] Original unchanged
-- [ ] Download works
-
-Status:
+زمن Smart لا يقارن بزمن Canvas؛ Smart يشمل Preparation والتحليل والتحقق، ولذلك لا يوصف بأنه لحظي.
 
 ---
 
-## Histogram Equalization
+## 7. C06 — اختبار حي موثق
 
-Checks:
+استخدمت C06 لاختبار السلسلة اليدوية والقص والتنقل بين النتائج:
 
-- [ ] Manual execution works
-- [ ] Result displayed
-- [ ] Preservation returned
-- [ ] Not automatically promoted as safe
+```text
+Upload C06
+  ↓
+Intensity Adjustment → Approve
+  ↓
+Rotate Right → Approve
+  ↓
+Undo → Redo
+  ↓
+Crop drag → Approve
+```
 
-Status:
+| الفحص | معيار القبول |
+| --- | --- |
+| الخطوة الأولى | before = Original وafter = Result A |
+| الخطوة الثانية | before = Result A وafter = Result B |
+| `manualActiveIndex` | يساوي الخطوة المعروضة |
+| Undo | يعرض Result A من الكاش دون طلب جديد غير لازم |
+| Redo | يعيد Result B بصرياً |
+| Crop handle | يغير x/y/width/height فعلياً |
+| Crop approval | أبعاد النتيجة تطابق القيم المرسلة |
+| Smart على ثقة منخفضة | لا يفرض deskew-only أو crop غير موثوق |
 
----
-
-## Median Denoising
-
-Parameters:
-
-- kernel_size: 3
-
-Checks:
-
-- [ ] Manual execution works
-- [ ] Result displayed
-- [ ] Original unchanged
-- [ ] Preservation returned
-
-Status:
-
----
-
-## Sharpen
-
-Parameters:
-
-- amount: 0.25
-- kernel_size: 3
-
-Checks:
-
-- [ ] Manual execution works
-- [ ] Result displayed
-- [ ] Preservation returned
-
-Status:
+نجاح هذا السيناريو يتطلب فحص `src` للصورتين، وليس state فقط.
 
 ---
 
-## Global Threshold
+## 8. Manual Preview وApprove
 
-Parameters:
+```mermaid
+flowchart TD
+    A["Select operation"] --> B{"Light or heavy"}
+    B -->|"Light"| C["Canvas preview"]
+    B -->|"Heavy"| D["Flask preview + JPEG optional"]
+    C --> E["Candidate"]
+    E --> F["manualApprovalButton: Approve"]
+    F --> G["Full-resolution result_id"]
+```
 
-- threshold: 127
+### الفحوص الإلزامية
 
-Checks:
-
-- [ ] Manual execution works
-- [ ] Binary output generated
-- [ ] No automatic quality claim
-
-Status:
-
----
-
-## Otsu Threshold
-
-Checks:
-
-- [ ] Manual execution works
-- [ ] Binary output generated
-
-Status:
+| الفحص | المتوقع |
+| --- | --- |
+| عملية خفيفة | لا تنتظر شبكة للمعاينة |
+| عملية ثقيلة | Preview خادمي، والواجهة ترسل `X-Preview-Format: jpeg` عند الحاجة |
+| تغيير Slider سريع | آخر قيمة هي المرشح المعروض |
+| اعتماد | إنشاء Result حقيقية عبر Flask/OpenCV |
+| خطوة لاحقة | استخدام `source_result_id` للنتيجة المعتمدة |
+| زر التنفيذ | لا يوجد إجراء مرئي مكرر مع الاعتماد |
 
 ---
 
-## Adaptive Threshold
+## 9. Smart Pipeline وPreparation
 
-Parameters:
+```mermaid
+flowchart LR
+    A["Smart button"] --> B["Preparation"]
+    B --> C["Verification decision"]
+    C --> D["Accepted preparation أو Original"]
+    D --> E["Rule-based treatment"]
+    E --> F["Result داخل Manual Editor"]
+    F --> G["Manual step لاحقة"]
+```
 
-- block_size: 35
-- c: 11
-
-Checks:
-
-- [ ] Manual execution works
-- [ ] Binary output generated
-
-Status:
-
----
-
-## Morphological Opening
-
-Parameters:
-
-- kernel_size: 3
-
-Checks:
-
-- [ ] Manual execution works
-- [ ] Preservation returned
-
-Status:
+يجب تسجيل العملية والقرار والسبب. لا تدخل `super_resolution` تلقائياً، ولا تتحول Preparation المرفوضة إلى قص إجباري.
 
 ---
 
-## Morphological Closing
+## 10. حفظ الأصل والسلسلة
 
-Parameters:
+```mermaid
+flowchart TD
+    O["Original immutable"] --> A["Result A"]
+    A --> B["Result B"]
+    B --> C["Result C"]
+    A -. "Undo" .-> A
+    B -. "Redo" .-> B
+```
 
-- kernel_size: 3
+### معيار القبول
 
-Checks:
-
-- [ ] Manual execution works
-- [ ] Preservation returned
-
-Status:
-
----
-
-# Invalid Inputs
-
-## Unsupported Extension
-
-Expected:
-
-`UNSUPPORTED_FILE_TYPE`
-
-Status:
+- الأصل المرئي والمحفوظ لا يتغير.
+- لكل نتيجة `result_id` مستقل.
+- لا يستخدم النظام Preview غير المعتمد كمصدر نهائي.
+- after يعرض النتيجة النشطة، وbefore يعرض مصدرها الصحيح.
+- تنزيل النتيجة لا يعتمد على اسم الملف القادم من العميل.
 
 ---
 
-## Corrupt Image
+## 11. التحقق والقرار والتنزيل
 
-Expected:
+```mermaid
+flowchart LR
+    A["Approved result"] --> B["Preservation metrics"]
+    B --> C["Acceptable / Caution / High Risk"]
+    C --> D["Review message"]
+    D --> E["Download"]
+```
 
-`UNREADABLE_IMAGE`
-
-Status:
-
----
-
-## 16-bit Image
-
-Expected:
-
-`UNSUPPORTED_IMAGE_DEPTH`
-
-Status:
+إذا فشل التحقق تقنياً وبقيت النتيجة صالحة، تعرض الواجهة Warning و`Assessment Unavailable` بدلاً من حذف النتيجة أو وصفها بأنها آمنة.
 
 ---
 
-## Invalid Operation
+## 12. الاختبارات السلبية
 
-Expected:
-
-`INVALID_OPERATION`
-
-Status:
-
----
-
-## Invalid Parameters
-
-Expected:
-
-`INVALID_OPERATION_PARAMETERS`
-
-Status:
+| السيناريو | النتيجة المتوقعة |
+| --- | --- |
+| امتداد غير مدعوم | `UNSUPPORTED_FILE_TYPE` |
+| ملف غير مقروء | `UNREADABLE_IMAGE` |
+| أبعاد أو حجم يتجاوز الحد | رفض مضبوط |
+| `operation_id` غير معروف | `INVALID_OPERATION` |
+| معاملات غير صالحة | `INVALID_OPERATION_PARAMETERS` |
+| `image_id` غير موجود | `IMAGE_NOT_FOUND` |
+| `result_id` غير موجود | `RESULT_NOT_FOUND` |
+| مصدر لا ينتمي للصورة | رفض مصدر غير صالح |
+| طلبان متزامنان | منع التضارب عبر `isBusy` |
+| خطأ داخلي | رسالة عربية دون Traceback |
 
 ---
 
-## Invalid Image ID
+## 13. Responsive وConsole
 
-Expected:
+### Desktop
 
-`INVALID_IMAGE_ID`
+```text
+Preview | Controls
+```
 
-Status:
+يجب أن تظهر الصورتان واللوحة والأزرار دون overflow غير متوقع.
 
----
+### Mobile
 
-## Unknown Image ID
+```text
+Preview
+  ↓
+Controls
+  ↓
+Verification
+```
 
-Expected:
+يجب أن يبقى Workflow قابلاً للتمرير، وأن تكون مقابض Crop والأزرار قابلة للاستخدام.
 
-`IMAGE_NOT_FOUND`
+### Console
 
-Status:
-
----
-
-## Invalid Result ID
-
-Expected:
-
-`INVALID_RESULT_ID`
-
-Status:
+يفحص المتصفح عدم وجود أخطاء JavaScript أثناء الرفع، Preview، الاعتماد، Smart، Undo/Redo، والتنزيل. نجاح Syntax Check لا يغني عن اختبار الأحداث الفعلية.
 
 ---
 
-## Unknown Result ID
+## 14. الحالة المرجعية الحالية
 
-Expected:
-
-`RESULT_NOT_FOUND`
-
-Status:
-
----
-
-# Runtime State
-
-## Sequential Manual Results
-
-Flow:
-
-`CLAHE → Sharpen`
-
-Checks:
-
-- [ ] Each operation receives a new result ID
-- [ ] Latest result replaces previous UI result
-- [ ] Download uses latest result
-
-Status:
+| المجال | الحالة |
+| --- | --- |
+| Regression Python | `333 passed, 16 skipped` |
+| JavaScript syntax | Passed |
+| Header والخلفية | تم التحقق بصرياً؛ الخلفية كاملة دون Hero مكرر |
+| C05 Local Preview | تم التحقق |
+| C05 Smart Preparation | deskew-only مقبول عند الثقة العالية |
+| C05 Super Resolution | تم الاعتماد والتحقق من أبعاد 2× |
+| C06 Manual Chain | before/after صحيحان بعد خطوتين |
+| C06 Undo/Redo | تم التحقق بصرياً من الكاش |
+| C06 Crop | السحب والاعتماد وأبعاد النتيجة تم التحقق منها |
+| Bleed-through removal | غير منفذ؛ حد موثق |
 
 ---
 
-## Manual → Smart Pipeline
+## 15. بوابة إغلاق اختبار E2E
 
-Checks:
+لا يغلق الاختبار إلا بعد وجود دليل لكل بند:
 
-- [ ] Previous result UI cleared before Smart execution
-- [ ] Smart result becomes primary result
-- [ ] Download uses Smart result
+```text
+Upload passed
+Analysis passed
+Manual preview passed
+Manual approve passed
+Smart path checked
+C05 checked
+C06 checked
+before/after checked by src
+Undo/Redo checked visually
+Crop dimensions checked
+Original immutability checked
+Verification message checked
+Download checked
+Responsive layout checked
+Console checked
+```
 
-Status:
-
----
-
-## Start Over
-
-Checks:
-
-- [ ] Selected document cleared
-- [ ] imageId cleared
-- [ ] resultId cleared
-- [ ] Metrics cleared
-- [ ] Diagnoses cleared
-- [ ] Recommendations cleared
-- [ ] Results cleared
-- [ ] Binary Candidates cleared
-- [ ] Download disabled
-- [ ] Manual operation reset
-
-Status:
-
----
-
-## Browser Refresh
-
-Checks:
-
-- [ ] No crash
-- [ ] No stale result restored incorrectly
-- [ ] Initial UI state restored
-
-Status:
-
----
-
-# Desktop Test
-
-Checks:
-
-- [ ] Upload works
-- [ ] Examination works
-- [ ] Manual Treatment works
-- [ ] Smart Treatment works
-- [ ] Comparison works
-- [ ] Download works
-- [ ] No unexpected layout overflow
-
-Status:
-
----
-
-# Mobile 375px Test
-
-Checks:
-
-- [ ] No horizontal scroll
-- [ ] Upload works
-- [ ] Metrics readable
-- [ ] Manual controls usable
-- [ ] Smart Pipeline button usable
-- [ ] Comparison fits viewport
-- [ ] Result image fits viewport
-- [ ] Download works
-
-Status:
-
----
-
-# Browser Console
-
-Checks:
-
-- [ ] No JavaScript errors during Upload
-- [ ] No JavaScript errors during Manual Treatment
-- [ ] No JavaScript errors during Smart Pipeline
-- [ ] No JavaScript errors during Download
-
-Status:
-
----
-
-# Network Safety
-
-Checks:
-
-- [ ] No local filesystem paths sent by frontend
-- [ ] No local filesystem paths returned in API JSON
-- [ ] Requests use image IDs
-- [ ] Requests use result IDs
-- [ ] No Python stack traces visible to user
-
-Status:
-
----
-
-# Original Immutability
-
-Test:
-
-1. Upload document.
-2. Run CLAHE.
-3. Run Sharpen.
-4. Run Morphological Closing.
-5. Run Smart Pipeline.
-6. Retrieve original again.
-
-Checks:
-
-- [ ] Original remains visually unchanged
-- [ ] Stored original bytes remain unchanged
-
-Status:
-
----
-
-# Scientific Integrity
-
-- [ ] No claim of historical content restoration
-- [ ] No claim of reconstruction of missing letters
-- [ ] No preservation percentage
-- [ ] No claim that structural change proves text loss
-- [ ] Smart Pipeline described as Rule-Based
-- [ ] No Machine Learning claim
-- [ ] Bleed-through limitation remains explicit
-- [ ] Binarization remains separate from Enhancement
-- [ ] Preservation Verification described as heuristic
-- [ ] Original remains the primary reference
-
----
-
-# Known Limitations
-
-## Noise Indicator
-
-The current Noise Indicator requires additional validation before automatic denoising is enabled.
-
-## Preservation Thresholds
-
-Current Preservation thresholds remain provisional and require broader calibration.
-
-## Bleed-through
-
-Dedicated bleed-through diagnosis and suppression are not implemented in the current MVP.
-
-## Generalization
-
-The current evaluation images do not establish universal performance across manuscript collections.
-
----
-
-# Final Phase 15 Decision
-
-Decision:
-
-`TBD`
-
-Allowed:
-
-- PASS
-- PASS WITH KNOWN LIMITATIONS
-- FAIL
-
-Core workflow failures require `FAIL`.
+</div>

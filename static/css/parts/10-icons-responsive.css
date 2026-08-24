@@ -1,0 +1,197 @@
+/* ---------- Existing Bootstrap Icons: consistent visual treatment ---------- */
+.button i,
+.workflow-item i,
+.dashboard-badge i,
+.chart-live i,
+.eyebrow i,
+.stage-badge i,
+.live-pill i,
+.preview-status i {
+    line-height: 1;
+    transition: transform .18s ease, filter .18s ease;
+}
+
+.button:hover:not(:disabled) i,
+.workflow-item a:hover i,
+.category-tab:hover i {
+    transform: translateY(-1px) scale(1.05);
+}
+
+/* ---------- Dark mode alignment ---------- */
+html[data-theme="dark"] .document-dashboard {
+    background:
+        radial-gradient(circle at 92% 0%, rgba(227, 170, 69, .14), transparent 22rem),
+        linear-gradient(145deg, #23352b, #1b2821);
+}
+
+html[data-theme="dark"] .metric-card,
+html[data-theme="dark"] .dashboard-analytics-pair .dashboard-chart-card,
+html[data-theme="dark"] .manual-preview-card {
+    background: #233129;
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .manual-preview-image-wrap {
+    background: #29362f;
+    border-color: var(--line);
+}
+
+/* ---------- Responsive safety ---------- */
+@media (max-width: 1199.98px) {
+    .dashboard-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-analytics-pair {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .manual-preview-stage {
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .dashboard-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .metric-card {
+        min-height: 112px;
+        padding: 10px;
+    }
+
+    .dashboard-analytics-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-analytics-pair .dashboard-chart-card {
+        min-height: 260px;
+        padding: 12px;
+    }
+
+    .tonal-card .chart-stage,
+    .quality-card .chart-stage {
+        height: 185px;
+        min-height: 185px;
+    }
+
+    .manual-preview-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .manual-preview-stage {
+        min-height: 420px;
+    }
+}
+
+@media (max-width: 420px) {
+    .manual-preview-stage {
+        min-height: 360px;
+    }
+
+    .manual-preview-card {
+        padding: 6px;
+    }
+}
+
+
+/* ---------- Interactive Dashboard metric focus ---------- */
+.metric-card[data-metric] {
+    position: relative;
+    cursor: pointer;
+}
+
+.metric-card[data-metric]:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--brand) 32%, transparent);
+    outline-offset: 3px;
+}
+
+.metric-card[data-metric].is-active {
+    border-color: var(--brand);
+    background: linear-gradient(145deg, var(--success-soft), var(--surface));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent), 0 14px 28px rgba(11, 122, 98, .12);
+    transform: translateY(-2px);
+}
+
+.metric-card[data-metric].is-active::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 10px;
+    top: 10px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+html[data-theme="dark"] .metric-card[data-metric].is-active {
+    background: linear-gradient(145deg, #2c5b49, #233129);
+    border-color: #77c6a8;
+}
+
+
+.manual-approval-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+}
+
+.manual-chain-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.manual-chain-status strong,
+.manual-chain-status small {
+    display: block;
+}
+
+.manual-chain-status small {
+    margin-top: 3px;
+    color: var(--ink-soft);
+    font-size: .72rem;
+}
+
+.manual-approval-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.manual-approval-actions .button:disabled {
+    cursor: not-allowed;
+    opacity: .48;
+}
+
+@media (max-width: 700px) {
+    .manual-approval-bar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .manual-approval-actions {
+        justify-content: stretch;
+    }
+
+    .manual-approval-actions .button {
+        flex: 1 1 100%;
+    }
+}

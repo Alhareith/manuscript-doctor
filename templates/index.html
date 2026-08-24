@@ -16,14 +16,25 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" defer></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+        <script src="{{ url_for('static', filename='js/parts/00-state-constants.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/01-utilities.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/02-upload-api.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/03-analysis-dashboard.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/04-examination.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/05-manual-parameters.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/06-manual-preview.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/07-manual-execution.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/08-smart-pipeline.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/09-history-results.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/10-theme-quick-tools.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/parts/11-events-entry.js') }}" defer></script>
 </head>
 <body>
 <div class="app-shell desktop-polish" id="home">
     <header class="app-header">
         <div class="container-fluid app-header-inner">
             <a class="app-brand" href="#workspace" aria-label="طبيب الوثائق">
-                <span class="brand-mark brand-mark-document" aria-hidden="true"><i class="bi bi-file-earmark-text-fill"></i><i class="bi bi-stars brand-spark"></i></span>
+                <span class="brand-mark brand-mark-document" aria-hidden="true"><img src="{{ url_for('static', filename='assets/doctor-logo.svg') }}" alt=""></span>
                 <span class="brand-copy">
                     <strong>طبيب الوثائق</strong>
                     <small>شخّص ← عالج ← حافظ ← تحقق</small>
@@ -31,7 +42,6 @@
             </a>
 
             <div class="header-actions">
-                <span class="header-assurance d-none d-md-inline-flex"><i class="bi bi-shield-check"></i> معالجة محافظة على الأصل</span>
                 <button id="themeToggleButton" class="theme-toggle" type="button" aria-label="تفعيل الوضع الليلي" aria-pressed="false">
                     <i class="bi bi-moon-stars-fill theme-toggle-icon"></i>
                     <span class="theme-toggle-label">الوضع الليلي</span>
@@ -61,7 +71,6 @@
                 <h1 id="uploadTitle">ارفع الوثيقة، ثم عالجها وأنت ترى أثر كل خطوة أمامك.</h1>
                 <p>الفحص يشرح الحالة، والمعالجة اليدوية تعرض المعاينة بجانب التحكم، والمسار الذكي يطبق فقط ما يستطيع تبريره والتحقق منه.</p>
             </div>
-
             <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="اسحب صورة الوثيقة هنا أو اخترها من الجهاز">
                 <input id="imageInput" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
                 <span class="upload-icon"><i class="bi bi-cloud-arrow-up-fill"></i></span>
@@ -233,7 +242,7 @@
 
             <section id="manualEditor" class="manual-editor" aria-labelledby="manualEditorTitle">
                 <header class="manual-editor-head">
-                    <div><span class="eyebrow"><i class="bi bi-eye-fill"></i> LIVE MANUAL PREVIEW</span><h2 id="manualEditorTitle">المعالجة اليدوية والمعاينة الفورية</h2><p>اختيار العملية يغير لوحة التحكم، وتحريك أي Slider يجهز معاينة العملية على الصورة المقابلة.</p></div>
+                    <div><span class="eyebrow"><i class="bi bi-eye-fill"></i> LIVE MANUAL PREVIEW</span><h2 id="manualEditorTitle">تجهيز الوثيقة والمعالجة اليدوية</h2><p>ابدأ بتجهيز الوثيقة، ثم جرّب المعالجة اليدوية وشاهد أثر كل خطوة داخل مساحة النتيجة نفسها.</p></div>
                     <span id="manualPreviewStatus" class="preview-status"><i class="bi bi-circle-fill"></i> جاهز</span>
                 </header>
 
@@ -242,7 +251,11 @@
                     <section class="manual-preview-pane" aria-label="معاينة المعالجة اليدوية">
                         <div class="manual-preview-toolbar">
                             <div><small>المعاينة الحالية</small><strong id="manualPreviewNote">الصورة الأصلية حتى تختار عملية</strong></div>
-                            <span class="live-pill"><i class="bi bi-lightning-charge-fill"></i> LIVE</span>
+                            <div class="manual-preview-toolbar-actions">
+                                <button id="manualUndoButton" class="button button-ghost button-compact" type="button" disabled title="التراجع عن آخر عملية معتمدة"><i class="bi bi-arrow-counterclockwise"></i><span>تراجع</span></button>
+                                <button id="manualRedoButton" class="button button-ghost button-compact" type="button" disabled title="إعادة العملية التي تم التراجع عنها"><i class="bi bi-arrow-clockwise"></i><span>إعادة</span></button>
+                                <span class="live-pill"><i class="bi bi-lightning-charge-fill"></i> LIVE</span>
+                            </div>
                         </div>
                         <div class="manual-preview-stage">
                             <div class="manual-preview-pair" aria-label="مقارنة المعاينة قبل وبعد">
@@ -254,9 +267,20 @@
                                 </figure>
                                 <figure class="manual-preview-card">
                                     <figcaption>بعد — المعاينة الحالية</figcaption>
-                                    <div class="manual-preview-image-wrap">
-                                        <img id="manualLivePreview" alt="المعاينة الحالية للمعالجة اليدوية">
-                                    </div>
+<div class="manual-preview-image-wrap manual-live-image-wrap">
+                                            <img id="manualLivePreview" alt="المعاينة الحالية للمعالجة اليدوية">
+                                            <div id="manualCropGuide" class="manual-crop-guide hidden" data-crop-handle="move" role="slider" aria-label="منطقة الاقتصاص اليدوي" aria-valuetext="منطقة القص الحالية">
+                                                <span class="crop-grid-lines" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-nw" data-crop-handle="nw" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-n" data-crop-handle="n" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-ne" data-crop-handle="ne" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-e" data-crop-handle="e" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-se" data-crop-handle="se" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-s" data-crop-handle="s" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-sw" data-crop-handle="sw" aria-hidden="true"></span>
+                                                <span class="crop-handle crop-handle-w" data-crop-handle="w" aria-hidden="true"></span>
+                                            </div>
+                                        </div>
                                 </figure>
                             </div>
                             <div id="manualPreviewOverlay" class="manual-preview-overlay hidden" aria-live="polite">
@@ -276,7 +300,7 @@
                                     <small id="manualChainList">المعاينة الحالية غير محفوظة بعد.</small>
                                 </div>
                             </div>
-
+                        
                             <div class="manual-approval-actions">
                                 <button id="manualApprovalButton" class="button button-primary" type="button" disabled>
                                     <i class="bi bi-check2-circle"></i>
@@ -288,23 +312,24 @@
                                 </button>
                             </div>
                         </div>
+
                     </section>
 
                     <!-- Controls side -->
                     <section class="manual-controls-pane" aria-label="أدوات المعالجة اليدوية">
                         <div class="operation-category-strip" role="tablist" aria-label="مجموعات المعالجة">
-                            <button class="category-tab is-active" type="button" data-operation-group="lighting"><i class="bi bi-sun-fill"></i><span>الإضاءة</span></button>
+                            <button class="category-tab is-active" type="button" data-operation-group="page"><i class="bi bi-file-earmark-break-fill"></i><span>تجهيز الوثيقة</span></button>
+                            <button class="category-tab" type="button" data-operation-group="lighting"><i class="bi bi-sun-fill"></i><span>الإضاءة</span></button>
                             <button class="category-tab" type="button" data-operation-group="contrast"><i class="bi bi-circle-half"></i><span>التباين</span></button>
                             <button class="category-tab" type="button" data-operation-group="noise"><i class="bi bi-grid-3x3-gap-fill"></i><span>الضوضاء</span></button>
                             <button class="category-tab" type="button" data-operation-group="detail"><i class="bi bi-crosshair"></i><span>التفاصيل</span></button>
                             <button class="category-tab" type="button" data-operation-group="threshold"><i class="bi bi-toggle-on"></i><span>فصل النص</span></button>
                             <button class="category-tab" type="button" data-operation-group="structure"><i class="bi bi-bounding-box"></i><span>البنية</span></button>
                             <button class="category-tab" type="button" data-operation-group="background"><i class="bi bi-eraser-fill"></i><span>الخلفية</span></button>
-                            <button class="category-tab" type="button" data-operation-group="page"><i class="bi bi-rulers"></i><span>الصفحة</span></button>
-                        </div>
+                            </div>
 
                         <div class="operation-browser" aria-label="العمليات المتاحة">
-                            <div class="operation-group is-active" data-operation-group-panel="lighting">
+                            <div class="operation-group" data-operation-group-panel="lighting">
                                 <button class="operation-row" data-operation-card="illumination_normalize" type="button"><i class="bi bi-brightness-high-fill"></i><span><strong>توحيد الإضاءة</strong><small>Illumination Normalization</small></span><i class="bi bi-chevron-left"></i></button>
                                 <button class="operation-row" data-operation-card="gamma_correct" type="button"><i class="bi bi-sun"></i><span><strong>تصحيح جاما</strong><small>Gamma Correction</small></span><i class="bi bi-chevron-left"></i></button>
                                 <button class="operation-row" data-operation-card="intensity_adjust" type="button"><i class="bi bi-sliders"></i><span><strong>السطوع والتباين</strong><small>Intensity Adjustment</small></span><i class="bi bi-chevron-left"></i></button>
@@ -324,6 +349,7 @@
 
                             <div class="operation-group" data-operation-group-panel="detail">
                                 <button class="operation-row" data-operation-card="sharpen" type="button"><i class="bi bi-crosshair2"></i><span><strong>زيادة وضوح التفاصيل</strong><small>Sharpen</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row operation-row-special" data-operation-card="super_resolution" type="button"><i class="bi bi-arrows-angle-expand"></i><span><strong>تحسين دقة النص</strong><small>Super Resolution · Lanczos + Unsharp · خادمي</small></span><i class="bi bi-chevron-left"></i></button>
                             </div>
 
                             <div class="operation-group" data-operation-group-panel="threshold">
@@ -344,10 +370,49 @@
                                 <button class="operation-row" data-operation-card="weak_structure_suppress" type="button"><i class="bi bi-filter-circle-fill"></i><span><strong>تقليل البنى الضعيفة</strong><small>Weak Structure Suppression</small></span><i class="bi bi-chevron-left"></i></button>
                             </div>
 
-                            <div class="operation-group" data-operation-group-panel="page">
-                                <button class="operation-row" data-operation-card="deskew" type="button"><i class="bi bi-rulers"></i><span><strong>تصحيح الميل</strong><small>Deskew · اضبط زاوية الميل يدويًا</small></span><i class="bi bi-chevron-left"></i></button>
-                                <div class="capability-note"><i class="bi bi-info-circle"></i><span>الاقتصاص وتصحيح المنظور ضمن مرحلة التهيئة القادمة، ولن تظهر كأدوات قابلة للتنفيذ قبل دعمها فعليًا في الـBackend.</span></div>
+                            <div class="operation-group is-active" data-operation-group-panel="page">
+                                <button class="operation-row operation-row-primary" data-operation-card="document_prepare" type="button">
+                                    <i class="bi bi-bounding-box-circles"></i>
+                                    <span>
+                                        <strong>تصحيح الميل والاقتصاص التلقائي</strong>
+                                        <small>Deskew + Optional Perspective Crop · الخيار الأول</small>
+                                    </span>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <button class="operation-row" data-operation-card="crop" type="button">
+                                    <i class="bi bi-crop"></i>
+                                    <span>
+                                        <strong>اقتصاص يدوي</strong>
+                                        <small>Manual Crop · حرّك الإطار ثم اعتمد العملية لتطبيق القص</small>
+                                    </span>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+
+                                <div class="orientation-actions" aria-label="تدوير واتجاه الصورة">
+                                    <div class="orientation-actions-title"><i class="bi bi-arrow-repeat"></i><strong>تدوير واتجاه الصورة</strong><small>كل زر ينفذ حركة واحدة على النتيجة الحالية</small></div>
+                                    <div class="orientation-actions-grid">
+                                        <button class="orientation-action" data-operation-card="rotate_right" type="button"><i class="bi bi-arrow-clockwise"></i><span>لليمين</span><small>90°</small></button>
+                                        <button class="orientation-action" data-operation-card="rotate_left" type="button"><i class="bi bi-arrow-counterclockwise"></i><span>لليسار</span><small>90°</small></button>
+                                        <button class="orientation-action" data-operation-card="flip_vertical" type="button"><i class="bi bi-distribute-vertical"></i><span>للأعلى / للأسفل</span><small>قلب رأسي</small></button>
+                                        <button class="orientation-action" data-operation-card="flip_horizontal" type="button"><i class="bi bi-distribute-horizontal"></i><span>يمين / يسار</span><small>قلب أفقي</small></button>
+                                    </div>
+                                </div>
+
+                                <button class="operation-row" data-operation-card="deskew" type="button">
+                                    <i class="bi bi-rulers"></i>
+                                    <span>
+                                        <strong>تصحيح الميل اليدوي</strong>
+                                        <small>Deskew · اضبط زاوية الميل يدويًا</small>
+                                    </span>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+
+                                <div class="capability-note">
+                                    <i class="bi bi-shield-check"></i>
+                                    <span>يختار النظام Guided أولًا ثم Region عند الحاجة، ثم يعرض النتيجة للمراجعة قبل الاعتماد.</span>
+                                </div>
                             </div>
+
                         </div>
 
                         <div class="selected-operation-panel">
@@ -370,6 +435,7 @@
                                 <option value="bilateral_denoise">Bilateral Denoising</option>
                                 <option value="non_local_means_denoise">Non-Local Means</option>
                                 <option value="sharpen">Sharpen</option>
+                                <option value="super_resolution">Super Resolution</option>
                                 <option value="global_threshold">Global Threshold</option>
                                 <option value="otsu_threshold">Otsu Threshold</option>
                                 <option value="adaptive_threshold">Adaptive Threshold</option>
@@ -380,10 +446,25 @@
                                 <option value="background_suppress">Background Suppression</option>
                                 <option value="weak_structure_suppress">Weak Structure Suppression</option>
                                 <option value="deskew">Deskew</option>
+                                <option value="rotate_right">Rotate Right</option>
+                                <option value="rotate_left">Rotate Left</option>
+                                <option value="flip_vertical">Flip Vertical</option>
+                                <option value="flip_horizontal">Flip Horizontal</option>
+                                <option value="document_prepare">تصحيح الميل والاقتصاص التلقائي</option>
+                                <option value="crop">اقتصاص يدوي</option>
+
                             </select>
 
                             <div id="manualParameters" class="manual-parameters slider-parameters" aria-live="polite"></div>
-                            <button id="applyManualButton" class="button button-secondary full-button" type="button" disabled><i class="bi bi-play-fill"></i> تنفيذ العملية الحالية</button>
+                            <section class="manual-change-chart manual-change-chart-inline" aria-labelledby="manualChangeChartTitle">
+                                <div class="manual-change-chart-head">
+                                    <div><small>LIVE CHANGE MAP</small><h3 id="manualChangeChartTitle">أثر المعاينة</h3></div>
+                                    <span id="manualChangeChartStatus">بانتظار المعاينة</span>
+                                </div>
+                                <p>مقارنة مصغرة لتوزيع درجات الإضاءة في الصورة الحالية قبل وبعد العملية.</p>
+                                <div class="manual-change-chart-stage"><canvas id="manualChangeChart" aria-label="مخطط تغير درجات الإضاءة قبل وبعد المعالجة"></canvas></div>
+                                <div class="manual-change-legend"><span><i class="legend-before"></i>قبل</span><span><i class="legend-after"></i>بعد</span></div>
+                            </section>
                         </div>
                     </section>
                 </div>
@@ -415,15 +496,6 @@
             <article class="stop-explanation" data-stop-explanation><i class="bi bi-sign-stop-fill"></i><div><strong>لماذا توقف النظام هنا؟</strong><p>—</p></div></article>
         </section>
 
-        <!-- Result comparison retained for backend result flow -->
-        <section id="comparisonSection" class="comparison-section hidden" aria-labelledby="comparisonTitle">
-            <header class="section-head"><div><span class="eyebrow"><i class="bi bi-columns-gap"></i> RESULT</span><h2 id="comparisonTitle">النتيجة الفعلية</h2><p>هذه المنطقة تظهر بعد تنفيذ عملية أو المسار الذكي.</p></div></header>
-            <div class="comparison-grid">
-                <figure><figcaption>الأصل المرفوع</figcaption><div class="comparison-image"><img id="comparisonOriginal" alt="الصورة الأصلية"></div></figure>
-                <figure><figcaption>النتيجة المطبقة فعليًا</figcaption><div class="comparison-image"><img id="resultPreview" alt="نتيجة المعالجة"></div></figure>
-            </div>
-        </section>
-
         <!-- Binarization -->
         <section id="binarizationSection" class="binarization-section hidden" aria-labelledby="binarizationTitle">
             <header class="section-head"><div><span class="eyebrow"><i class="bi bi-grid-1x2"></i> BINARIZATION</span><h2 id="binarizationTitle">مرشحو فصل النص</h2><p>مسار اختياري مستقل؛ لا تُحوَّل كل وثيقة تلقائيًا إلى أبيض وأسود.</p></div></header>
@@ -448,7 +520,7 @@
 
     <footer class="app-footer app-footer-fixed" aria-label="تنقل سريع بين أقسام مساحة العمل">
         <div class="container-fluid footer-fixed-inner">
-            <div class="footer-brand"><span class="brand-mark"><i class="bi bi-file-earmark-medical-fill"></i></span><div><strong>طبيب الوثائق</strong><small>تنقّل سريع بين مراحل العمل</small></div></div>
+            <div class="footer-brand"><span class="brand-mark brand-mark-document footer-logo-mark" aria-hidden="true"><img src="{{ url_for('static', filename='assets/doctor-logo.svg') }}" alt=""></span><div><strong>طبيب الوثائق</strong><small>تنقّل سريع بين مراحل العمل</small></div></div>
             <nav class="footer-section-nav" aria-label="أقسام الموقع">
                 <a href="#workspace" data-footer-nav><i class="bi bi-house-door"></i><span>البداية</span></a>
                 <a href="#documentPreviewSection" data-footer-nav><i class="bi bi-image"></i><span>المعاينة</span></a>

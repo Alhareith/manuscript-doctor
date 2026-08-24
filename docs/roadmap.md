@@ -1,482 +1,227 @@
-docs/roadmap.md
-
 <div dir="rtl" align="right">
 
-# 🗺️ Manuscript Doctor — خارطة الطريق
+# 🗺️ Manuscript Doctor — خارطة الطريق الحالية
 
-> **الغرض من الوثيقة:** توضيح مراحل تنفيذ المشروع من الأساس حتى الإصدار النهائي، مع تحديد الهدف والمخرج الرئيسي لكل مرحلة دون تكرار تفاصيل التنفيذ الموجودة في بقية الوثائق.
+> **وظيفة الوثيقة:** توضيح كيف انتقل المشروع من الفكرة إلى النسخة القابلة للتجربة، وما الذي تم إثباته، وما الذي بقي مؤجلاً. هذه ليست قائمة أمنيات ولا بديلاً عن تفاصيل المعمارية أو الاختبارات.
 
 ---
 
-## 1. المسار العام
+## 1. الحالة المختصرة
 
 ```mermaid
 flowchart LR
-    A["Foundation"] --> B["Examination"]
-    B --> C["Processing"]
-    C --> D["Evaluation"]
-    D --> E["Preservation"]
-    E --> F["Recommendation"]
-    F --> G["Smart Pipeline"]
-    G --> H["Integration"]
-    H --> I["Frontend"]
-    I --> J["Validation"]
-    J --> K["Release"]
+    A["Scope"] --> B["Foundation"]
+    B --> C["Image Engine"]
+    C --> D["Smart + Preservation"]
+    D --> E["Frontend Integration"]
+    E --> F["Validation"]
+    F --> G["Documentation Freeze"]
+    G --> H["Release Candidate"]
 ```
 
----
+| الحالة | المعنى |
+| --- | --- |
+| ✅ مكتمل | نُفذ واختُبر ووُثق في النسخة الحالية |
+| 🟡 مستقر مع قيود | يعمل، لكن حدوده معلنة أو يحتاج Corpus أوسع |
+| 🔵 قيد التثبيت | أعمال التوثيق والمراجعة النهائية الحالية |
+| ⏳ مؤجل | فكرة مستقبلية لم تدخل النسخة الحالية |
+| ❌ خارج النطاق | لا ينبغي وصفها كميزة للمشروع |
 
-# 2. المراحل التنفيذية
-
-| المرحلة                           | الهدف                              | المخرج الرئيسي                       |
-| --------------------------------- | ---------------------------------- | ------------------------------------ |
-| **0 — Scope**                     | تثبيت المشكلة والنطاق              | تعريف واضح للـMVP                    |
-| **1 — Workspace**                 | تجهيز بنية المشروع وGit            | مشروع منظم وقابل للتتبع              |
-| **2 — Environment**               | تجهيز Python والاعتماديات          | بيئة تشغيل قابلة للتكرار             |
-| **3 — UX Design**                 | تصميم تجربة المستخدم قبل البرمجة   | Workflow وWireframes                 |
-| **4 — Architecture**              | تثبيت المسؤوليات والعقود           | Architecture + API Contracts         |
-| **5 — Flask Foundation**          | بناء أساس Backend الآمن            | Upload + Storage + IDs + Responses   |
-| **6 — Examination & Diagnosis**   | تحليل الصورة الأصلية وتشخيصها      | `analyzer.py` + Preservation Profile |
-| **7 — Image Operations**          | تنفيذ عمليات المعالجة المستقلة     | `operations.py`                      |
-| **8 — Operation Evaluation**      | اختبار وضبط العمليات               | Parameters مبررة ومختبرة             |
-| **9 — Preservation Verification** | تقييم أثر المعالجة على التفاصيل    | `preservation.py`                    |
-| **10 — Recommendation Engine**    | تحويل التشخيص إلى خطة علاج         | `recommender.py`                     |
-| **11 — Smart Pipeline**           | تنفيذ معالجة تلقائية واعية بالحالة | `pipeline.py`                        |
-| **12 — Backend Integration**      | ربط جميع الوحدات بالـAPI           | Backend مكتمل وظيفيًا                |
-| **13 — Frontend**                 | بناء الواجهة النهائية              | `index.html` + CSS + JS              |
-| **14 — Frontend Integration**     | ربط الواجهة بالـBackend            | Workflow كامل من المتصفح             |
-| **15 — End-to-End Testing**       | اختبار الاستخدام الكامل            | نتائج اختبار موثقة                   |
-| **16 — Scientific Validation**    | مراجعة Metrics وThresholds         | حدود وقرارات معايرة نهائية           |
-| **17 — UI/UX Polish**             | تحسين العرض والاستجابة             | واجهة نهائية مستقرة                  |
-| **18 — Optional Features**        | إضافة قيمة بعد استقرار الأساس      | ميزات اختيارية فقط عند الحاجة        |
-| **19 — Documentation**            | إنهاء التوثيق الأكاديمي والتقني    | وثائق مطابقة للكود                   |
-| **20 — Release**                  | تجهيز نسخة التسليم                 | إصدار ثابت قابل للتشغيل والعرض       |
+**الحالة الحالية:** 🟡 **RELEASE CANDIDATE — READY WITH KNOWN LIMITATIONS**.
 
 ---
 
-# 3. المرحلة 0 — تثبيت النطاق
+## 2. ما تم إنجازه
 
-### ننجز
+| المرحلة | المخرج الفعلي | الحالة |
+| --- | --- | --- |
+| Scope | فلسفة `Diagnose → Treat → Preserve → Verify` وحدود MVP | ✅ |
+| Foundation | Flask، رفع آمن، `image_id`، تخزين الأصل والنتائج | ✅ |
+| Examination | Metrics وDiagnosis وPreservation Profile | ✅ |
+| Operations | Registry وعمليات OpenCV مستقلة قابلة للاختبار | ✅ |
+| Evaluation | معايرة أولية للمخاطر والفوائد على صور متعددة | 🟡 |
+| Preservation | Benefit Gate وPreservation Gate وRollback | ✅ |
+| Recommendation | توصيات Rule-Based قابلة للتفسير | ✅ |
+| Smart Pipeline | مرشح تلقائي واحد مع حماية من التكرار والمخاطر | ✅ |
+| Preparation | Boundary Verification وdeskew-only المحافظ | 🟡 |
+| Manual Studio | Preview وApprove وManual Chain وCrop وGeometry | ✅ |
+| Performance | Canvas للعمليات الخفيفة وJPEG Preview اختيارياً | ✅ |
+| Frontend | واجهة RTL مقسمة ومتجاوبة وHeader بالخلفية الحالية | ✅ |
+| Validation | Regression وC05 وC06 واختبار حي للواجهة | ✅ |
+| Documentation | توحيد وثائق المعمارية والتدفق والتقييم والاختبار | 🔵 |
 
-* تعريف المشكلة.
-* تثبيت فلسفة المشروع.
-* تحديد وظائف الـMVP.
-* تحديد ما هو خارج النطاق.
+---
 
-### المخرج
+## 3. خط الأساس المثبت
 
-```text
-Manuscript Doctor
-=
-Diagnose → Treat → Preserve → Verify
+```mermaid
+flowchart TD
+    A["Original"] --> B["Analyze"]
+    B --> C["Diagnose + Recommend"]
+    C --> D{"Manual أو Smart"}
+    D --> E["Preview / Candidate"]
+    E --> F["Approve"]
+    F --> G["Preservation + Decision"]
+    G --> H["Download / Next Manual Step"]
 ```
 
+| الدليل | الحالة المثبتة |
+| --- | --- |
+| Python regression | `333 passed, 16 skipped` |
+| JavaScript syntax | نجح لجميع الأجزاء المقسمة |
+| C05 | `960×1280`؛ Smart يقبل deskew-only عند الثقة العالية؛ Super Resolution 2× خادمية |
+| C06 | Manual Chain وbefore/after وUndo/Redo وCrop تم التحقق منها |
+| Local Preview | Rotate وFlip وIntensity وGamma دون طلب `/preview` للمعاينة |
+| Heavy Preview | JPEG اختياري، مع بقاء PNG افتراضياً للتوافق |
+| Final Artifact | Approve وDownload وVerification عبر Flask/OpenCV |
+| Original | ثابت وغير مستبدل بالنتائج |
+
 ---
 
-# 4. المراحل 1–5 — الأساس
+## 4. مراحل التنفيذ المنطقية
 
-هذه المراحل تبني البيئة التي سيعتمد عليها باقي المشروع.
+### المرحلة A — الأساس والهوية
+
+**الحالة:** ✅ مكتملة.
+
+ثبتت هذه المرحلة اسم المشروع، نطاق MVP، تشغيل Flask المحلي، بنية الملفات، حماية الأصل، وعقد الاستجابات. لا توجد في النسخة الحالية Database أو Authentication أو Docker.
+
+### المرحلة B — محرك الصورة
+
+**الحالة:** ✅ مكتملة.
+
+أصبح لكل عملية موضع مستقل في `processing/ops/`، وسجل موحد في `registry.py`، ومعاملات قابلة للتحقق. يعمل `app.py` كطبقة API ولا يحتوي على خوارزميات OpenCV طويلة.
+
+### المرحلة C — التقييم والمحافظة
+
+**الحالة:** 🟡 مستقرة مع قيود.
+
+تم فصل Benefit عن Preservation، وإضافة Rollback وDecision وWarning. تبقى Metrics وThresholds مؤشرات هندسية تحتاج Corpus أوسع ولا تمثل فهماً لغوياً للنص.
+
+### المرحلة D — Smart Pipeline
+
+**الحالة:** ✅ مكتملة وظيفياً.
+
+يبدأ المسار من الأصل، يختار مرشحاً مؤهلاً، يعيد التحليل، ثم يمر عبر بوابتي المنفعة والمحافظة. تقبل الجولة خطوة تلقائية واحدة فقط، ولا تدخل العمليات اليدوية غير المؤهلة إلى Smart.
+
+### المرحلة E — الاستوديو اليدوي
+
+**الحالة:** ✅ مكتملة وظيفياً.
+
+تدعم الواجهة Preview محلياً أو خادمياً حسب كلفة العملية، ثم Approve واحداً ينشئ Result حقيقية. تُبنى الخطوات اللاحقة من `source_result_id`، وتتنقل before/after وUndo/Redo عبر `manualChain` و`manualActiveIndex`.
+
+### المرحلة F — التحقق والتجميد
+
+**الحالة:** 🔵 قيد التثبيت.
+
+يتم توحيد الوثائق، إزالة الأرقام القديمة، مراجعة الروابط والرسومات، وتثبيت حدود النسخة قبل التغليف. لا تعني هذه المرحلة إضافة خوارزميات جديدة.
+
+---
+
+## 5. سياسة الإضافات الحالية
+
+```mermaid
+flowchart TD
+    A["فكرة جديدة"] --> B{"هل تحل مشكلة مثبتة؟"}
+    B -->|"لا"| C["تؤجل خارج MVP"]
+    B -->|"نعم"| D{"هل مكانها واضح في المعمارية؟"}
+    D -->|"لا"| C
+    D -->|"نعم"| E["Implementation + Test"]
+    E --> F["Preservation + Documentation"]
+    F --> G{"هل الدليل كافٍ؟"}
+    G -->|"لا"| C
+    G -->|"نعم"| H["Release Candidate"]
+```
+
+لا تدخل أي ميزة جديدة إلى النسخة الحالية لمجرد أنها تبدو مفيدة بصرياً؛ يجب أن يكون لها هدف، ومكان، واختبار، وحدود معلنة.
+
+---
+
+## 6. ما هو مؤجل بوضوح
+
+| الميزة | الحالة | سبب التأجيل |
+| --- | --- | --- |
+| EDSR أو FSRCNN أو Real-ESRGAN | ⏳ | تحتاج أوزاناً وتبعيات وتقييماً مستقلاً |
+| OCR أو Text Recognition | ⏳ | يحتاج Metric مثل CER/WER وCorpus موسع |
+| Bleed-through Removal مخصص | ⏳ | لا يوجد مسار موثوق مثبت حالياً |
+| Queue أو Workers | ⏳ | Smart خادمي لكنه لا يحتاج بنية تشغيلية إضافية في MVP |
+| Database وAuthentication | ⏳ | خارج تطبيق الاستخدام المحلي التعليمي |
+| Automatic Crop غير المشروط | ❌ | قد يفقد أجزاء الوثيقة عند انخفاض الثقة |
+| ادعاء استعادة النص المفقود | ❌ | لا تثبته Super Resolution أو Metrics الحالية |
+| تشغيل كل العمليات تلقائياً | ❌ | يخالف سياسة المخاطر وPreservation |
+
+---
+
+## 7. معيار الانتقال
 
 ```mermaid
 flowchart LR
-    A["Workspace"] --> B["Python Environment"]
-    B --> C["UX Design"]
-    C --> D["Architecture"]
-    D --> E["Flask Foundation"]
+    A["Implement"] --> B["Unit / Integration Test"]
+    B --> C["Browser or Image Evidence"]
+    C --> D["Review Limits"]
+    D --> E{"Pass?"}
+    E -->|"نعم"| F["Document + Freeze"]
+    E -->|"لا"| G["Root-cause Fix"]
+    G --> B
 ```
 
-بنهاية المرحلة 5 يجب أن يستطيع النظام:
+لا تنتقل مرحلة إلى حالة «مكتملة» إلا إذا توفر:
 
-* استقبال صورة.
-* التحقق منها.
-* إنشاء `image_id`.
-* حفظ Original بأمان.
-* عرضها بواسطة API.
-* إعادة Responses موحدة.
+1. تنفيذ قابل للتشغيل.
+2. اختبار مناسب للمسار.
+3. دليل بصري عند تعلق المشكلة بالواجهة أو الصورة.
+4. توثيق يذكر الفائدة والحدود.
+5. عدم إضعاف الأصل أو عقود API.
 
 ---
 
-# 5. المرحلة 6 — Examination & Diagnosis
-
-### الهدف
-
-فهم حالة الصورة قبل تنفيذ أي معالجة.
-
-### نبني
+## 8. الأولوية عند ضيق الوقت
 
 ```text
-processing/analyzer.py
-```
-
-### يشمل
-
-* Brightness.
-* Contrast.
-* Dynamic Range.
-* Sharpness.
-* Noise Indicator.
-* Illumination Variation.
-* Edge Density.
-* Diagnosis Rules.
-* Preservation Profile.
-
-### لا يشمل
-
-* Treatment.
-* Recommendation.
-* Preservation Verification.
-
----
-
-# 6. المرحلة 7 — Image Processing Operations
-
-### الهدف
-
-بناء عمليات معالجة مستقلة وقابلة للاختبار.
-
-### نبني
-
-```text
-processing/operations.py
-```
-
-وتشمل العمليات المعتمدة مثل:
-
-* CLAHE.
-* Histogram Equalization.
-* Median / Gaussian.
-* Sharpening.
-* Thresholding.
-* Morphology.
-
-كل عملية تبدأ من Original عند استخدامها يدويًا.
-
----
-
-# 7. المرحلة 8 — Operation Evaluation
-
-### الهدف
-
-منع اعتماد Parameters عشوائية.
-
-نختبر كل Operation على صور متنوعة ونحدد:
-
-```text
-الفائدة
-+
-الآثار الجانبية
-+
-Parameters المناسبة
-+
-Preservation Impact
-```
-
-النتيجة المطلوبة:
-
-> لا تدخل Operation إلى Smart Pipeline قبل فهم سلوكها.
-
----
-
-# 8. المرحلة 9 — Preservation Verification
-
-### الهدف
-
-تقييم أثر Treatment على البنية الأصلية.
-
-### نبني
-
-```text
-processing/preservation.py
-```
-
-المدخل:
-
-```text
-Original + Processed Result
-```
-
-المخرج:
-
-```text
-Metrics + Warnings + Assessment
-```
-
----
-
-# 9. المرحلة 10 — Recommendation Engine
-
-### الهدف
-
-تحويل حالة الصورة إلى خطة معالجة قابلة للتفسير.
-
-### نبني
-
-```text
-processing/recommender.py
-```
-
-التدفق:
-
-```mermaid
-flowchart LR
-    A["Diagnosis"] --> D["Recommendation"]
-    B["Metrics"] --> D
-    C["Preservation Profile"] --> D
-```
-
-كل Recommendation يجب أن توضح:
-
-* ماذا نقترح؟
-* لماذا؟
-* ما مستوى الأولوية؟
-* هل توجد ملاحظة Preservation؟
-
----
-
-# 10. المرحلة 11 — Smart Pipeline
-
-### الهدف
-
-تنفيذ معالجة تلقائية قصيرة ومبررة.
-
-```text
-Original
-↓
-Treatment Plan
-↓
-Relevant Operations
-↓
-Processed Result
-↓
-Preservation Verification
-```
-
-الـPipeline لا تطبق جميع العمليات على كل صورة.
-
----
-
-# 11. المرحلة 12 — Backend Integration
-
-### الهدف
-
-تحويل الوحدات المستقلة إلى Backend واحد متكامل.
-
-بنهاية المرحلة تعمل:
-
-```text
-Upload
-↓
-Analysis
-↓
-Diagnosis
-↓
-Recommendation
-↓
-Manual / Pipeline
-↓
-Preservation
-↓
-Result
-```
-
-عبر الـAPI المعتمدة.
-
----
-
-# 12. المرحلتان 13–14 — Frontend
-
-### المرحلة 13
-
-بناء:
-
-```text
-templates/index.html
-static/css/style.css
-static/js/main.js
-```
-
-### المرحلة 14
-
-ربط الواجهة بالـBackend وإدارة:
-
-* Upload.
-* Loading.
-* Examination.
-* Processing.
-* Verifying.
-* Result.
-* Warning.
-* Error.
-* Download.
-
----
-
-# 13. المرحلتان 15–16 — الاختبار والتحقق
-
-## المرحلة 15 — End-to-End
-
-اختبار المسار:
-
-```mermaid
-flowchart LR
-    A["Upload"] --> B["Diagnose"]
-    B --> C["Treat"]
-    C --> D["Verify"]
-    D --> E["Compare"]
-    E --> F["Download"]
-```
-
-على مجموعة صور متنوعة.
-
-## المرحلة 16 — Scientific Validation
-
-نراجع:
-
-* Metrics.
-* Diagnostic Thresholds.
-* Processing Parameters.
-* Preservation Thresholds.
-* False Warnings.
-* Known Limitations.
-
-أي قيمة غير مدعومة بالتجربة تبقى **مؤقتة**.
-
----
-
-# 14. المرحلة 17 — UI/UX Polish
-
-بعد استقرار الوظائف فقط يتم تحسين:
-
-* RTL.
-* Responsive behavior.
-* Typography.
-* حالات Loading وWarnings.
-* Original/Result comparison.
-* ترتيب المعلومات.
-
-لا نضيف تأثيرات بصرية لا تخدم الاستخدام.
-
----
-
-# 15. المرحلة 18 — Optional Features
-
-لا تبدأ قبل استقرار الـCore.
-
-أمثلة:
-
-| الميزة                        | الأولوية               |
-| ----------------------------- | ---------------------- |
-| Lost Detail Map               | عالية بعد Preservation |
-| Treatment Report              | عالية إذا سمح الوقت    |
-| Candidate Comparison          | مستقبل                 |
-| Automatic Candidate Selection | مستقبل                 |
-| Regional Preservation         | مستقبل                 |
-| Region-Aware Processing       | مستقبل                 |
-
----
-
-# 16. المرحلتان 19–20 — التسليم
-
-## المرحلة 19
-
-تحديث جميع الوثائق بحيث تطابق النظام الفعلي.
-
-## المرحلة 20
-
-تنفيذ:
-
-```text
-Final Tests
-↓
-Clean Repository
-↓
-Fresh Installation Test
-↓
-Version Tag
-↓
-Demo Preparation
-↓
-Final Release
-```
-
----
-
-# 17. قاعدة الانتقال بين المراحل
-
-لا ننتقل لمجرد انتهاء كتابة الكود.
-
-```mermaid
-flowchart LR
-    A["Implement"] --> B["Test"]
-    B --> C["Review"]
-    C --> D{"Passed?"}
-    D -->|نعم| E["Next Phase"]
-    D -->|لا| F["Fix"]
-    F --> B
-```
-
-أي مرحلة يجب أن تنتهي بـ:
-
-* كود يعمل.
-* اختبارات ناجحة.
-* مراجعة للمخرجات.
-* تحديث الوثائق المتأثرة.
-* Git نظيف.
-
----
-
-# 18. الحالة الحالية
-
-تتم متابعة الحالة الفعلية من خلال:
-
-```text
-project-plan.md
-```
-
-وهو **مصدر التتبع الرسمي**.
-
-أما هذه الوثيقة فوظيفتها:
-
-> إظهار الطريق الكامل للمشروع بصورة مختصرة وواضحة.
-
-لذلك لا تستخدم علامات `[x]` هنا لتسجيل التقدم.
-
----
-
-# 19. قاعدة الأولوية
-
-إذا ضاق الوقت:
-
-```text
-Core Functionality
-      ↓
 Correctness
-      ↓
-Preservation Verification
-      ↓
-Testing
-      ↓
-Clear UX
-      ↓
-Documentation
-      ↓
+  ↓
+Original Preservation
+  ↓
+API and Chain Integrity
+  ↓
+Regression Tests
+  ↓
+Readable UX
+  ↓
+Documentation Freeze
+  ↓
 Optional Features
 ```
 
-الميزة الاختيارية لا تؤخر إغلاق الوظائف الأساسية.
+تُؤجل الميزة الاختيارية إذا كانت ستؤخر إصلاحاً وظيفياً أو تجعل النتيجة أقل قابلية للتفسير.
 
 ---
 
-<div align="center">
+## 9. خطة ما بعد النسخة الحالية
 
-### 🩺 Manuscript Doctor
+لا تبدأ هذه الخطة إلا بعد اعتماد التوثيق الحالي:
 
-**Build the foundation.
-Understand the image.
-Treat carefully.
-Verify the result.
-Then refine.**
+| الترتيب | العمل | شرط البدء |
+| ---: | --- | --- |
+| 1 | توسيع Corpus للوثائق الحقيقية | توفر صور مصرح باستخدامها ومعيار تقييم واضح |
+| 2 | تحسين Noise Indicator | حالات مرجعية وضوضاء معروفة |
+| 3 | تقييم نموذج Super Resolution عميق | مقارنة عادلة مع المسار المحافظ الحالي |
+| 4 | إضافة OCR اختيارياً | تعريف CER/WER ومراجعة الخصوصية |
+| 5 | دراسة Queue | أكثر من مستخدم أو مهام طويلة مثبتة |
 
-</div>
+هذه أعمال مستقبلية وليست جزءاً من ادعاء النسخة الحالية.
+
+---
+
+## 10. مراجع التتبع الداخلية
+
+- [`architecture.md`](architecture.md) — الطبقات والعقود.
+- [`requirements.md`](requirements.md) — المتطلبات القابلة للتتبع.
+- [`workflow.md`](workflow.md) — تدفق المستخدم والنظام.
+- [`testing.md`](testing.md) — استراتيجية الاختبار.
+- [`e2e-testing.md`](e2e-testing.md) — اختبار المسار الكامل.
+- [`operation-evaluation.md`](operation-evaluation.md) — تقييم العمليات.
+- [`phase-c-report.md`](phase-c-report.md) — تقرير التكامل.
+- [`decisions.md`](decisions.md) — أسباب القرارات الهندسية.
 
 </div>

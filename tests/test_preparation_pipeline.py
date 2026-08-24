@@ -72,19 +72,33 @@ def test_returns_independent_result_image():
     assert result["image"] is not image
 
 
-def test_stops_safely_when_boundary_is_not_detected():
-    image = np.full((600, 800, 3), 220, dtype=np.uint8)
-    result = prepare_document(image)
+def test_deskew_only_fallback_works_without_boundary_or_crop():
+    image = np.full((600, 800, 3), 255, dtype=np.uint8)
+    for y in range(180, 480, 55):
+        cv2.line(image, (120, y), (680, y), (0, 0, 0), 4)
 
-    assert result["prepared"] is False
+    center = (image.shape[1] / 2.0, image.shape[0] / 2.0)
+    matrix = cv2.getRotationMatrix2D(center, 6.0, 1.0)
+    rotated = cv2.warpAffine(
+        image,
+        matrix,
+        (image.shape[1], image.shape[0]),
+        flags=cv2.INTER_CUBIC,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=(255, 255, 255),
+    )
+    result = prepare_document(rotated)
+
     assert result["boundary"]["detected"] is False
     assert result["perspective"] is None
-    assert result["skew"] is None
-    assert result["deskew"] is None
-    assert len(result["steps"]) == 1
-    assert result["steps"][0]["step"] == "boundary"
-    assert result["steps"][0]["status"] == "rejected"
-    assert result["reason"].startswith("stopped:")
+    assert result["prepared"] is True
+    assert result["skew"] is not None
+    assert result["deskew"] is not None
+    assert result["deskew"]["applied"] is True
+    assert result["deskew"]["crop_applied"] is False
+    assert result["image"].shape[0] >= rotated.shape[0]
+    assert result["image"].shape[1] >= rotated.shape[1]
+    assert any(step["step"] == "auto_deskew" and step["status"] == "applied" for step in result["steps"])
 
 
 def test_invalid_input_raises_value_error():

@@ -3,6 +3,8 @@ from io import BytesIO
 import cv2
 import numpy as np
 import pytest
+import app as app_module
+
 
 from app import create_app
 
@@ -95,6 +97,27 @@ def test_manual_operation_creates_result(client):
     assert result["source_image_id"] == image_id
 
     assert payload["data"]["operation"]["id"] == "clahe"
+
+def test_super_resolution_manual_operation_scales_result(client):
+    source = make_document_image()
+    _, upload_payload = upload_image(client, image=source)
+    image_id = upload_payload["data"]["image"]["image_id"]
+
+    response = client.post(
+        f"/api/images/{image_id}/operations",
+        json={
+            "operation_id": "super_resolution",
+            "parameters": {"scale": 2, "amount": 0.35, "sigma": 1.0},
+        },
+    )
+
+    payload = response.get_json()
+    assert response.status_code == 201
+    assert payload["success"] is True
+    assert payload["data"]["operation"]["id"] == "super_resolution"
+    assert payload["data"]["result"]["width"] == source.shape[1] * 2
+    assert payload["data"]["result"]["height"] == source.shape[0] * 2
+
 
 def test_manual_preview_returns_in_memory_preview_without_final_result(client):
     _, upload_payload = upload_image(client)
@@ -316,7 +339,15 @@ def test_manual_operations_can_chain_from_approved_result(client):
 
     assert first_response.status_code == 201
     first_payload = first_response.get_json()
-    first_result_id = first_payload["data"]["result"]["id"]
+    first_result = first_payload["data"]["result"]
+
+    assert first_result["origin"] == "manual"
+    assert first_result["status"] == "approved"
+    assert first_result["parent_result_id"] is None
+    assert first_result["operation_id"] == "clahe"
+
+    first_result_id = first_result["id"]
+
     assert first_payload["data"]["source_result_id"] is None
 
     second_response = client.post(
@@ -333,9 +364,13 @@ def test_manual_operations_can_chain_from_approved_result(client):
 
     assert second_response.status_code == 201
     second_payload = second_response.get_json()
-    assert second_payload["success"] is True
-    assert second_payload["data"]["source_result_id"] == first_result_id
-    assert second_payload["data"]["result"]["id"] != first_result_id
+
+    second_result = second_payload["data"]["result"]
+    assert second_result["origin"] == "manual"
+    assert second_result["status"] == "approved"
+    assert second_result["parent_result_id"] == first_result_id
+    assert second_result["operation_id"] == "sharpen"
+
 
 
 def test_manual_chain_rejects_result_from_another_image(client):
@@ -372,3 +407,158 @@ def test_manual_chain_rejects_result_from_another_image(client):
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "SOURCE_RESULT_MISMATCH"
+
+
+def test_smart_pipeline_result_has_unified_metadata(client):
+    _, upload_payload = upload_image(client)
+    image_id = upload_payload["data"]["image"]["image_id"]
+
+    response = client.post(f"/api/images/{image_id}/pipeline")
+
+    assert response.status_code == 201
+
+    payload = response.get_json()
+    result = payload["data"]["result"]
+
+    assert result["origin"] == "smart"
+    assert result["parent_result_id"] is None
+    assert result["operation_id"] is None
+    assert result["status"] in {
+        "accepted",
+        "accepted_with_caution",
+        "review_required",
+        "unchanged_due_to_risk",
+    }
+
+
+def _fake_preparation(image, boundary_detector):
+    prepared = cv2.flip(image, 1)
+
+    return {
+        "prepared": True,
+        "image": prepared,
+        "boundary": {
+            "detected": True,
+            "status": "review_required",
+            "method_used": "guided",
+            "corners": [[1, 1], [100, 1], [100, 100], [1, 100]],
+            "confidence": 0.61,
+            "final_score": 0.61,
+            "area_ratio": 0.70,
+            "edge_support": 0.55,
+            "reason": "review required: guided candidate",
+        },
+        "perspective": {"applied": True, "width": 320, "height": 240},
+        "skew": {"angle": 1.2, "confidence": 0.82},
+        "deskew": {
+            "applied": True,
+            "angle": 1.2,
+            "confidence": 0.82,
+            "crop_applied": True,
+            "crop_reason": "test",
+        },
+        "steps": [],
+        "reason": "prepared for review",
+    }
+
+
+def test_preparation_preview_can_be_approved(client, monkeypatch):
+    monkeypatch.setattr(app_module, "prepare_document", _fake_preparation)
+
+    _, upload_payload = upload_image(client)
+    image_id = upload_payload["data"]["image"]["image_id"]
+
+    preview_response = client.post(
+        f"/api/images/{image_id}/preparation/preview"
+    )
+
+    assert preview_response.status_code == 200
+    preview_payload = preview_response.get_json()
+    preview_data = preview_payload["data"]
+    preparation_id = preview_data["preparation_id"]
+
+    assert preview_data["method_used"] == "guided"
+    assert preview_data["status"] == "review_required"
+    assert client.get(
+        f"/api/preparation/{preparation_id}"
+    ).status_code == 200
+
+    approve_response = client.post(
+        f"/api/images/{image_id}/preparation/{preparation_id}/approve"
+    )
+
+    assert approve_response.status_code == 201
+    approve_payload = approve_response.get_json()
+    result = approve_payload["data"]["result"]
+
+    assert result["origin"] == "preparation"
+    assert result["status"] == "approved"
+    assert result["method_used"] == "guided"
+    assert result["source_image_id"] == image_id
+
+
+def test_preparation_reject_does_not_create_final_result(client, monkeypatch):
+    monkeypatch.setattr(app_module, "prepare_document", _fake_preparation)
+
+    _, upload_payload = upload_image(client)
+    image_id = upload_payload["data"]["image"]["image_id"]
+
+    preview_response = client.post(
+        f"/api/images/{image_id}/preparation/preview"
+    )
+    preparation_id = preview_response.get_json()["data"]["preparation_id"]
+
+    reject_response = client.post(
+        f"/api/images/{image_id}/preparation/{preparation_id}/reject"
+    )
+
+    assert reject_response.status_code == 200
+    assert reject_response.get_json()["data"]["status"] == "rejected"
+    assert client.get(
+        f"/api/preparation/{preparation_id}"
+    ).status_code == 404
+
+
+def test_preparation_cannot_be_approved_for_another_image(client, monkeypatch):
+    monkeypatch.setattr(app_module, "prepare_document", _fake_preparation)
+
+    _, first_upload = upload_image(client)
+    _, second_upload = upload_image(client, filename="second.png")
+
+    first_image_id = first_upload["data"]["image"]["image_id"]
+    second_image_id = second_upload["data"]["image"]["image_id"]
+
+    preview_response = client.post(
+        f"/api/images/{first_image_id}/preparation/preview"
+    )
+    preparation_id = preview_response.get_json()["data"]["preparation_id"]
+
+    response = client.post(
+        f"/api/images/{second_image_id}/preparation/{preparation_id}/approve"
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "PREPARATION_SOURCE_MISMATCH"
+
+
+
+
+def test_manual_preview_supports_optional_jpeg_transport(client):
+    _, upload_payload = upload_image(client)
+    image_id = upload_payload["data"]["image"]["image_id"]
+
+    response = client.post(
+        f"/api/images/{image_id}/preview",
+        json={
+            "operation_id": "clahe",
+            "parameters": {"clip_limit": 1.5, "tile_grid_size": 8},
+        },
+        headers={"X-Preview-Format": "jpeg"},
+    )
+
+    payload = response.get_json()
+    assert response.status_code == 200
+    preview = payload["data"]["preview"]
+    assert preview["format"] == "jpeg"
+    assert preview["data_url"].startswith("data:image/jpeg;base64,")
+    assert len(preview["data_url"]) < 600_000
