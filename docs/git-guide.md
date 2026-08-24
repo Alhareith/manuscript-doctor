@@ -5,6 +5,8 @@ docs/git-guide.md
 # 🌿 Manuscript Doctor — دليل Git
 
 > **الغرض من الوثيقة:** تحديد طريقة بسيطة وثابتة لاستخدام Git داخل المشروع، بحيث يمكن تتبع التغييرات والرجوع إليها دون تعقيد غير ضروري.
+>
+> **ملاحظة الحالة الحالية:** هذا الدليل إرشادي. قبل الإضافة راجع `git status` و`.gitignore`؛ فمجلدات runtime وملفات التقييم والكاش قد تكون مستبعدة عمداً من Git. أمر الاختبارات المعتمد حالياً هو `PYTHONPATH=. pytest -q` من جذر المشروع.
 
 ---
 
@@ -160,6 +162,10 @@ feat: add analyzer, redesign frontend, fix upload and update everything
 ```text
 storage/uploads/*
 storage/results/*
+storage/preparation_previews/*
+.pytest_cache/
+*.log
+*.zip
 ```
 
 مع الاحتفاظ بـ:
@@ -228,7 +234,7 @@ flowchart LR
 مثال:
 
 ```bash
-python -m pytest -q
+PYTHONPATH=. pytest -q
 ```
 
 ثم فقط إذا كانت النتيجة صحيحة:
@@ -403,7 +409,7 @@ Clean Working Tree
 بعد الانتهاء من مرحلة Analyzer:
 
 ```bash
-python -m pytest -q
+PYTHONPATH=. pytest -q
 ```
 
 ثم:

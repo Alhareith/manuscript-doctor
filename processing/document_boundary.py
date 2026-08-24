@@ -1,3 +1,5 @@
+from email.mime import image
+
 import cv2
 import numpy as np
 
@@ -6,6 +8,8 @@ MAX_AREA_RATIO = 0.98
 MIN_CONFIDENCE = 0.68
 MAX_CANDIDATES = 12
 APPROX_EPSILON_RATIOS = (0.015, 0.02, 0.025, 0.03)
+PREPARATION_REVIEW_MIN_CONFIDENCE = 0.45
+PREPARATION_ALLOWED_METHODS = ("guided", "region")
 
 
 def _validate_image(image):
@@ -1086,4 +1090,140 @@ def detect_document_boundary(image):
             "geometry and inside/outside "
             "contrast ranking"
         ),
+    }
+
+def _preparation_candidate_payload(method, candidate):
+    if candidate is None:
+        return {
+            "method_used": method,
+            "status": "reject",
+            "detected": False,
+            "corners": [],
+            "confidence": 0.0,
+            "final_score": 0.0,
+            "area_ratio": 0.0,
+            "edge_support": 0.0,
+            "reason": f"rejected: {method} did not produce a valid quadrilateral",
+        }
+
+    confidence = float(candidate.get("final_score", candidate.get("confidence", 0.0)))
+    corners = [
+        [int(round(x)), int(round(y))]
+        for x, y in np.asarray(candidate["corners"], dtype=np.float32).reshape(4, 2)
+    ]
+    area_ratio = float(candidate.get("area_ratio", 0.0))
+    edge_support = float(candidate.get("contrast_score", 0.0))
+
+    if confidence >= MIN_CONFIDENCE:
+        status = "accept_automatic"
+        reason = f"accepted: {method} passed the automatic confidence threshold"
+    elif confidence >= PREPARATION_REVIEW_MIN_CONFIDENCE:
+        status = "review_required"
+        reason = f"review required: {method} produced a usable candidate below automatic confidence"
+    else:
+        status = "reject"
+        reason = f"rejected: {method} confidence is below the Preparation review floor"
+
+    return {
+        "method_used": method,
+        "status": status,
+        "detected": status != "reject",
+        "corners": corners,
+        "confidence": round(confidence, 4),
+        "final_score": round(confidence, 4),
+        "area_ratio": round(area_ratio, 4),
+        "edge_support": round(edge_support, 4),
+        "reason": reason,
+    }
+
+
+def detect_preparation_boundary(image):
+    """Select a Preparation boundary using Guided first, then Region.
+
+    Hough may be used internally as Guided's seed, but it is never returned
+    as an accepted Preparation method.
+    """
+    gray = _to_gray(image)
+
+    height, width = gray.shape[:2]
+    if width < 80 or height < 80:
+        return {
+            "detected": False,
+            "status": "reject",
+            "method_used": None,
+            "corners": [],
+            "confidence": 0.0,
+            "final_score": 0.0,
+            "area_ratio": 0.0,
+            "edge_support": 0.0,
+            "candidates": {
+                "guided": _preparation_candidate_payload("guided", None),
+                "region": _preparation_candidate_payload("region", None),
+            },
+            "reason": "rejected: image is too small for Preparation boundary detection",
+        }
+
+    # Guided uses the existing Hough implementation only as an internal seed.
+    hough_seed = _extract_hough_document_candidate(image, gray)
+    guided_candidate = _extract_guided_region_candidate(image, hough_seed)
+    guided = _preparation_candidate_payload("guided", guided_candidate)
+
+    # Guided has priority. Region is intentionally lazy: it is expensive and is
+    # needed only when Guided cannot produce a reviewable candidate.
+    if guided["status"] != "reject":
+        region = {
+            "method_used": "region",
+            "status": "not_run",
+            "detected": False,
+            "corners": [],
+            "confidence": 0.0,
+            "final_score": 0.0,
+            "area_ratio": 0.0,
+            "edge_support": 0.0,
+            "reason": "skipped: Guided produced a usable candidate",
+        }
+
+        return {
+            **guided,
+            "candidates": {
+                "guided": guided,
+                "region": region,
+            },
+            "allowed_methods": list(PREPARATION_ALLOWED_METHODS),
+        }
+
+    # Guided failed. Only now run Region as the fallback candidate.
+    region_candidates = _extract_region_document_candidates(image, gray)
+    region_candidate = region_candidates[0] if region_candidates else None
+    region = _preparation_candidate_payload("region", region_candidate)
+
+    candidates = {
+        "guided": guided,
+        "region": region,
+    }
+
+
+    # Guided has priority when it is geometrically usable. Region is fallback.
+    if guided["status"] != "reject":
+        selected = guided
+    elif region["status"] != "reject":
+        selected = region
+    else:
+        return {
+            "detected": False,
+            "status": "reject",
+            "method_used": None,
+            "corners": [],
+            "confidence": 0.0,
+            "final_score": 0.0,
+            "area_ratio": 0.0,
+            "edge_support": 0.0,
+            "candidates": candidates,
+            "reason": "rejected: neither Guided nor Region produced a reviewable candidate",
+        }
+
+    return {
+        **selected,
+        "candidates": candidates,
+        "allowed_methods": list(PREPARATION_ALLOWED_METHODS),
     }

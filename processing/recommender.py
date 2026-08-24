@@ -66,7 +66,8 @@ MANUAL_ONLY = {
     "histogram_equalization",
     "global_threshold",
     "otsu_threshold",
-    "adaptive_threshold"
+    "adaptive_threshold",
+    "super_resolution"
 }
 
 

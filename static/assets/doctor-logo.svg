@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">رمز طبيب الوثائق</title>
+  <desc id="desc">ورقة وثيقة مع علامة طبية وعدسة فحص</desc>
+  <defs>
+    <linearGradient id="shield" x1="18" y1="12" x2="110" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b7a62"/>
+      <stop offset="1" stop-color="#064c42"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="34" y1="20" x2="101" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f1c36b"/>
+      <stop offset="1" stop-color="#bd740d"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 5 117 25v38c0 30-20 49-53 60C31 112 11 93 11 63V25L64 5Z" fill="url(#shield)" stroke="#f9e5ac" stroke-width="3"/>
+  <path d="M64 14 108 31v31c0 24-15 40-44 51C35 102 20 86 20 62V31l44-17Z" fill="none" stroke="url(#gold)" stroke-width="3" opacity=".95"/>
+  <path d="M38 31h31l17 17v38H38V31Z" fill="#fff4dc" stroke="#f7d38b" stroke-width="2"/>
+  <path d="M69 31v18h17" fill="#dfb56a" opacity=".78"/>
+  <path d="M54 52v9H45v8h9v9h8v-9h9v-8h-9v-9h-8Z" fill="#5b2b20"/>
+  <path d="M44 86h25" stroke="#9a7650" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="84" cy="86" r="18" fill="#0b5b4c" stroke="url(#gold)" stroke-width="4"/>
+  <circle cx="84" cy="86" r="5" fill="#fff4dc" stroke="#bd740d" stroke-width="2"/>
+  <path d="m97 99 9 9" stroke="#f1c36b" stroke-width="5" stroke-linecap="round"/>
+  <path d="M77 78v-4m14 4v-4m-14 19v4m14-4v4" stroke="#f1c36b" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

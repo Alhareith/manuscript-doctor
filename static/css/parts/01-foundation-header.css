@@ -1,0 +1,196 @@
+/* هوية التصميم: واجهة وثائق مكتبية هادئة؛ ورق دافئ، كهرماني للتمييز، وأخضر للمحافظة والنتائج. */
+:root {
+--bg: #f7f2eb;
+    --bg-soft: #fbf8f4;
+    --surface: #fffdf9;
+    --surface-2: #f4eee7;
+    --surface-3: #eee5dc;
+    --ink: #4a2c21;
+    --ink-strong: #2e1b15;
+    --ink-soft: #7a5a4c;
+    --muted: #9a8174;
+    --line: #e8ddd3;
+    --line-strong: #d9c8bb;
+    --brand: #5a3325;
+    --brand-strong: #342018;
+    --brand-soft: #8f6554;
+    --accent: #b8865f;
+    --accent-soft: #efe0d2;
+    --success: #5f7a63;
+    --success-soft: #e9f0e8;
+    --warning: #aa7a37;
+    --warning-soft: #f7eedf;
+    --danger: #9a504c;
+    --danger-soft: #f5e6e4;
+    --shadow-xs: 0 1px 2px rgba(65, 37, 25, .04);
+    --shadow-sm: 0 8px 24px rgba(65, 37, 25, .07);
+    --shadow-md: 0 18px 44px rgba(65, 37, 25, .10);
+    --shadow-lg: 0 26px 64px rgba(40, 23, 17, .14);
+    --radius-sm: 10px;
+    --radius: 16px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+    --header-h: 78px;
+    --font-ui: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --font-display: "Aref Ruqaa Ink", "IBM Plex Sans Arabic", serif;
+}
+
+html[data-theme="dark"] {
+    --bg: #17120f;
+    --bg-soft: #1d1713;
+    --surface: #211a16;
+    --surface-2: #2a211c;
+    --surface-3: #352921;
+    --ink: #eaded5;
+    --ink-strong: #fff9f4;
+    --ink-soft: #c6b2a5;
+    --muted: #9c877a;
+    --line: #3d3028;
+    --line-strong: #554137;
+    --brand: #6e4536;
+    --brand-strong: #120d0b;
+    --brand-soft: #9d7464;
+    --accent: #c7936d;
+    --accent-soft: #39291f;
+    --success: #88a38a;
+    --success-soft: #243126;
+    --warning: #c49b5e;
+    --warning-soft: #33291c;
+    --danger: #c57a74;
+    --danger-soft: #362321;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, .18);
+    --shadow-sm: 0 8px 28px rgba(0, 0, 0, .20);
+    --shadow-md: 0 20px 48px rgba(0, 0, 0, .28);
+    --shadow-lg: 0 30px 70px rgba(0, 0, 0, .38);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 10% -10%, rgba(184, 134, 95, .09), transparent 30%),
+        linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 32%, var(--bg) 100%);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+button, input, select, textarea { font: inherit; }
+button { color: inherit; }
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; }
+.hidden { display: none !important; }
+
+::selection { background: rgba(184, 134, 95, .25); color: var(--ink-strong); }
+
+:focus-visible {
+    outline: 3px solid rgba(184, 134, 95, .35);
+    outline-offset: 3px;
+}
+
+.app-shell { min-height: 100vh; }
+
+.container-fluid {
+    --bs-gutter-x: clamp(24px, 4vw, 68px);
+}
+
+/* ---------- Header ---------- */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
+    background:
+        radial-gradient(circle at 82% -40%, rgba(184, 134, 95, .22), transparent 38%),
+        linear-gradient(120deg, #2f1c16 0%, #45271e 50%, #2b1913 100%);
+    color: #fffaf6;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 10px 30px rgba(34, 18, 12, .18);
+}
+
+.app-header-inner {
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.app-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.brand-mark {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-size: 22px;
+    color: #fff8f0;
+    background: linear-gradient(145deg, rgba(255,255,255,.15), rgba(255,255,255,.07));
+    border: 1px solid rgba(255,255,255,.16);
+    box-shadow: inset 0 1px rgba(255,255,255,.12), 0 8px 20px rgba(0,0,0,.12);
+}
+
+.brand-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.brand-copy strong {
+    font-family: var(--font-display);
+    font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+    font-weight: 700;
+    letter-spacing: -.02em;
+}
+
+.brand-copy small {
+    margin-top: 2px;
+    color: rgba(255,250,246,.68);
+    font-size: .76rem;
+    letter-spacing: .01em;
+}
+
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.header-assurance {
+    align-items: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 999px;
+    color: rgba(255,255,255,.74);
+    font-size: .79rem;
+    background: rgba(255,255,255,.055);
+}
+
+.theme-toggle {
+    min-height: 40px;
+    padding: 7px 11px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.13);
+    background: rgba(255,255,255,.07);
+    color: #fff8f2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+.theme-toggle:hover { transform: translateY(-1px); background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.20); }
+.theme-toggle-label { font-size: .8rem; }
+

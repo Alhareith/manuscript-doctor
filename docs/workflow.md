@@ -1,875 +1,380 @@
-docs/workflow.md
-
 <div dir="rtl" align="right">
 
 # 🔄 Manuscript Doctor — تدفق العمل
 
-> **الغرض من الوثيقة:** توثيق تسلسل عمل المستخدم والنظام خطوة بخطوة، من لحظة اختيار صورة المخطوطة حتى مقارنة النتيجة وتنزيلها.
-> **هذه الوثيقة تصف التدفق فقط؛ أما المتطلبات ففي `requirements.md`، والعقود في `architecture.md`، وأسباب القرارات في `decisions.md`.**
+> **غرض الوثيقة:** توضيح رحلة المستخدم وحركة البيانات من اختيار الصورة حتى اعتماد النتيجة وتنزيلها.
+>
+> هذه الوثيقة تشرح **متى** تحدث كل خطوة. العقود في [`architecture.md`](architecture.md)، والمتطلبات في [`requirements.md`](requirements.md)، وحالات الواجهة في [`ui-states.md`](ui-states.md).
 
 ---
 
-## 🧭 الفكرة العامة للتدفق
+## 1. التدفق العام
 
-يعتمد Manuscript Doctor على مسار واضح وثابت:
-
-```text id="wf-core"
-رفع الصورة
-    ↓
-التحقق منها
-    ↓
-فحصها
-    ↓
-تشخيص حالتها
-    ↓
-تقدير حساسية التفاصيل
-    ↓
-اقتراح المعالجة
-    ↓
-تنفيذ المعالجة
-    ↓
-فحص المحافظة
-    ↓
-مقارنة الأصل بالنتيجة
-    ↓
-عرض القرار
-    ↓
-تنزيل النتيجة
+```mermaid
+flowchart LR
+    A["اختيار الصورة"] --> B["معاينة محلية"]
+    B --> C["رفع + تحقق"]
+    C --> D["فحص وتشخيص"]
+    D --> E{"اختيار المسار"}
+    E -->|"Manual"| F["Preview → Approve"]
+    E -->|"Smart"| G["Preparation → Pipeline"]
+    F --> H["سلسلة النتائج"]
+    G --> H
+    H --> I["Preservation + Compare"]
+    I --> J["تنزيل"]
 ```
 
-<div align="center">
+المبدأ التنفيذي هو:
 
-### Diagnose → Treat → Preserve → Verify
+```text
+Diagnose → Treat → Preserve → Verify
+```
 
-</div>
+ولا تُعد المعاينة نتيجة نهائية؛ الاعتماد هو النقطة التي تنشئ artifact محفوظاً من خلال Flask/OpenCV.
 
 ---
 
-# 1. تدفق المستخدم الأساسي
+## 2. اختيار الصورة ورفعها
 
-## 1.1 اختيار الصورة
+### 2.1 اختيار محلي
 
-1. يفتح المستخدم التطبيق.
-2. يختار صورة مخطوطة من جهازه.
-3. تعرض JavaScript معاينة محلية للصورة.
-4. لا يتم إرسال الصورة إلى Backend حتى يضغط المستخدم زر الرفع.
+يختار المستخدم صورة من جهازه أو يسحبها إلى Drop Zone. تعرض الواجهة معاينة محلية قبل الإرسال، ولا ترسل مسار الملف المحلي إلى الخادم.
 
-### النتيجة المتوقعة
-
-```text id="wf-select"
+```text
+Empty
+  ↓ اختيار ملف
 Image Selected
-+
+  ↓ معاينة
 Local Preview
+  ↓ ضغط زر الرفع
+Upload Request
 ```
 
----
+### 2.2 التحقق الخادمي
 
-## 1.2 رفع الصورة وفحصها
-
-بعد الضغط على زر:
-
-> **رفع وفحص الصورة**
-
-يحدث التالي:
-
-1. ترسل الصورة إلى Backend.
-2. يتحقق Backend من وجود الملف.
-3. يتحقق من اسم الملف.
-4. يتحقق من الامتداد.
-5. يقرأ Raw Bytes.
-6. يحاول فك الصورة باستخدام OpenCV.
-7. يتحقق من أبعاد الصورة.
-8. يتحقق من حد عدد Pixels.
-9. يولد `image_id`.
-10. يحفظ Original Bytes دون إعادة ترميز.
-11. يبدأ Examination على الصورة الأصلية.
-
-### النتيجة المتوقعة
-
-```text id="wf-upload-result"
-Original Saved
-+
-image_id
-+
-Examination Results
-```
-
----
-
-# 2. Examination Workflow
-
-بعد نجاح الرفع يبدأ النظام بفحص الصورة الأصلية.
-
-```mermaid id="wf-examination"
-flowchart TD
-    A["Original Image"] --> B["Convert Working Copy to Grayscale"]
-    B --> C["Measure Brightness"]
-    B --> D["Measure Contrast"]
-    B --> E["Measure Dynamic Range"]
-    B --> F["Measure Sharpness"]
-    B --> G["Measure Noise Indicator"]
-    B --> H["Measure Illumination Variation"]
-    B --> I["Measure Edge Density"]
-
-    C --> J["Metrics"]
-    D --> J
-    E --> J
-    F --> J
-    G --> J
-    H --> J
-    I --> J
-
-    J --> K["Diagnosis Rules"]
-    K --> L["Diagnosis"]
-    J --> M["Preservation Profile"]
-```
-
-### المخرجات
-
-```text id="wf-exam-output"
-Dimensions
-+
-Metrics
-+
-Diagnoses
-+
-Preservation Profile
-```
-
----
-
-# 3. Diagnosis Workflow
-
-بعد حساب Metrics يتم تطبيق قواعد التشخيص.
-
-المبدأ:
-
-```text id="wf-diagnosis"
-Metric
-   ↓
-Threshold / Rule
-   ↓
-Diagnosis
-```
-
-مثال:
-
-```text id="wf-diagnosis-example"
-Brightness منخفض
-      ↓
-Diagnosis:
-إضاءة منخفضة
-```
-
-التشخيص لا يحدد العملية العلاجية مباشرة.
-
----
-
-# 4. Preservation Profile Workflow
-
-Preservation Profile يتم تكوينه **قبل المعالجة**.
-
-هدفه الإجابة تقريبًا عن:
-
-> ما مقدار الحذر المطلوب عند معالجة هذه الصورة؟
-
-```text id="wf-profile"
-Original Metrics
-      ↓
-Sensitivity Indicators
-      ↓
-Preservation Profile
-      ↓
-Low / Moderate / High
-```
-
-### مهم
-
-Preservation Profile:
-
-* لا يقيس مقدار النص المحفوظ.
-* لا يقارن Original مع Result.
-* لا يمثل ضمانًا لسلامة المعالجة.
-
-المقارنة الفعلية تأتي لاحقًا في Preservation Verification.
-
----
-
-# 5. Recommendation Workflow
-
-بعد اكتمال Diagnosis وPreservation Profile:
-
-```text id="wf-recommendation"
-Diagnosis
-+
-Preservation Profile
-      ↓
-Recommender
-      ↓
-Treatment Recommendation
-```
-
-كل Recommendation يجب أن توضح:
-
-* العملية المقترحة.
-* سبب الاختيار.
-* Priority عند الحاجة.
-* أي Warning متعلق بالحساسية.
-
-### مثال
-
-```text id="wf-rec-example"
-Diagnosis:
-Low Contrast
-
-Preservation Profile:
-Moderate
-
-        ↓
-
-Recommendation:
-CLAHE
-
-Reason:
-تحسين التباين المحلي بصورة أكثر تحفظًا من بعض المعالجات العالمية.
-```
-
----
-
-# 6. اختيار طريقة المعالجة
-
-بعد عرض Recommendation يستطيع المستخدم اختيار أحد مسارين:
-
-```mermaid id="wf-treatment-choice"
-flowchart TD
-    A["Treatment Ready"] --> B{"طريقة المعالجة"}
-    B -->|"Manual"| C["Manual Operation"]
-    B -->|"Automatic"| D["Preservation-Aware Smart Pipeline"]
-```
-
----
-
-# 7. Manual Processing Workflow
-
-## القاعدة الأساسية
-
-كل Manual Operation تبدأ من:
-
-> **Original Image**
-
-ولا تبدأ من Result سابقة.
-
-```text id="wf-manual-rule"
-Original
-   ↓
-Operation A
-   ↓
-Result A
-```
-
-ثم عند اختيار Operation B:
-
-```text id="wf-manual-second"
-Original
-   ↓
-Operation B
-   ↓
-Result B
-```
-
-وليس:
-
-```text id="wf-manual-wrong"
-Original
-   ↓
-Operation A
-   ↓
-Result A
-   ↓
-Operation B
-```
-
----
-
-## التدفق الكامل
-
-```mermaid id="wf-manual-sequence"
+```mermaid
 sequenceDiagram
-    participant U as User
-    participant JS as main.js
+    participant U as المستخدم
+    participant UI as الواجهة
     participant F as Flask
+    participant CV as OpenCV
     participant S as Storage
-    participant O as Operations
+
+    U->>UI: اختيار JPG/JPEG/PNG
+    UI->>F: POST /api/images
+    F->>F: التحقق من الحقل والاسم والامتداد
+    F->>CV: قراءة raw bytes وفك الصورة
+    F->>F: فحص dtype والأبعاد والبكسلات
+    F->>S: حفظ Original Bytes
+    F->>F: إنشاء image_id
+    F-->>UI: image_id + analysis + diagnoses + recommendations
+```
+
+يرفض الخادم الملف إذا كان فارغاً، أو غير قابل للقراءة، أو خارج الامتدادات المسموحة، أو تجاوز `20 MB`، أو تجاوز `30,000,000` بكسل بعد فك الصورة.
+
+### 2.3 بعد نجاح الرفع
+
+تنتقل الواجهة إلى حالة **Examination Ready** وتعرض:
+
+| المخرج | مكانه في التجربة |
+| --- | --- |
+| الصورة الأصلية | مساحة المعاينة |
+| Dimensions وChannels | معلومات الصورة |
+| Metrics | Dashboard |
+| Diagnoses | لوحة التشخيص |
+| Preservation Profile | مستوى الحذر |
+| Recommendations | اقتراحات المعالجة |
+
+---
+
+## 3. الفحص والتشخيص
+
+يعمل `analyzer.py` على الصورة المقروءة بعد نجاح التحقق. يحسب مؤشرات السطوع والتباين والنطاق الديناميكي والحدة والضوضاء وتفاوت الإضاءة وكثافة الحواف.
+
+```mermaid
+flowchart TD
+    A["Original decoded image"] --> B["Working grayscale copy"]
+    B --> C["Metrics"]
+    C --> D["Diagnosis rules"]
+    C --> E["Preservation Profile"]
+    D --> F["Diagnoses + messages"]
+    E --> G["Low / Moderate / High"]
+```
+
+لا يغير التحليل الأصل، ولا ينفذ عملية معالجة، ولا يقرر وحده أن عملية معينة يجب اعتمادها. يحول `recommender.py` النتائج إلى توصيات Rule-Based تحتوي العملية والسبب والأولوية والمخاطر.
+
+---
+
+## 4. اختيار مسار المعالجة
+
+بعد ظهور التشخيص والتوصية، يختار المستخدم:
+
+| المسار | يستخدم عندما | طبيعة التنفيذ |
+| --- | --- | --- |
+| Manual | يريد التحكم في العملية والمعاملات | خطوة يراجعها المستخدم ثم يعتمدها |
+| Smart Pipeline | يريد قراراً محافظاً مبنياً على التحليل | تجهيز وتحليل ومرشح والتحقق |
+
+لا تدخل `super_resolution` تلقائياً في المسار الذكي، لأنها عملية يدوية مستقلة. كما لا يُفرض القص التلقائي إذا لم يسمح `verify_preparation` بذلك.
+
+---
+
+## 5. المعالجة اليدوية
+
+### 5.1 تحديد المصدر الحالي
+
+يبدأ أول اختيار من الأصل، لكن بعد اعتماد خطوة يدوية تصبح النتيجة المعتمدة هي مصدر الخطوة التالية:
+
+```mermaid
+flowchart LR
+    O["Original"] --> A["Approved A"]
+    A --> B["Approved B"]
+    B --> C["Approved C"]
+```
+
+يُرسل `source_result_id` عند وجود نتيجة سابقة. يتحقق Flask من أن النتيجة تخص `image_id` نفسه وأنها نتيجة معتمدة صالحة للسلسلة.
+
+### 5.2 المعاينة
+
+```mermaid
+flowchart TD
+    A["اختيار Operation"] --> B{"نوع العملية"}
+    B -->|"خفيفة"| C["Canvas local preview"]
+    B -->|"قص"| D["Crop draft + guide"]
+    B -->|"ثقيلة"| E["Flask /preview"]
+    C --> F["Candidate"]
+    D --> F
+    E --> F
+    F --> G["زر الاعتماد الوحيد"]
+```
+
+العمليات الخفيفة الحالية للمعاينة المحلية هي `rotate_right` و`rotate_left` و`flip_horizontal` و`flip_vertical` و`intensity_adjust` و`gamma_correct`. أما CLAHE وSuper Resolution وبقية العمليات الثقيلة فتستخدم Preview خادمياً على نسخة عرض.
+
+في Preview الخادمي:
+
+1. يحدد الخادم المصدر الحالي.
+2. يصغر الصورة للعرض، باستثناء معالجة Crop قبل تصغير النتيجة.
+3. يطبق العملية على نسخة المعاينة.
+4. يعيد Preview بصيغة PNG افتراضياً أو JPEG عند إرسال `X-Preview-Format: jpeg`.
+5. يتخطى Preservation Verification النهائي لأن الصورة ما زالت مرشحاً.
+
+### 5.3 الاقتصاص اليدوي
+
+يظهر إطار القص بهامش ابتدائي تقريبي 5%، وتتحرك مقابضه لتعديل `x` و`y` و`width` و`height`. لا تصبح القيم نتيجة محفوظة إلا بعد الاعتماد.
+
+```text
+Crop Guide
+   ↓ سحب المقبض
+Crop Parameters
+   ↓ معاينة
+Candidate
+   ↓ اعتماد
+Flask/OpenCV Crop Result
+```
+
+يجب أن تطابق أبعاد النتيجة النهائية قيم الإطار المعتمدة، مع بقاء الأصل دون تعديل.
+
+### 5.4 Super Resolution
+
+يختارها المستخدم عندما يكون النص صغيراً أو الصورة منخفضة الدقة. تستخدم حالياً تكبير Lanczos ثم Unsharp Masking بمعاملات `scale` و`amount` و`sigma`. وقد تزيد قابلية القراءة، لكنها لا تستعيد حروفاً فُقدت بالكامل.
+
+### 5.5 الاعتماد
+
+زر **اعتماد العملية وإضافتها للسلسلة** هو نقطة التنفيذ النهائية:
+
+```mermaid
+sequenceDiagram
+    participant U as المستخدم
+    participant UI as الواجهة
+    participant F as Flask
+    participant O as Registry + OpenCV
     participant P as Preservation
-
-    U->>JS: Select Manual Operation
-    JS->>F: POST /api/images/{image_id}/operations
-    F->>F: Validate image_id
-    F->>F: Validate operation_id
-    F->>S: Load Original
-    F->>O: Execute Operation
-    O-->>F: Processed Image
-    F->>P: Original + Processed Result
-    P-->>F: Preservation Assessment
-    F->>S: Save Result + result_id
-    F-->>JS: Result + Processing Info + Preservation
-    JS->>U: Display Result and Assessment
-```
-
----
-
-# 8. Preservation-Aware Smart Pipeline Workflow
-
-Smart Pipeline ليست سلسلة ثابتة لجميع الصور.
-
-المسار الصحيح:
-
-```text id="wf-pipeline-core"
-Analysis
-+
-Diagnosis
-+
-Preservation Profile
-        ↓
-Recommendation
-        ↓
-Treatment Plan
-        ↓
-Pipeline
-        ↓
-Processed Result
-        ↓
-Preservation Verification
-```
-
----
-
-## التدفق الكامل
-
-```mermaid id="wf-pipeline-sequence"
-sequenceDiagram
-    participant U as User
-    participant JS as main.js
-    participant F as Flask
     participant S as Storage
-    participant A as Analyzer
-    participant R as Recommender
-    participant PIP as Pipeline
-    participant PR as Preservation
 
-    U->>JS: Run Automatic Treatment
-    JS->>F: POST /api/images/{image_id}/pipeline
-    F->>F: Validate image_id
-    F->>S: Load Original
-    F->>A: Analyze Original
-    A-->>F: Metrics + Diagnoses + Preservation Profile
-    F->>R: Build Treatment Recommendation
-    R-->>F: Treatment Plan
-    F->>PIP: Execute Plan
-    PIP-->>F: Processed Result + Steps
-    F->>PR: Original + Result
-    PR-->>F: Preservation Metrics + Warnings + Assessment
-    F->>S: Save Result + result_id
-    F-->>JS: Result + Steps + Reasons + Preservation
-    JS->>U: Display Treatment Result
+    U->>UI: اعتماد Candidate
+    UI->>F: POST /api/images/{id}/operations
+    F->>F: التحقق من operation + parameters + source_result_id
+    F->>S: تحميل الأصل أو النتيجة المصدرية
+    F->>O: تطبيق كامل الدقة
+    O-->>F: Processed image
+    F->>P: Original + Processed
+    P-->>F: Metrics / Warnings / Assessment
+    F->>S: حفظ result + manifest
+    F-->>UI: result_id + metadata
+    UI-->>U: تحديث السلسلة وbefore/after
 ```
+
+لا يوجد زر مستقل باسم «تنفيذ العملية الحالية». وجود Candidate قابل للاعتماد هو الذي يحدد جاهزية الزر الوحيد.
 
 ---
 
-# 9. Preservation Verification Workflow
+## 6. before/after وسجل الخطوات
 
-Preservation Verification يحدث **بعد المعالجة**.
+عند عرض الخطوة النشطة، تكون الصورة السابقة هي مصدرها المباشر، والصورة اللاحقة هي نتيجتها:
 
-مدخلاته:
+| الخطوة النشطة | before | after |
+| --- | --- | --- |
+| الأولى | Original | Result A |
+| الثانية | Result A | Result B |
+| الثالثة | Result B | Result C |
 
-```text id="wf-pres-input"
-Original
-+
-Processed Result
+تُحفظ الخطوات المعتمدة في `state.manualChain`، ويُحدد `manualActiveIndex` الخطوة النشطة، وتستخدم الواجهة `syncManualChainSelection` لتحديث الصورتين معاً. لا تعتمد الواجهة على تحميل الصورة الأصلية مكان before بعد كل اعتماد، لأن ذلك يعيد مشكلة التأخر خطوة واحدة.
+
+### Undo وRedo
+
+```mermaid
+stateDiagram-v2
+    [*] --> Original
+    Original --> StepA: اعتماد A
+    StepA --> StepB: اعتماد B
+    StepB --> UndoAtA: Undo
+    UndoAtA --> StepB: Redo
+    StepA --> NewBranch: اعتماد عملية جديدة
+    NewBranch --> [*]
 ```
 
-ثم:
+التراجع والإعادة يغيران المؤشر النشط ويعيدان عرض النتائج المحفوظة أو المؤقتة دون إعادة تنفيذ العملية بلا حاجة. إذا اعتمد المستخدم خطوة جديدة بعد التراجع، تزال الفروع اللاحقة غير النشطة من المسار الحالي.
 
-```mermaid id="wf-preservation"
+---
+
+## 7. Smart Pipeline وتجهيز الوثيقة
+
+يبدأ Smart Pipeline من الصورة الأصلية، ولا يستخدم النتيجة اليدوية السابقة تلقائياً. قبل خطوات العلاج، يجرب تجهيز الوثيقة ثم يتحقق منه.
+
+```mermaid
 flowchart TD
+    O["Original"] --> P["prepare_document"]
+    P --> V{"verify_preparation"}
+    V -->|"accept"| A["استخدام الصورة المجهزة"]
+    V -->|"reject / review_required"| R["الإبقاء على الأصل"]
+    A --> S["Analyze + Recommend"]
+    R --> S
+    S --> T["Apply eligible treatment"]
+    T --> G["Benefit Gate"]
+    G --> H["Preservation Gate"]
+    H -->|"مقبول"| F["Smart Result"]
+    H -->|"خطر"| X["Rollback / Warning"]
+```
+
+### سياسة Preparation
+
+| الحالة | السلوك |
+| --- | --- |
+| حدود موثوقة | يمكن استخدام التصحيح المنظوري والقص الآمن عند نجاح التحقق |
+| حدود غير موثوقة + deskew عالي الثقة | يقبل `deskew-only` ويحافظ على الإطار دون قص |
+| ثقة منخفضة | يؤجل التجهيز أو يرفضه ويستمر من الأصل |
+
+يعرض الرد خطوة `document_prepare` بحالة `accepted` أو `deferred`، و`method_used` عند توفرها. لا تعني `deferred` فشل Smart Pipeline كله؛ تعني فقط أن Preparation لم تكن آمنة تلقائياً.
+
+### خطوات Smart
+
+يعيد المسار الذكي الخطوات والقرار والتوصيات ونتيجة المحافظة، وقد يعيد Binarization Candidates مستقلة للمراجعة. لا تدخل Super Resolution في هذه السلسلة.
+
+---
+
+## 8. التحقق والمقارنة
+
+بعد تنفيذ العملية أو Smart Pipeline، تقارن وحدة Preservation الأصل بالنتيجة. قد تعرض:
+
+```text
+acceptable
+caution
+high_risk
+```
+
+هذه حالات إرشادية، وليست فهماً لغوياً للنص أو ضماناً تاريخياً لحفظ كل حرف. تعرض الواجهة before/after، ملخص ما حدث، وسبب القرار أو التحذير.
+
+```mermaid
+flowchart LR
     A["Original"] --> C["Preservation Verification"]
     B["Processed Result"] --> C
-
-    C --> D["Structural Metrics"]
-    D --> E["Warnings"]
-    E --> F{"Assessment"}
-
-    F --> G["Acceptable"]
-    F --> H["Caution"]
-    F --> I["High Risk"]
-```
-
-### الهدف
-
-اكتشاف مؤشرات على تغيرات مثل:
-
-* فقد تفاصيل دقيقة.
-* تغير واضح في الحواف.
-* تفتت مكونات.
-* اندماج مكونات.
-* تغير بنيوي غير مرغوب.
-
-### لا يعني
-
-```text id="wf-pres-no"
-Structural Change
-≠
-Text Loss Confirmed
+    C --> D["Metrics + Warnings"]
+    D --> E["Assessment"]
+    E --> F["Compare + Decision"]
 ```
 
 ---
 
-# 10. Treatment Decision Workflow
+## 9. التنزيل
 
-بعد Preservation Verification تعرض الواجهة Decision مفهومة.
+لا يصبح زر التنزيل فعالاً إلا عند وجود `result_id` محفوظ:
 
-مثال:
-
-```text id="wf-decision-ok"
-Assessment:
-Acceptable
-
-Message:
-تحسنت الصورة دون ظهور مؤشرات قوية على تغير بنيوي غير مرغوب وفق المقاييس المستخدمة.
-```
-
-أو:
-
-```text id="wf-decision-warning"
-Assessment:
-Caution
-
-Message:
-تحسنت بعض الخصائص، لكن ظهرت مؤشرات تستدعي مراجعة النتيجة قبل اعتمادها.
-```
-
-أو:
-
-```text id="wf-decision-risk"
-Assessment:
-High Risk
-
-Message:
-تشير المؤشرات إلى تغير بنيوي مرتفع نسبيًا، ويوصى باستخدام معالجة أكثر تحفظًا.
-```
-
----
-
-# 11. Comparison Workflow
-
-بعد اكتمال المعالجة والتقييم:
-
-```text id="wf-comparison"
-Original
-    │
-    ├──────────────┐
-    │              │
-    ▼              ▼
-Original View    Result View
-    │              │
-    └──────┬───────┘
-           ↓
-Preservation Assessment
-           ↓
-Treatment Summary
-```
-
-في الـMVP الأساسي:
-
-```text id="wf-comparison-mvp"
-Original
-+
-Result
-+
-Assessment
-```
-
-أما:
-
-```text id="wf-optional-map"
-Structural Change Map
-```
-
-فهي ميزة اختيارية لاحقة.
-
----
-
-# 12. Treatment Summary Workflow
-
-بعد كل Result يجب أن تستطيع الواجهة عرض:
-
-```text id="wf-summary"
-Detected Problem
-+
-Treatment Applied
-+
-Why It Was Chosen
-+
-Preservation Assessment
-+
-Final Message
-```
-
-الغرض من Summary ليس عرض تفاصيل تقنية كثيرة، بل جعل النتيجة قابلة للتفسير.
-
----
-
-# 13. Download Workflow
-
-لا يظهر Download كوظيفة فعالة إلا بعد وجود Result حقيقية.
-
-```mermaid id="wf-download"
+```mermaid
 sequenceDiagram
-    participant U as User
-    participant JS as main.js
+    participant U as المستخدم
+    participant UI as الواجهة
     participant F as Flask
     participant S as Storage
 
-    U->>JS: Click Download
-    JS->>F: GET /api/results/{result_id}/download
-    F->>F: Validate result_id
-    F->>S: Locate allowed result file
-    S-->>F: Result File
-    F-->>U: Download File
+    U->>UI: الضغط على تنزيل
+    UI->>F: GET /api/results/{result_id}/download
+    F->>F: التحقق من result_id
+    F->>S: تحديد الملف المسموح
+    S-->>F: PNG result
+    F-->>U: ملف قابل للتنزيل
 ```
 
-### قاعدة أمان
-
-لا يرسل المستخدم:
-
-```text id="wf-download-bad"
-C:\file.png
-../results/file.png
-```
-
-بل يرسل Backend Resource ID فقط.
+لا يرسل المستخدم مساراً محلياً أو مساراً نسبياً؛ يستخدم `result_id` فقط.
 
 ---
 
-# 14. التدفق التقني الكامل للرفع
+## 10. تدفق الأخطاء
 
-```mermaid id="wf-upload-sequence"
-sequenceDiagram
-    participant U as User
-    participant JS as main.js
-    participant F as Flask
-    participant S as Storage
-    participant A as Analyzer
-
-    U->>JS: Select Image
-    JS->>JS: Show Local Preview
-
-    U->>JS: Upload and Examine
-    JS->>F: POST /api/images
-
-    F->>F: Check image field
-    F->>F: Check filename
-    F->>F: Check extension
-    F->>F: Read raw bytes
-    F->>F: Decode with OpenCV
-    F->>F: Validate dimensions
-    F->>F: Validate pixel limit
-    F->>F: Generate image_id
-
-    F->>S: Save Original Bytes
-    F->>A: Analyze Image
-    A-->>F: Analysis + Diagnoses + Profile
-
-    F-->>JS: Unified JSON
-    JS->>U: Show Examination Result
-```
-
----
-
-# 15. ترتيب المسؤوليات داخل Backend
-
-المسار المطلوب عند اكتمال جميع الوحدات:
-
-```text id="wf-backend-order"
-Request
-   ↓
-Flask Validation
-   ↓
-Resource Resolution
-   ↓
-Specialized Processing Module
-   ↓
-Preservation Verification عند الحاجة
-   ↓
-Storage
-   ↓
-Unified JSON Response
-```
-
-### غير مسموح
-
-```text id="wf-backend-wrong"
-Request
-↓
-app.py
-↓
-كل الخوارزميات داخله
-```
-
----
-
-# 16. تدفق الأخطاء
-
-أي خطأ متوقع يجب أن يتوقف عند أقرب نقطة صحيحة.
-
-```mermaid id="wf-errors"
+```mermaid
 flowchart TD
-    A["Request"] --> B{"Valid?"}
-    B -->|"No"| C["Unified Error Response"]
-    B -->|"Yes"| D["Continue"]
-
-    D --> E{"Processing Success?"}
-    E -->|"No"| C
-    E -->|"Yes"| F["Result"]
-
-    F --> G{"Preservation Available?"}
+    A["Request"] --> B{"Valid resource and body?"}
+    B -->|"No"| E["Unified Error"]
+    B -->|"Yes"| C["Execute"]
+    C --> D{"Processing succeeded?"}
+    D -->|"No"| E
+    D -->|"Yes"| F["Result created"]
+    F --> G{"Preservation available?"}
     G -->|"Yes"| H["Result + Assessment"]
-    G -->|"No"| I["Result + Verification Warning"]
+    G -->|"No"| I["Result + Warning"]
 ```
+
+| الخطأ | السلوك |
+| --- | --- |
+| ملف أو معرف غير صالح | يتوقف الطلب برسالة عربية واضحة |
+| Operation غير مسجلة | لا تستدعى أي دالة Python |
+| Parameters غير صالحة | يعاد خطأ 400 مضبوط |
+| مصدر نتيجة غير صالح | لا تضاف خطوة إلى السلسلة |
+| فشل OpenCV | لا تُعرض النتيجة كمعتمدة |
+| تعذر Preservation | يمكن إبقاء نتيجة المعالجة مع تحذير، دون وصفها بأنها آمنة |
 
 ---
 
-# 17. أخطاء الرفع
+## 11. التدفق المختصر المعتمد
 
-| الحالة                 | Code                         | السلوك               |
-| ---------------------- | ---------------------------- | -------------------- |
-| لا يوجد ملف            | `NO_FILE`                    | إيقاف الطلب          |
-| Filename فارغ          | `EMPTY_FILENAME`             | إيقاف الطلب          |
-| Extension غير مسموح    | `UNSUPPORTED_FILE_TYPE`      | رفض الملف            |
-| ملف أكبر من الحد       | `FILE_TOO_LARGE`             | رفض الطلب            |
-| أبعاد مفرطة            | `IMAGE_DIMENSIONS_TOO_LARGE` | رفض الصورة           |
-| الملف غير قابل للقراءة | `UNREADABLE_IMAGE`           | عدم حفظه كصورة صالحة |
-
----
-
-# 18. أخطاء المعالجة
-
-| الحالة                 | Code                        | السلوك                                                     |
-| ---------------------- | --------------------------- | ---------------------------------------------------------- |
-| `image_id` غير موجود   | `IMAGE_NOT_FOUND`           | لا تنفذ المعالجة                                           |
-| Operation غير مسجلة    | `INVALID_OPERATION`         | لا تستدعَ أي Function                                      |
-| فشل Operation          | `PROCESSING_FAILED`         | لا تعتبر Result ناجحة                                      |
-| Result غير موجودة      | `RESULT_NOT_FOUND`          | لا يتم التنزيل                                             |
-| فشل Preservation Check | `PRESERVATION_CHECK_FAILED` | يمكن إعادة Result مع Warning إذا كانت المعالجة نفسها ناجحة |
+| المرحلة | مدخلها | مخرجها |
+| --- | --- | --- |
+| Select | ملف محلي | Local Preview |
+| Upload | صورة قابلة للقراءة | `image_id` |
+| Examine | الأصل المفكوك | Metrics |
+| Diagnose | Metrics | Diagnoses |
+| Recommend | Diagnoses + Profile | خطة مبررة |
+| Treat | Operation أو Smart request | Candidate أو Result |
+| Preserve | Original + Result | Assessment |
+| Compare | before + after | قرار مفهوم |
+| Download | `result_id` | PNG result |
 
 ---
 
-# 19. فشل Preservation Check
+## 12. قاعدة إضافة مسار جديد
 
-هذه حالة خاصة.
+لا يضاف أي تدفق جديد إلى الواجهة قبل تحديد:
 
-```text id="wf-pres-fail"
-Processing
-    ✓ Success
-
-Preservation
-    ✗ Failed
+```text
+متى يبدأ؟
+  ↓
+ما المصدر؟
+  ↓
+ما المعاينة؟
+  ↓
+ما نقطة الاعتماد؟
+  ↓
+ما النتيجة المحفوظة؟
+  ↓
+كيف يؤثر على Preservation؟
 ```
-
-لا نريد تحويلها تلقائيًا إلى:
-
-```text id="wf-pres-fail-wrong"
-Everything Failed
-```
-
-إذا كانت Result نفسها صحيحة:
-
-```text id="wf-pres-fail-correct"
-Result Available
-+
-Preservation Assessment Unavailable
-+
-Warning
-```
-
-لكن:
-
-> لا يجوز اعتبار Result آمنة بسبب غياب التقييم.
-
----
-
-# 20. حالات الواجهة أثناء التدفق
-
-```text id="wf-ui-states"
-Empty
-   ↓
-Image Selected
-   ↓
-Uploading / Examining
-   ↓
-Examination Ready
-   ↓
-Treatment Ready
-   ↓
-Processing
-   ↓
-Verifying
-   ↓
-Result Ready
-```
-
-الحالات غير الخطية:
-
-```text id="wf-ui-extra"
-Warning
-Error
-```
-
-تفاصيل كل حالة توجد في:
-
-```text id="wf-ui-doc"
-docs/ui-states.md
-```
-
----
-
-# 21. User Workflow المختصر
-
-|  #  | المرحلة                  | ما يراه المستخدم                 |
-| :-: | ------------------------ | -------------------------------- |
-|  1  | **Select**               | اختيار صورة                      |
-|  2  | **Preview**              | معاينة محلية                     |
-|  3  | **Upload**               | رفع الصورة                       |
-|  4  | **Examine**              | مؤشرات الحالة البصرية            |
-|  5  | **Diagnose**             | المشكلات المكتشفة                |
-|  6  | **Preservation Profile** | مقدار الحذر المقترح              |
-|  7  | **Recommend**            | خطة المعالجة وسببها              |
-|  8  | **Treat**                | Manual أو Smart Pipeline         |
-|  9  | **Verify**               | فحص أثر المعالجة                 |
-|  10 | **Compare**              | Original مقابل Result            |
-|  11 | **Decision**             | Acceptable / Caution / High Risk |
-|  12 | **Download**             | تنزيل Result                     |
-
----
-
-# 22. المسار النهائي للنظام
-
-```mermaid id="wf-final"
-flowchart TD
-
-    A["Select Manuscript"]
-    B["Local Preview"]
-    C["Upload"]
-    D["Validate"]
-    E["Save Original"]
-    F["Examine"]
-    G["Diagnose"]
-    H["Preservation Profile"]
-    I["Recommend"]
-    J{"Treatment Mode"}
-    K["Manual Operation"]
-    L["Smart Pipeline"]
-    M["Processed Result"]
-    N["Preservation Verification"]
-    O["Comparison"]
-    P["Decision"]
-    Q["Download"]
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
-
-    J --> K
-    J --> L
-
-    K --> M
-    L --> M
-
-    M --> N
-    N --> O
-    O --> P
-    P --> Q
-```
-
----
-
-# 23. قاعدة التدفق الأساسية
-
-أي ميزة جديدة يجب أن تجد مكانًا منطقيًا داخل هذا التدفق.
-
-إذا لم نستطع تحديد:
-
-```text id="wf-feature-check"
-متى تبدأ؟
-↓
-ما مدخلاتها؟
-↓
-ما مخرجاتها؟
-↓
-ما الوحدة المسؤولة عنها؟
-↓
-كيف تؤثر على Preservation؟
-```
-
-فلا يتم إدخالها مباشرة إلى الـMVP.
-
----
-## Runtime Backend Workflow
-
-### Upload
-
-Client
-→ POST `/api/images`
-→ Validate
-→ Decode
-→ Analyze
-→ Diagnose
-→ Preservation Profile
-→ Recommend
-→ Save Original
-→ Return Image ID
-
-### Manual Treatment
-
-Image ID
-→ Operation ID + Parameters
-→ Validate
-→ Load Original
-→ Apply Operation
-→ Preservation Verification
-→ Save PNG Result
-→ Return Result ID
-
-### Smart Treatment
-
-Image ID
-→ Load Original
-→ Analyze
-→ Recommend
-→ Smart Pipeline
-→ Candidate Verification
-→ Final Verification
-→ Save Result
-→ Save Binary Candidates
-→ Return Decision and Result IDs
----
-
-<div align="center">
-
-## 🩺 Manuscript Doctor
-
-### Workflow Principle
-
-**Examine before treating.**
-**Explain before applying.**
-**Verify before trusting.**
-
-</div>
 
 </div>

@@ -40,6 +40,21 @@ def test_accepts_verified_second_document():
     assert abs(verification["residual_skew"]["angle"]) <= 0.75
 
 
+def test_accepts_high_confidence_deskew_only_document():
+    result = prepare_document(_load_image("check/c05.jpg"))
+    verification = verify_preparation(result)
+
+    assert result["prepared"] is True
+    assert result["deskew"]["applied"] is True
+    assert result["deskew"]["crop_applied"] is False
+    assert verification["status"] == "accept"
+    assert verification["verified"] is True
+    assert any("deskew-only accepted" in item["reason"] for item in verification["checks"])
+
+
+
+
+
 def test_rejects_unprepared_result():
     image = np.full((600, 800, 3), 220, dtype=np.uint8)
     result = prepare_document(image)

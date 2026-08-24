@@ -1,804 +1,440 @@
-
 <div dir="rtl" align="right">
 
 # 🏛️ Manuscript Doctor — معمارية النظام
 
-> **الغرض من الوثيقة:** توضيح البنية الداخلية للنظام، مسؤولية كل مكوّن، تدفق البيانات، عقود الـAPI، وحدود الفصل بين الأجزاء.
-> **هذه الوثيقة لا تشرح المتطلبات أو أسباب جميع القرارات؛ المتطلبات في `requirements.md` والقرارات في `decisions.md`.**
+> **غرض الوثيقة:** شرح كيف تتصل الواجهة بالخادم ومحرك معالجة الصور، وكيف تنتقل الصورة من الرفع إلى المعاينة ثم الاعتماد والتحقق والتنزيل.
+>
+> توثق هذه الصفحة **المعمارية المنفذة حالياً**. تفاصيل المتطلبات في [`requirements.md`](requirements.md)، ومسار المستخدم في [`workflow.md`](workflow.md)، وأسباب القرارات في [`decisions.md`](decisions.md).
 
 ---
 
-## 1. الهدف المعماري
+## 1. المبدأ المعماري
 
-يجب أن تسمح المعمارية لـ **Manuscript Doctor** بتنفيذ المسار التالي بوضوح:
+يعتمد النظام على دورة واضحة:
 
 ```text
-Analyze
-   ↓
-Diagnose
-   ↓
-Recommend
-   ↓
-Treat
-   ↓
-Preserve
-   ↓
-Verify
+Analyze → Diagnose → Recommend → Treat → Preserve → Verify
 ```
 
-مع الحفاظ على مبدأ أساسي:
+والقاعدة الأهم هي الفصل بين المسؤوليات:
 
-> **تنفيذ المعالجة منفصل عن تحليل الصورة، والتوصية منفصلة عن التنفيذ، والتحقق من المحافظة منفصل عن الجميع.**
+| المسؤولية | مكانها |
+| --- | --- |
+| استقبال الملفات والطلبات | Flask في `app.py` |
+| قياس الصورة وتشخيصها | `processing/analyzer.py` |
+| بناء التوصيات | `processing/recommender.py` |
+| تنفيذ عملية واحدة | `processing/ops/` عبر `registry.py` |
+| ترتيب المسار الذكي | `processing/pipeline.py` و`smart_document_pipeline.py` |
+| تجهيز الوثيقة والتحقق من الميل والحدود | `preparation_pipeline.py` و`preparation_verification.py` |
+| مقارنة الأصل بالنتيجة | `processing/preservation.py` |
+| العرض والحالة والمعاينة | `static/js/parts/` |
+| الهوية البصرية والتجاوب | `static/css/parts/` |
 
-الهدف ليس إنشاء عدد كبير من الملفات، بل منع تداخل المسؤوليات بحيث يمكن تطوير كل جزء واختباره دون هدم بقية النظام.
-
----
-
-# 2. النظرة العامة على المعمارية
-
-```mermaid
-flowchart TD
-
-    U["👤 المستخدم"]
-
-    subgraph FE["🖥️ Frontend"]
-        HTML["index.html"]
-        JS["main.js"]
-        CSS["style.css"]
-    end
-
-    subgraph BE["⚙️ Flask Backend"]
-        APP["app.py"]
-    end
-
-    subgraph CORE["🧠 Processing Core"]
-        ANA["analyzer.py"]
-        REC["recommender.py"]
-        OPS["operations.py"]
-        PIPE["pipeline.py"]
-        PRES["preservation.py"]
-    end
-
-    subgraph ST["💾 Runtime Storage"]
-        UP["storage/uploads"]
-        RES["storage/results"]
-    end
-
-    U --> HTML
-    HTML --> JS
-    CSS --> HTML
-
-    JS -->|HTTP| APP
-
-    APP --> ANA
-    ANA --> REC
-
-    APP --> OPS
-    APP --> PIPE
-
-    REC --> PIPE
-
-    OPS --> PRES
-    PIPE --> PRES
-
-    APP <--> UP
-    APP <--> RES
-
-    PRES --> APP
-    APP -->|JSON + URLs| JS
-```
+لا ينفذ الخادم خوارزمية OpenCV داخل Route مباشرة، ولا تضع الواجهة قواعد التشخيص أو التوصية أو المحافظة على التفاصيل.
 
 ---
 
-# 3. طبقات النظام
-
-| الطبقة                 | المسؤولية                                   | التقنية                 |
-| ---------------------- | ------------------------------------------- | ----------------------- |
-| **Presentation Layer** | عرض الواجهة والتفاعل مع المستخدم            | HTML + CSS + JavaScript |
-| **Application Layer**  | إدارة HTTP والتحقق وتنسيق تدفق الطلبات      | Flask                   |
-| **Processing Layer**   | التحليل والتشخيص والتوصية والمعالجة والتحقق | OpenCV + NumPy          |
-| **Storage Layer**      | حفظ الصور الأصلية والنتائج المؤقتة          | Local File System       |
-
-> لا توجد قاعدة بيانات في الـMVP.
-
----
-
-# 4. المكونات ومسؤولياتها
-
-## 4.1 `app.py` — منسق التطبيق
-
-### المسؤوليات
-
-* إنشاء تطبيق Flask.
-* إعداد المجلدات وحدود الرفع.
-* تعريف Routes.
-* استقبال HTTP Requests.
-* التحقق من الطلبات والملفات.
-* إدارة `image_id` و`result_id`.
-* استدعاء الوحدات المتخصصة.
-* حفظ وقراءة الملفات المسموحة.
-* إعادة JSON موحد.
-* التعامل مع الأخطاء المتوقعة.
-
-### لا يجب أن يحتوي على
-
-* خوارزميات OpenCV الخاصة بالمعالجة.
-* حساب Brightness أو Contrast.
-* قواعد Diagnosis.
-* قواعد Recommendation.
-* خوارزميات Preservation.
-* منطق Pipeline الداخلي.
-
----
-
-## 4.2 `processing/analyzer.py` — Examination & Diagnosis Engine
-
-### المسؤولية
-
-تحليل **الصورة الأصلية قبل المعالجة**.
-
-### الوظائف
-
-* التحقق من صحة مصفوفة الصورة.
-* دعم:
-
-  * Grayscale
-  * BGR
-  * BGRA
-* استخراج الأبعاد والقنوات.
-* تحويل نسخة داخلية إلى Grayscale عند الحاجة.
-* حساب المؤشرات البصرية.
-* تحويل بعض المؤشرات إلى Diagnosis.
-* إنشاء Preservation Profile أولي.
-
-### المؤشرات الحالية
-
-* Brightness
-* Contrast
-* Dynamic Range
-* Sharpness Indicator
-* Noise Indicator
-* Illumination Variation
-* Edge Density
-
-### لا يجب أن يقوم بـ
-
-* حفظ الملفات.
-* تنفيذ CLAHE أو Threshold أو أي Treatment.
-* اختيار Operation للمستخدم.
-* مقارنة Original مع Result.
-* التعامل مع Flask أو HTTP.
-
-```text
-Original Image
-      ↓
-Analyzer
-      ↓
-Metrics
-      ↓
-Diagnosis
-      ↓
-Preservation Profile
-```
-
----
-
-## 4.3 `processing/recommender.py` — Recommendation Engine
-## Recommendation Engine
-
-`processing/recommender.py` يحول نتائج Examination Engine إلى توصيات معالجة قابلة للتفسير.
-
-لا يقوم الملف بتنفيذ عمليات معالجة الصور.
-
-### Inputs
-
-- diagnoses
-- preservation profile
-
-### Outputs
-
-- recommended operations
-- provisional parameters
-- recommendation reasons
-- processing mode
-- operation risk
-- operations excluded from automatic use
-- summary
-
-### Recommendation Policy
-
-قواعد التوصية مبنية على نتائج Operation Evaluation وليس على أسماء الخوارزميات فقط.
-
-لا تصبح أي عملية مؤهلة للاستخدام التلقائي إذا كانت مصنفة `manual_only` أو `reject`.
-
-### Processing Modes
-
-#### Enhancement
-
-عمليات تنتج نسخة محسنة مع المحافظة على طبيعة الصورة العامة، مثل:
-
-- CLAHE
-- Median Denoising
-- Sharpening
-
-#### Binarization
-
-عمليات تنتج تمثيلًا ثنائيًا منفصلًا، مثل:
-
-- Adaptive Threshold
-
-لا يعامل Binarization كنتيجة Enhancement عادية.
-
-### Important Limitation
-
-Recommendation Engine هو Rule-Based Decision Support وليس نموذج AI أو Machine Learning.
----
-
-## 4.4 `processing/operations.py` ## Processing Operations
-
-`processing/operations.py` يحتوي على عمليات معالجة صور مستقلة.
-
-تستقبل العمليات صورة OpenCV موجودة في الذاكرة وتعيد صورة جديدة دون تعديل الصورة الأصلية أو التعامل مع الملفات أو HTTP.
-
-### Core Operations
-
-#### CLAHE
-تحسين التباين المحلي مع الحد من التضخيم المفرط للتباين.
-
-في الصور الملونة يتم تعديل قناة الإضاءة فقط للمحافظة على المعلومات اللونية قدر الإمكان.
-
-#### Histogram Equalization
-تحسين عالمي للتباين يستخدم أساسًا كعملية مقارنة مع طرق التحسين المحلي.
-
-#### Median Denoising
-تقليل بعض أنواع التغيرات النقطية مع محافظة نسبية على الحواف.
-
-#### Sharpening
-تعزيز التفاصيل باستخدام Unsharp Masking بمعامل شدة قابل للتحكم.
-
-#### Global Threshold
-تحويل الصورة إلى تمثيل ثنائي باستخدام قيمة Threshold محددة.
-
-#### Otsu Threshold
-اختيار Threshold عالمي تلقائيًا اعتمادًا على توزيع شدة الصورة.
-
-#### Adaptive Threshold
-استخدام Thresholds محلية، ويستهدف بصورة خاصة الحالات التي تتغير فيها الإضاءة عبر الصفحة.
-
-#### Morphological Opening
-عملية بنيوية قد تساعد على إزالة مكونات صغيرة، ويجب استخدامها بحذر بسبب احتمال فقد التفاصيل.
-
-#### Morphological Closing
-عملية بنيوية قد تسد فجوات صغيرة، ويجب استخدامها بحذر بسبب احتمال دمج تفاصيل متجاورة.
-
-### Operation Registry
-
-لا يرسل Frontend أسماء دوال Python.
-
-يستخدم النظام معرفات ثابتة مثل:
-
-- `clahe`
-- `median_denoise`
-- `adaptive_threshold`
-
-ويقوم Backend لاحقًا بربط المعرف بالدالة المسموح بها عبر Operation Registry.
-
-### Parameter Status
-
-القيم الافتراضية الحالية هي Initial Defaults فقط.
-
-لا تعتبر Parameters نهائية أو مثلى للمخطوطات قبل مرحلة Operation Evaluation & Parameter Tuning.
-## الهدف
-
-* منع استدعاء دوال عشوائية.
-* تثبيت Contract بين Frontend وBackend.
-* جعل إضافة Operation جديدة أسهل.
-* عدم إنشاء Route جديد لكل خوارزمية.
-
----
-## Operation Qualification
-
-تمر عملية المعالجة بثلاث درجات قبل الاستخدام التلقائي:
-
-1. Implementation Validation
-   - تتم في Phase 7.
-   - تثبت أن العملية تعمل برمجيًا.
-
-2. Operation Evaluation
-   - تتم في Phase 8.
-   - تحدد الاستخدام المناسب والParameters والمخاطر الأولية.
-
-3. Preservation Verification
-   - تبدأ في Phase 9.
-   - تقيس تغير البنية بين الأصل والنتيجة.
-
-لا يجوز اعتبار العملية Auto-Safe قبل اكتمال المراحل اللازمة.
----
-
-
-# 6. `processing/pipeline.py` — Preservation-Aware Smart Pipeline
-## Preservation-Aware Smart Pipeline
-
-`processing/pipeline.py` ينسق التنفيذ التلقائي المحافظ للعمليات المؤهلة فقط.
-
-### Pipeline Flow
-
-Original Image
-→ Recommendation Engine
-→ Automatic Eligibility Gate
-→ Candidate Operation
-→ Preservation Verification
-→ Accept / Reject
-→ Next Candidate
-→ Final Verification
-
-### Original Reference
-
-تتم مقارنة كل Candidate بالصورة الأصلية، وليس فقط بنتيجة الخطوة السابقة.
-
-يمنع ذلك إخفاء التغير التراكمي الناتج من عدة عمليات متتالية.
-
-### Automatic Enhancement Operations
-
-في الـMVP الحالي:
-
-- CLAHE
-- Sharpening بصورة مشروطة
-
-### Deferred Automatic Operation
-
-Median Denoising لا ينفذ تلقائيًا حاليًا بسبب محدودية Noise Indicator الحالية.
-
-يبقى متاحًا للتوصية والمراجعة اليدوية.
-
-### Binarization Path
-
-لا يتم دمج Adaptive Threshold داخل Enhancement Chain.
-
-يتم إنشاؤه كـBinarization Candidate مستقل من الصورة الأصلية وتصنيفه `review_required`.
-
-### Preservation Acceptance Policy
-
-#### Low / Moderate Preservation Sensitivity
-
-- acceptable → accept
-- caution → accept with caution
-- high_risk → reject
-
-#### High Preservation Sensitivity
-
-- acceptable → accept
-- caution → reject automatically
-- high_risk → reject automatically
-
-هذه السياسة Provisional وHeuristic وتحتاج معايرة مستقبلية.
-
-### Verification Failure
-
-إذا نجحت عملية المعالجة وفشل Preservation Verification، لا يعتمد Smart Pipeline النتيجة تلقائيًا.
-
-### No Dynamic Re-analysis
-
-يتم تحليل الصورة الأصلية وإنشاء التوصيات مرة واحدة فقط في MVP.
-
-لا يعاد تشغيل Analyzer بين خطوات Pipeline.
-
-# 7. `processing/preservation.py` — Preservation Verification Engine
-
-## Preservation Verification Engine
-
-`processing/preservation.py` يقارن الصورة الأصلية بالصورة المعالجة بعد تنفيذ العملية.
-
-لا يحاول فهم النص لغويًا ولا يستخدم OCR.
-
-### Initial Preservation Metrics
-
-#### Edge Retention
-يقيس النسبة التقريبية من الحواف الأصلية التي ما زالت تظهر بالقرب من مواقعها بعد المعالجة.
-
-#### Component Retention
-يقارن عدد المكونات البنيوية الصغيرة في تمثيل ثنائي مشتق من الأصل والنتيجة.
-
-لا تعتبر Connected Components حروفًا بشكل تلقائي.
-
-#### Structure Similarity Indicator
-مؤشر مبسط يعتمد على متوسط الفرق البصري بعد التطبيع.
-
-لا يمثل SSIM القياسي ولا يجب تسميته SSIM.
-
-#### Edge Inflation
-يقارن عدد الحواف بعد المعالجة بعدد الحواف في الأصل، للمساعدة في اكتشاف التضخيم المحتمل للضوضاء أو الحواف.
-
-### Assessment
-
-تجمع Warnings الأولية إلى:
-
-- acceptable
-- caution
-- high_risk
-
-هذه الحالات Heuristic وليست ضمانًا علميًا للمحافظة على النص.
-
-### Important Limitation
-
-تؤدي عمليات Binarization بطبيعتها إلى تغيير مظهر الصورة بدرجة كبيرة، ولذلك لا يجب تفسير جميع Preservation Metrics بنفس الطريقة المستخدمة مع عمليات Enhancement التقليدية.
-
----
-
-# 8. الفرق بين Preservation Profile وPreservation Verification
-
-هذا الفرق **أساسي** ولا يجب خلطه.
-
-| العنصر                        | التوقيت      | السؤال                              |
-| ----------------------------- | ------------ | ----------------------------------- |
-| **Preservation Profile**      | قبل المعالجة | ما مقدار الحذر المقترح لهذه الصورة؟ |
-| **Preservation Verification** | بعد المعالجة | ماذا حدث للبنية بعد تطبيق المعالجة؟ |
+## 2. الصورة العامة للنظام
 
 ```mermaid
 flowchart LR
-    A["Original"] --> B["Preservation Profile"]
-    B --> C["Treatment"]
-    C --> D["Processed Result"]
-    A --> E["Preservation Verification"]
-    D --> E
+    U["المستخدم"] --> UI["HTML + CSS Parts + JS Parts"]
+    UI --> API["Flask API / app.py"]
+
+    API --> VAL["Validation + File I/O"]
+    API --> AN["Analyzer"]
+    API --> REC["Recommender"]
+    API --> PREP["Preparation"]
+    API --> REG["Operation Registry"]
+    API --> PIPE["Smart Pipeline"]
+
+    REG --> OPS["OpenCV Operations"]
+    PREP --> OPS
+    PIPE --> OPS
+    OPS --> PRES["Preservation Verification"]
+    API --> ST["Runtime Storage"]
+    ST --> API
+    API -->|"JSON + image URLs"| UI
 ```
 
----
+### الطبقات
 
-# 9. الواجهة الأمامية
+| الطبقة | المكوّنات | المسؤولية |
+| --- | --- | --- |
+| Presentation | `templates/index.html`، `static/css/`، `static/js/` | رسم الواجهة، إدارة الحالة، المعاينة، المقارنة، والتفاعل |
+| Application | `app.py` | التحقق من HTTP، قراءة الملفات، استدعاء الخدمات، وتوحيد الاستجابات |
+| Analysis | `analyzer.py`، `recommender.py` | استخراج المؤشرات، التشخيص، وبناء توصيات قابلة للتفسير |
+| Processing | `processing/ops/`، `pipeline.py` | تطبيق العمليات الفردية والمسارات المركبة |
+| Preparation | `preparation_pipeline.py`، `document_boundary.py`، `document_rectification.py` | تجهيز الوثيقة عندما يكون القرار آمناً |
+| Verification | `preservation.py`، `preparation_verification.py` | فحص أثر المعالجة والتحقق من قبول التجهيز |
+| Storage | `storage/uploads/`، `storage/results/`، `storage/preparation_previews/` | ملفات Runtime المؤقتة والنتائج القابلة للعرض والتنزيل |
 
-## `templates/index.html`
-
-مسؤول عن:
-
-* هيكل الصفحة.
-* الأقسام.
-* الأزرار.
-* أماكن عرض الصور.
-* الحاويات.
-
-لا يحتوي منطق Diagnosis أو Processing.
+لا توجد قاعدة بيانات أو خدمة خلفية دائمة في النسخة الحالية. يعتمد النظام على ملفات Runtime ومعرفات مولدة في الخادم.
 
 ---
 
-## `static/js/main.js`
+## 3. دورة حياة الصورة
 
-مسؤول عن:
-
-* اختيار الصورة.
-* Local Preview.
-* إرسال Requests.
-* استقبال JSON.
-* إدارة حالات الواجهة.
-* عرض Metrics.
-* عرض Diagnosis.
-* عرض Recommendations.
-* عرض Result.
-* عرض Preservation Assessment.
-* تحديث روابط التنزيل.
-
-### ممنوع داخله
-
-```text
-Thresholds
-Diagnosis Rules
-Recommendation Rules
-Preservation Rules
-OpenCV Logic
+```mermaid
+flowchart TD
+    A["Raw Upload"] --> B["Validate filename, extension, bytes"]
+    B --> C["Decode with OpenCV"]
+    C --> D["Check dtype, dimensions, pixel limit"]
+    D --> E["Analyze + Diagnose + Recommend"]
+    E --> F{"Treatment"}
+    F -->|"Manual"| G["Preview Candidate"]
+    F -->|"Smart"| H["Preparation + Smart Pipeline"]
+    G --> I["Approve"]
+    H --> J["Verify Decision"]
+    I --> K["Save Result Artifact"]
+    J --> K
+    K --> L["Compare / Download"]
 ```
 
----
-
-## `static/css/style.css`
-
-مسؤول عن:
-
-* RTL.
-* Responsive Layout.
-* Grid/Flex.
-* Cards.
-* Buttons.
-* Image Containers.
-* Loading States.
-* Warning States.
-* Typography.
-
-ولا يحتوي أي منطق وظيفي.
+تبقى البايتات الأصلية محفوظة كما وصلت بعد نجاح التحقق، ولا تُستبدل نتيجة معالجة بالصورة الأصلية. كل نتيجة معتمدة تملك `result_id` مستقلاً، ويمكن ربطها بنتيجة سابقة عبر `parent_result_id`.
 
 ---
 
-# 10. Backend هو مصدر الحقيقة
+## 4. طبقة Flask — `app.py`
 
-الـBackend هو المصدر الوحيد لـ:
+يتولى `app.py` تنسيق الطلبات ولا يحتوي على منطق خوارزميات OpenCV التفصيلي. قبل تمرير أي عملية، يتحقق من:
 
-* Analysis Metrics.
-* Diagnostic Thresholds.
-* Diagnosis.
-* Preservation Profile.
-* Recommendation Rules.
-* Operation Selection.
-* Pipeline Rules.
-* Preservation Metrics.
-* Preservation Assessment.
-* Warnings.
+1. صحة `image_id` أو `result_id`.
+2. وجود الملف داخل مجلد Runtime المسموح.
+3. صحة جسم JSON ووجود `operation_id`.
+4. كون `parameters` كائناً JSON صالحاً.
+5. أن العملية مسجلة في `processing/ops/registry.py`.
+6. أن `source_result_id` ينتمي إلى الصورة نفسها وصالح للسلسلة.
 
-```text
-JavaScript
-    ✗ لا يشخص
-    ✗ لا يوصي
-    ✗ لا يحسب Thresholds
-    ✗ لا يقرر سلامة النتيجة
+### مسارات API الحالية
 
-Python Backend
-    ✓ مصدر الحقيقة
-```
+| الطريقة | المسار | الوظيفة |
+| --- | --- | --- |
+| `GET` | `/` | عرض صفحة التطبيق |
+| `POST` | `/api/images` | رفع الصورة، التحقق، التحليل، والتوصيات |
+| `GET` | `/api/images/<image_id>` | عرض الصورة الأصلية |
+| `POST` | `/api/images/<image_id>/operations` | تنفيذ عملية يدوية واعتماد نتيجتها |
+| `POST` | `/api/images/<image_id>/preview` | إنشاء Preview خادمي غير نهائي |
+| `POST` | `/api/images/<image_id>/pipeline` | تشغيل Smart Pipeline |
+| `GET` | `/api/results/<result_id>` | عرض نتيجة محفوظة |
+| `GET` | `/api/results/<result_id>/download` | تنزيل نتيجة محفوظة بصيغة PNG |
+| `GET` | `/api/images/<image_id>/boundary` | تحليل حدود الوثيقة |
+| `POST` | `/api/images/<image_id>/preparation/preview` | إنشاء معاينة تجهيز الوثيقة |
+| `GET` | `/api/preparation/<preparation_id>` | عرض معاينة Preparation |
+| `POST` | `/api/images/<image_id>/preparation/<preparation_id>/approve` | اعتماد معاينة Preparation |
+
+لا ينشئ النظام Route جديداً لكل Operation؛ يمر `operation_id` عبر registry موحدة.
 
 ---
 
-# 11. دورة حياة الصورة
-
-## 11.1 رفع الصورة
+## 5. رفع الصورة والتحقق منها
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant JS as main.js
+    participant U as المستخدم
+    participant UI as JavaScript
     participant F as Flask
+    participant CV as OpenCV
     participant S as Storage
     participant A as Analyzer
 
-    U->>JS: Select Image
-    JS->>JS: Local Preview
-    U->>JS: Upload
-    JS->>F: POST /api/images
-    F->>F: Validate Request
-    F->>F: Decode with OpenCV
-    F->>F: Validate Dimensions
-    F->>F: Generate image_id
-    F->>S: Save Original Bytes
-    F->>A: Analyze Original
-    A-->>F: Analysis + Diagnosis + Profile
-    F-->>JS: Unified JSON
+    U->>UI: اختيار JPG/JPEG/PNG
+    UI->>F: POST /api/images
+    F->>F: التحقق من الاسم والامتداد والحجم
+    F->>CV: Decode raw bytes
+    CV-->>F: مصفوفة image
+    F->>F: dtype + dimensions + pixel limit
+    F->>A: Analyze image
+    A-->>F: metrics + diagnoses + profile
+    F->>S: حفظ original bytes
+    F-->>UI: image_id + analysis + recommendations
 ```
+
+القيم الأمنية الحالية تشمل حد حجم الطلب `20 MB` وحد الصورة المفكوكة `30,000,000` بكسل. لا يكفي الامتداد وحده لقبول الملف؛ يجب أن ينجح فك الصورة وقراءة مصفوفتها.
 
 ---
 
-## 11.2 Manual Processing
+## 6. محرك التحليل والتوصية
+
+### Analyzer
+
+يعمل `analyzer.py` على صورة قابلة للقراءة ويعيد أبعادها ومؤشرات بصرية، منها:
+
+| المؤشر | المعنى |
+| --- | --- |
+| `brightness` | مستوى السطوع العام |
+| `contrast` | انتشار درجات الإضاءة |
+| `dynamic_range` | المسافة بين القيم الداكنة والمضيئة |
+| `sharpness` | مؤشر تقريبي لقوة التفاصيل والحواف |
+| `noise` | تغيرات محلية غير منتظمة |
+| `illumination_variation` | عدم تجانس الإضاءة |
+| `edge_density` | كثافة الحواف |
+
+### Recommender
+
+يحوّل `recommender.py` نتائج التحليل إلى توصيات تحتوي على العملية والسبب والأولوية والمخاطر. وهو **Rule-Based Decision Support**، وليس نموذج تعلم آلي أو ذكاء اصطناعي توليدي.
+
+لا تصبح العملية مؤهلة للمسار التلقائي إذا كانت مصنفة `manual_only` أو `reject`، ولا يعني وجودها في registry أنها آمنة لكل الصور.
+
+---
+
+## 7. سجل العمليات — `processing/ops/registry.py`
+
+تستخدم الواجهة معرفات ثابتة، ثم يربطها registry بدوال Python المسموح بها:
+
+```mermaid
+flowchart LR
+    UI["operation_id + parameters"] --> R["registry.py"]
+    R --> V["validate parameters"]
+    V --> F["operation function"]
+    F --> O["new image array"]
+```
+
+### مجموعات العمليات الحالية
+
+| الفئة | معرفات أو أمثلة |
+| --- | --- |
+| الهندسة | `crop`، `deskew`، `rotate_right`، `rotate_left`، `flip_horizontal`، `flip_vertical` |
+| التباين | `clahe`، `histogram_equalization`، `faded_text_enhance` |
+| الإضاءة | `intensity_adjust`، `gamma_correct`، `illumination_normalize` |
+| إزالة الضوضاء | `median_denoise`، `bilateral_denoise`، `non_local_means_denoise` |
+| فصل النص | `global_threshold`، `otsu_threshold`، `adaptive_threshold` |
+| البنية | `morphological_opening`، `morphological_closing`، `morphological_top_hat`، `morphological_black_hat` |
+| الخلفية | `background_suppress`، `weak_structure_suppress` |
+| التفاصيل والدقة | `sharpen`، `super_resolution` |
+
+كل عملية تستقبل مصفوفة صورة وتعيد مصفوفة جديدة، ولا تتعامل مباشرة مع HTML أو HTTP أو مسارات الملفات. العمليات الملونة تعالج luminance عند الحاجة للمحافظة على القنوات اللونية، وتتحقق الوحدات من القنوات والأنواع والمعاملات.
+
+### Super Resolution
+
+توجد العملية في `processing/ops/super_resolution.py` وتظهر في registry بالمعرف `super_resolution`. وهي عملية يدوية مستقلة، ومعاملاتها الافتراضية الحالية:
+
+```json
+{
+  "scale": 2,
+  "amount": 0.35,
+  "sigma": 1.0
+}
+```
+
+التنفيذ الحالي هو Lanczos interpolation ثم Unsharp Masking محافظ. توجد حماية لحجم الناتج، ولا تُدرج العملية تلقائياً داخل Smart Pipeline. تحسين الوضوح لا يعني استعادة حرف فُقدت معلوماته بالكامل.
+
+---
+
+## 8. المعاينة مقابل الاعتماد
+
+هذا الفصل هو أساس معالجة مشكلة التأخير وعدم ظهور الخطوة الحالية في الوقت الصحيح.
 
 ```mermaid
 sequenceDiagram
-    participant JS as main.js
-    participant F as Flask
-    participant O as Operations
-    participant P as Preservation
-    participant S as Storage
+    participant UI as واجهة JavaScript
+    participant L as Canvas محلي
+    participant F as Flask Preview
+    participant CV as OpenCV
+    participant S as Result Storage
 
-    JS->>F: operation_id + image_id
-    F->>F: Validate image_id
-    F->>F: Validate operation_id
-    F->>S: Load Original
-    F->>O: Execute Operation
-    O-->>F: Processed Image
-    F->>P: Original + Result
-    P-->>F: Preservation Assessment
-    F->>S: Save Result
-    F-->>JS: Result + Preservation
+    UI->>UI: تحديد current source
+    alt عملية خفيفة
+        UI->>L: render local candidate
+        L-->>UI: data URL سريع
+    else عملية ثقيلة
+        UI->>F: POST /preview + operation + parameters
+        F->>F: تحميل المصدر والتحقق منه
+        F->>CV: resize ثم apply operation
+        CV-->>F: preview image
+        F-->>UI: preview payload JPEG أو PNG
+    end
+    UI->>F: POST /operations عند الاعتماد
+    F->>CV: تطبيق كامل الدقة على current source
+    CV->>S: حفظ result artifact + manifest
+    F-->>UI: result_id + metadata + preservation
 ```
+
+### المعاينة المحلية
+
+العمليات الحالية القابلة للمعاينة المحلية هي:
+
+```text
+rotate_right
+rotate_left
+flip_horizontal
+flip_vertical
+intensity_adjust
+gamma_correct
+```
+
+لا تنشئ هذه المعاينة ملفاً نهائياً ولا `result_id`. إنها مرشح بصري سريع فقط.
+
+### المعاينة الخادمية
+
+يستخدم المسار `/preview` مصدراً مصغراً للعمليات الثقيلة. يمكن للواجهة إرسال:
+
+```http
+X-Preview-Format: jpeg
+```
+
+فيعود الرد بصيغة JPEG لتقليل النقل، بينما يبقى PNG هو الافتراضي للتوافق. يتخطى Preview فحص المحافظة النهائي لأنه غير نهائي.
+
+### الاعتماد
+
+زر **اعتماد العملية وإضافتها للسلسلة** هو مسار الاعتماد الوحيد. عند الاعتماد:
+
+1. يتحقق الخادم من العملية والمعاملات.
+2. يحدد المصدر الحالي من `source_result_id` إن وجد، وإلا يستخدم الأصل.
+3. يطبق العملية كاملة الدقة عبر OpenCV.
+4. ينفذ `Preservation Verification` عند الإمكان.
+5. يحفظ النتيجة وmanifest جديداً.
+6. يعيد `result_id` و`parent_result_id` وmetadata للواجهة.
 
 ---
 
-## 11.3 Smart Pipeline
+## 9. السلسلة اليدوية وbefore/after وUndo/Redo
+
+الوثيقة الأصلية ثابتة، لكن العمليات اليدوية **تُبنى تسلسلياً** بعد الاعتماد. معنى ذلك أن الخطوة الثانية تستخدم نتيجة الخطوة الأولى المعتمدة كمصدر، لا أن كل خطوة تعود إلى الأصل.
 
 ```mermaid
-sequenceDiagram
-    participant F as Flask
-    participant A as Analyzer
-    participant R as Recommender
-    participant PIP as Pipeline
-    participant PR as Preservation
+flowchart LR
+    O["Original image"] --> A["Approved Step A"]
+    A --> B["Approved Step B"]
+    B --> C["Approved Step C"]
 
-    F->>A: Original Image
-    A-->>F: Analysis + Diagnosis + Profile
-    F->>R: Analysis Data
-    R-->>F: Treatment Plan
-    F->>PIP: Original + Plan
-    PIP-->>F: Processed Result
-    F->>PR: Original + Result
-    PR-->>F: Assessment
+    A -. "before/after عند A" .-> V1["Original / A"]
+    B -. "before/after عند B" .-> V2["A / B"]
+    C -. "before/after عند C" .-> V3["B / C"]
 ```
+
+يحفظ كل عنصر في `manualChain` بيانات العملية ونتيجتها ومصدرها. يحدد `manualActiveIndex` الخطوة المعروضة، وتستخدم `syncManualChainSelection` المصدر السابق والنتيجة الحالية لتحديث الصورتين معاً. لذلك لا يجب أن تعتمد الواجهة على تعيينات متفرقة قد تعرض الخطوة السابقة بعد اعتماد الخطوة الجديدة.
+
+يغير Undo/Redo المؤشر النشط في السلسلة ويعيد عرض الصور من النتائج المحفوظة أو الكاش المحلي دون إعادة تنفيذ العملية بلا حاجة. وعند اعتماد عملية جديدة بعد التراجع، تُزال الفروع اللاحقة غير المعتمدة من المسار النشط بدلاً من خلط تاريخين.
 
 ---
 
-# 12. هوية الموارد
+## 10. تجهيز الوثيقة وSmart Pipeline
 
-## `image_id`
+تجهيز الوثيقة ليس مرادفاً لاقتصاص قسري. يبدأ المسار بـ`prepare_document`، ثم يمرر الناتج إلى `verify_preparation` قبل استخدامه في Smart Pipeline.
 
-يمثل صورة أصلية مرفوعة.
-
-يولد بواسطة Backend.
-
-مثال:
-
-```text
-917a66f45b08454c9ab34cb7658f4060
+```mermaid
+flowchart TD
+    O["Original"] --> P["prepare_document"]
+    P --> V{"verify_preparation"}
+    V -->|"accept"| U["Use prepared image"]
+    V -->|"reject / review_required"| R["Keep original"]
+    U --> A["Analyze"]
+    R --> A
+    A --> S["Run Smart Pipeline"]
+    S --> G{"Benefit + Preservation Gates"}
+    G -->|"Accept"| F["Smart result"]
+    G -->|"Reject"| X["Rollback / warning"]
 ```
 
-Frontend يتعامل معه كـ:
+### سياسة deskew-only
 
-> Opaque Identifier
+عند عدم وجود حدود موثوقة، يمكن قبول تصحيح الميل فقط إذا:
 
-أي معرف لا يحتاج لمعرفة بنيته الداخلية.
+| الشرط | المطلوب |
+| --- | --- |
+| الثقة | `deskew` عالي الثقة، بحد أدنى محافظ `0.80` |
+| الاقتصاص | غير مطبق |
+| المنظور | غير مطبق |
+| الإطار | يُحافظ على الإطار الكامل |
+| القرار | يقبل فقط إذا كان التحقق يصف الحالة الآمنة |
+
+إذا لم تحقق الصورة هذه الشروط، تبقى Preparation مؤجلة أو مرفوضة، ويمكن للمستخدم مراجعة تجهيز الوثيقة يدوياً.
+
+### Smart Pipeline
+
+يطبق `pipeline.py` و`smart_document_pipeline.py` المرشحات المؤهلة فقط. يمر المرشح عبر:
+
+```text
+Recommendation
+   ↓
+Eligibility Gate
+   ↓
+Apply Candidate
+   ↓
+Re-analysis / Benefit Gate
+   ↓
+Preservation Gate
+   ↓
+Accept أو Rollback
+```
+
+تُحفظ نتيجة Smart الأساسية مع `origin="smart"`، وقد تُحفظ مرشحات فصل النص كـ`smart_candidate` للمراجعة. لا تدخل `super_resolution` في المسار التلقائي.
 
 ---
 
-## `result_id`
+## 11. Preservation Verification
 
-يمثل Result مستقلة.
+يقارن `processing/preservation.py` الأصل بالنتيجة بعد العملية. لا يستخدم OCR ولا يفهم المعنى اللغوي للنص.
 
-الصورة الواحدة يمكن أن تنتج:
+| المؤشر | الاستخدام |
+| --- | --- |
+| Edge Retention | هل بقيت الحواف الأصلية قريبة من مواضعها؟ |
+| Component Retention | مقارنة مكونات بنيوية مشتقة، وليست حروفاً مؤكدة |
+| Structure Similarity Indicator | اختلاف بصري مبسط بعد التطبيع، وليس SSIM القياسي |
+| Edge Inflation | رصد تضخم الحواف أو الضوضاء بعد المعالجة |
 
-```text
-Original
- ├── CLAHE Result
- ├── Median Result
- ├── Otsu Result
- └── Pipeline Result
-```
-
-وكل Result لها `result_id` منفصل.
+النتيجة تصنف كمؤشر مساعد مثل `acceptable` أو `caution` أو `high_risk`. أما Preview غير النهائي فيعيد `skipped_for_preview` ولا يُعامل كحكم اعتماد.
 
 ---
 
-# 13. قاعدة Original Immutable
+## 12. واجهة Frontend المقسمة
 
-الصورة الأصلية لا يتم تعديلها أو الكتابة فوقها.
+### JavaScript
 
-### Manual Operation
+| الملف | المسؤولية |
+| --- | --- |
+| `00-state-constants.js` | الحالة، عناصر DOM، تعريفات العمليات والمعاملات |
+| `01-utilities.js` | أدوات عامة وتنسيق الرسائل والقيم |
+| `02-upload-api.js` | الرفع، تصفير الحالة، واستدعاءات البداية |
+| `03-analysis-dashboard.js` | المؤشرات والرسومات ولوحة التحليل |
+| `04-examination.js` | فحص الصورة وتحديث حالات Examination |
+| `05-manual-parameters.js` | إنشاء المعاملات، Crop، وملاحظات Super Resolution |
+| `06-manual-preview.js` | Preview، Chart، Canvas المحلي، والمرشح المتفائل |
+| `07-manual-execution.js` | اعتماد العملية، السلسلة، before/after، Undo/Redo |
+| `08-smart-pipeline.js` | تشغيل Smart Pipeline وعرض قراره وخطواته |
+| `09-history-results.js` | سجل النتائج والخطوات المعتمدة |
+| `10-theme-quick-tools.js` | الثيم وأزرار العمليات السريعة |
+| `11-events-entry.js` | ربط الأحداث ونقطة الدخول النهائية |
 
-```text
-Original
-   ↓
-Operation A
-   ↓
-Result A
-```
+### CSS
 
-ثم إذا اختار المستخدم Operation B:
+تقسم CSS إلى ملفات للـHeader، workflow، الرفع، التحليل، المعالجة اليدوية، القص والسجل والفوتر، الثيم، المحرر، Dashboard، والاستجابة للشاشات.
 
-```text
-Original
-   ↓
-Operation B
-   ↓
-Result B
-```
-
-وليس:
-
-```text
-Result A
-   ↓
-Operation B
-```
-
-أما Smart Pipeline فهي سلسلة مقصودة:
+الـHeader يستخدم الصورة:
 
 ```text
-Original
-   ↓
-Step 1
-   ↓
-Step 2
-   ↓
-Step 3
-   ↓
-Result
+static/assets/header-workspace-background.png
 ```
+
+كخلفية كاملة فقط، ولا يوجد عنصر Hero مستقل للصورة القديمة.
 
 ---
 
-# 14. التخزين
+## 13. هوية الموارد والتخزين
 
-```text
-storage/
-├── uploads/
-└── results/
+```mermaid
+flowchart LR
+    I["image_id"] --> U["storage/uploads/<id>.<ext>"]
+    I --> R1["result_id A"]
+    R1 --> R2["result_id B"]
+    I --> P["preparation_id"]
 ```
 
-## `uploads`
+| المورد | المعنى |
+| --- | --- |
+| `image_id` | هوية صورة الرفع الأصلية |
+| `result_id` | هوية نتيجة معالجة محفوظة |
+| `parent_result_id` | النتيجة التي بنيت عليها الخطوة الحالية |
+| `preparation_id` | معاينة تجهيز مؤقتة قبل اعتمادها |
 
-يحتوي الصور الأصلية المؤقتة.
-
-## `results`
-
-يحتوي نتائج المعالجة.
-
-### القواعد
-
-* الملفات Runtime Data.
-* لا تتبع بواسطة Git.
-* الاسم الداخلي يولده Backend.
-* المستخدم لا يختار مسار التخزين.
-* لا يوجد تخزين دائم في الـMVP.
+تُولد المعرفات في الخادم، ولا ترسل الواجهة مسارات نظام الملفات. يستخدم `storage/uploads/` للأصل، و`storage/results/` للنتائج، و`storage/preparation_previews/` لمعاينات التجهيز المؤقتة. هذه ملفات Runtime وليست جزءاً من مصدر الكود.
 
 ---
 
-# 15. استراتيجية التحقق من الرفع
+## 14. عقد الاستجابة
 
-يمر الملف بالخطوات التالية:
-
-```text
-Request
-   ↓
-هل يوجد image؟
-   ↓
-هل filename غير فارغ؟
-   ↓
-هل الامتداد مسموح؟
-   ↓
-قراءة Raw Bytes
-   ↓
-OpenCV Decode
-   ↓
-هل الصورة قابلة للقراءة؟
-   ↓
-Dimensions Check
-   ↓
-Pixel Limit Check
-   ↓
-Generate image_id
-   ↓
-Save Original Bytes
-```
-
-### لا يعتمد النظام على
-
-* Extension وحده.
-* MIME Type وحده.
-* اسم الملف القادم من المستخدم.
-
----
-
-# 16. حدود الرفع
-
-القيم الحالية:
-
-```text
-MAX_UPLOAD_SIZE = 20 MB
-MAX_IMAGE_PIXELS = 30,000,000
-```
-
-وجود الحدين مقصود:
-
-```text
-File Size Limit
-+
-Decoded Image Pixel Limit
-```
-
-لأن الملف المضغوط الصغير قد يتحول إلى صورة كبيرة جدًا بعد فك الضغط.
-
----
-
-# 17. API Endpoints
-
-| Method | Endpoint                            | الوظيفة                |
-| ------ | ----------------------------------- | ---------------------- |
-| `GET`  | `/`                                 | عرض الصفحة الرئيسية    |
-| `POST` | `/api/images`                       | رفع صورة والتحقق منها  |
-| `GET`  | `/api/images/<image_id>`            | عرض Original           |
-| `POST` | `/api/images/<image_id>/operations` | تنفيذ Manual Operation |
-| `POST` | `/api/images/<image_id>/pipeline`   | تشغيل Smart Pipeline   |
-| `GET`  | `/api/results/<result_id>`          | عرض Result             |
-| `GET`  | `/api/results/<result_id>/download` | تنزيل Result           |
-
-لا نضيف Route لكل Operation.
-
----
-
-# 18. عقد الاستجابة الموحد
-
-## نجاح
+تستخدم الاستجابات غلافاً موحداً:
 
 ```json
 {
@@ -809,7 +445,7 @@ Decoded Image Pixel Limit
 }
 ```
 
-## فشل
+وعند الخطأ:
 
 ```json
 {
@@ -823,569 +459,133 @@ Decoded Image Pixel Limit
 }
 ```
 
----
-
-# 19. Upload Contract
-
-## Request
-
-```text
-Content-Type: multipart/form-data
-Field: image
-```
-
-## Response
+### عقد العملية اليدوية
 
 ```json
 {
-  "success": true,
-  "message": "تم رفع الصورة والتحقق منها بنجاح.",
-  "data": {
-    "image": {
-      "image_id": "SERVER_GENERATED_ID",
-      "original_name": "manuscript.jpg",
-      "width": 1200,
-      "height": 1600,
-      "channels": 3,
-      "url": "/api/images/SERVER_GENERATED_ID"
-    },
-    "analysis": null,
-    "diagnoses": [],
-    "preservation_profile": null,
-    "recommendations": []
+  "operation_id": "super_resolution",
+  "parameters": {
+    "scale": 2,
+    "amount": 0.35,
+    "sigma": 1.0
   },
-  "error": null
+  "source_result_id": "OPTIONAL_APPROVED_RESULT_ID"
 }
 ```
 
-القيم التي ما زالت `null` يتم ملؤها عند ربط وحدات التحليل والتوصية فعليًا.
+يعيد الخادم نتيجة تحتوي على `result_id` و`url` و`download_url` وبيانات العملية و`source_result_id` وحالة التحقق.
 
----
-
-# 20. Analysis Contract
-
-```json
-{
-  "dimensions": {
-    "width": 1200,
-    "height": 1600,
-    "channels": 3
-  },
-  "metrics": {
-    "brightness": {
-      "value": 74.2,
-      "unit": "gray_level"
-    },
-    "contrast": {
-      "value": 31.6,
-      "unit": "gray_level_std"
-    },
-    "dynamic_range": {
-      "value": 112.0,
-      "unit": "gray_level"
-    },
-    "sharpness": {
-      "value": 83.5,
-      "unit": "laplacian_variance"
-    },
-    "noise": {
-      "value": 4.0,
-      "unit": "local_difference"
-    },
-    "illumination_variation": {
-      "value": 0.13,
-      "unit": "coefficient"
-    },
-    "edge_density": {
-      "value": 0.08,
-      "unit": "ratio"
-    }
-  }
-}
-```
-
-> قيم Metrics تقنية ومؤشرية، ولا يجب تفسيرها خارج تعريف كل Metric.
-
----
-
-# 21. Diagnosis Contract
-
-```json
-{
-  "code": "low_contrast",
-  "label": "تباين منخفض",
-  "severity": "medium",
-  "message": "تشير القياسات إلى انخفاض التباين في الصورة."
-}
-```
-
----
-
-# 22. Preservation Profile Contract
-
-```json
-{
-  "level": "moderate",
-  "indicators": [
-    {
-      "code": "weak_contrast_details",
-      "message": "قد تكون بعض التفاصيل ضعيفة التباين وأكثر عرضة للاختفاء أثناء المعالجة القوية."
-    }
-  ],
-  "message": "توجد مؤشرات تستدعي استخدام معالجة متوازنة ومراقبة أثرها على التفاصيل.",
-  "interpretation": "heuristic"
-}
-```
-
----
-
-# 23. Recommendation Contract
+### عقد Preview
 
 ```json
 {
   "operation_id": "clahe",
-  "title": "تحسين التباين المحلي",
-  "reason": "التباين منخفض ويحتاج إلى تحسين محلي محافظ.",
-  "priority": "high"
+  "parameters": {},
+  "source_result_id": "OPTIONAL_APPROVED_RESULT_ID"
 }
 ```
 
----
-
-# 24. Manual Operation Contract
-
-## Request
-
-```json
-{
-  "operation": "clahe"
-}
-```
-
-## Response
-
-```json
-{
-  "success": true,
-  "message": "تمت معالجة الصورة وفحص النتيجة.",
-  "data": {
-    "result": {
-      "result_id": "SERVER_GENERATED_ID",
-      "url": "/api/results/SERVER_GENERATED_ID",
-      "download_url": "/api/results/SERVER_GENERATED_ID/download"
-    },
-    "processing": {
-      "operation_id": "clahe",
-      "name": "CLAHE",
-      "purpose": "تحسين التباين المحلي"
-    },
-    "preservation": {
-      "metrics": {},
-      "warnings": [],
-      "assessment": null
-    }
-  },
-  "error": null
-}
-```
-
-وجود:
-
-```json
-"assessment": null
-```
-
-مسموح مؤقتًا قبل اكتمال Preservation Engine.
+لا تعيد هذه العملية نتيجة معتمدة؛ تعيد `preview` و`source_result_id` و`verification.status = "skipped_for_preview"`.
 
 ---
 
-# 25. Pipeline Contract
+## 15. قواعد الحماية والتعامل مع الأخطاء
 
-```json
-{
-  "success": true,
-  "message": "تمت المعالجة التلقائية وفحص النتيجة.",
-  "data": {
-    "result": {
-      "result_id": "SERVER_GENERATED_ID"
-    },
-    "pipeline": {
-      "steps": [
-        {
-          "operation": "median",
-          "reason": "تقليل التغيرات المحلية المزعجة"
-        },
-        {
-          "operation": "clahe",
-          "reason": "تحسين التباين المحلي"
-        }
-      ]
-    },
-    "preservation": {
-      "metrics": {},
-      "warnings": [],
-      "assessment": null
-    },
-    "decision": {
-      "status": null,
-      "message": null
-    }
-  },
-  "error": null
-}
-```
+| القاعدة | التطبيق |
+| --- | --- |
+| الأصل Immutable | لا تُكتب نتيجة فوق ملف الرفع |
+| معرفات غير مكشوفة البنية | الواجهة تتعامل مع `image_id` و`result_id` كمعرفات opaque |
+| تحقق مزدوج | التحقق في الواجهة لتحسين UX وفي Flask للحماية |
+| registry مغلقة | لا تُستدعى دوال Python من اسم يرسله المستخدم |
+| مصدر السلسلة | لا تُستخدم نتيجة من صورة أخرى |
+| المعاملات | ترفض القيم غير الصالحة قبل OpenCV |
+| المسارات | لا يختار المستخدم مسار التخزين |
+| الذاكرة | حدود الحجم والبكسلات وحماية Super Resolution |
+| الأخطاء | رسائل عربية مفهومة دون كشف Stack Trace |
+
+أمثلة رموز الأخطاء: `NO_FILE`، `UNREADABLE_IMAGE`، `INVALID_OPERATION`، `INVALID_OPERATION_PARAMETERS`، `SOURCE_RESULT_NOT_FOUND`، `INVALID_SOURCE_RESULT_KIND`، `PROCESSING_FAILED`، و`RESULT_NOT_FOUND`.
 
 ---
 
-# 26. Error Codes
+## 16. الأداء واختيار التعقيد
 
-| Code                         | المعنى                                   |
-| ---------------------------- | ---------------------------------------- |
-| `NO_FILE`                    | الطلب لا يحتوي صورة                      |
-| `EMPTY_FILENAME`             | اسم الملف فارغ                           |
-| `UNSUPPORTED_FILE_TYPE`      | نوع الملف غير مدعوم                      |
-| `FILE_TOO_LARGE`             | حجم الطلب يتجاوز الحد                    |
-| `IMAGE_DIMENSIONS_TOO_LARGE` | أبعاد الصورة تتجاوز الحد                 |
-| `UNREADABLE_IMAGE`           | الملف لا يمكن فكّه كصورة صالحة           |
-| `INVALID_IMAGE_ID`           | صيغة معرف الصورة غير صالحة               |
-| `IMAGE_NOT_FOUND`            | الصورة الأصلية غير موجودة                |
-| `INVALID_OPERATION`          | Operation غير مسجلة                      |
-| `PROCESSING_FAILED`          | فشل تنفيذ المعالجة                       |
-| `INVALID_RESULT_ID`          | صيغة معرف النتيجة غير صالحة              |
-| `RESULT_NOT_FOUND`           | Result غير موجودة                        |
-| `PRESERVATION_CHECK_FAILED`  | تعذر تنفيذ فحص المحافظة                  |
-| `FEATURE_NOT_READY`          | الوظيفة مثبتة معماريًا لكنها لم تنفذ بعد |
-| `INTERNAL_ERROR`             | خطأ داخلي غير متوقع                      |
+لا تُقاس سرعة النظام بزمن المعاينة وحده:
 
-> `FEATURE_NOT_READY` يستخدم أثناء التطوير فقط ويختفي من السلوك النهائي عند اكتمال الوظائف.
+| المسار | الأولوية | سبب الكلفة |
+| --- | --- | --- |
+| Canvas Preview | استجابة فورية | يعمل على نسخة العرض داخل المتصفح |
+| Flask Preview | حجم نقل منخفض ونتيجة تقريبية | تصغير الصورة وتطبيق العملية الخادمية |
+| Approve | صحة artifact النهائي | معالجة كاملة وحفظ وفحص المحافظة |
+| Smart Pipeline | قرار محافظ قابل للتفسير | Preparation وتحليل ومرشح والتحقق |
+
+لم تُضف queue أو background workers أو Docker لأن المعمارية الحالية تطبيق محلي تعليمي، ولأن إضافة بنية تشغيلية كبيرة ستخفي منطق معالجة الصور بدلاً من توضيحه.
 
 ---
 
-# 27. فشل Preservation Verification
-
-فشل Preservation Check تقنيًا لا يعني دائمًا أن عملية معالجة الصورة نفسها فشلت.
-
-يمكن أن تكون الحالة:
-
-```text
-Processing
-   ✓ Success
-
-Preservation Check
-   ✗ Failed
-```
-
-وفي هذه الحالة يمكن للنظام إعادة:
-
-```text
-Result
-+
-Warning:
-Preservation Assessment unavailable
-```
-
-لكن لا يجوز للنظام أن يصف النتيجة بأنها آمنة.
-
----
-
-# 28. HTTP Status Codes
-
-| Status | الاستخدام                                   |
-| ------ | ------------------------------------------- |
-| `200`  | طلب ناجح                                    |
-| `201`  | إنشاء Resource جديدة مثل Upload             |
-| `400`  | Request غير صالح                            |
-| `404`  | Resource غير موجودة                         |
-| `413`  | الملف أكبر من الحد                          |
-| `500`  | خطأ داخلي غير متوقع                         |
-| `501`  | وظيفة مثبتة لكنها لم تنفذ بعد أثناء التطوير |
-
----
-
-# 29. إضافة Analysis Metric جديدة
-
-عند إضافة Metric:
-
-```text
-1. Implement in analyzer.py
-        ↓
-2. Define exactly what it measures
-        ↓
-3. Document unit / interpretation
-        ↓
-4. Write tests
-        ↓
-5. Evaluate on real images
-        ↓
-6. Connect to Diagnosis only if justified
-```
-
-لا نضيف Threshold لمجرد وجود Metric.
-
----
-
-# 30. إضافة Preservation Metric جديدة
-
-```text
-1. Implement in preservation.py
-        ↓
-2. Define Original vs Result behavior
-        ↓
-3. Document meaning
-        ↓
-4. Document limitations
-        ↓
-5. Add tests
-        ↓
-6. Evaluate empirically
-        ↓
-7. Connect to Assessment only after justification
-```
-
-هذه الخطوة أكثر صرامة لأن Preservation Metrics تؤثر على الحكم النهائي على Result.
-
----
-
-# 31. إضافة Operation جديدة
-
-```text
-Implement Operation
-      ↓
-Test Output
-      ↓
-Test Original Immutability
-      ↓
-Evaluate Preservation Effects
-      ↓
-Register Operation
-      ↓
-Add Metadata
-      ↓
-Document Intended Use
-      ↓
-Allow Recommendation / Pipeline if justified
-```
-
-### الملفات التي قد تتغير
-
-```text
-operations.py
-tests/
-Operation Registry
-recommender.py     ← عند الحاجة
-pipeline.py        ← عند الحاجة
-Frontend metadata  ← عند الحاجة
-documentation      ← عند الحاجة
-```
-
-### ما لا يتغير
-
-```text
-API Route Structure
-```
-
----
-
-# 32. إضافة Recommendation Rule
-
-```text
-Diagnosis exists
-      ↓
-Preservation context understood
-      ↓
-Rule added in recommender.py
-      ↓
-Reason added
-      ↓
-Tests
-      ↓
-Pipeline update if needed
-```
-
-لا تكتب Recommendation Rule داخل `analyzer.py`.
-
----
-
-# 33. قواعد الأمان المعمارية
-
-* Backend يتحقق من كل Request.
-* Frontend validation لتحسين UX فقط.
-* لا يرسل المستخدم File Path.
-* لا يرسل المستخدم Python Function Name.
-* لا يكتب Backend فوق Original.
-* UUID يستخدم كهوية داخلية.
-* الملفات لا تحفظ خارج المجلدات المسموحة.
-* لا تعتمد عملية القبول على Extension فقط.
-* Runtime files لا تدخل Git.
-* Stack Trace لا يعرض للمستخدم النهائي.
-* لا يوجد `current_image` global state.
-
----
-
-# 34. القرارات التي تحافظ على بساطة النظام
-
-لا نستخدم حاليًا:
-
-```text
-Database
-Repository Layer
-Service Layer لكل عملية
-Flask-RESTful
-SQLAlchemy
-Celery
-Background Workers
-Microservices
-Docker كشرط
-Cloud Storage
-```
-
-لأن حجم المشروع لا يبررها.
-
-المعمارية الحالية تعتمد:
-
-```text
-Flask
-+
-Processing Modules
-+
-File System
-+
-UUID
-+
-Clear Contracts
-```
-
-وهي كافية للـMVP.
-
-> **Simple until complexity is justified.**
-
----
-
-# 35. قابلية الاختبار
-
-كل وحدة معالجة يجب أن تكون قابلة للاختبار بعيدًا عن الواجهة.
-
-```text
-analyzer.py
-   ↓
-Unit Tests
-
-operations.py
-   ↓
-Unit Tests
-
-preservation.py
-   ↓
-Unit Tests
-
-pipeline.py
-   ↓
-Unit Tests
-```
-
-أما `app.py` فيختبر باستخدام Flask Test Client.
-
----
-
-# 36. مبدأ عدم تعديل Original
-
-يجب أن يظل هذا الاختبار ممكنًا طوال المشروع:
-
-```text
-Original Before
-       =
-Original After Analysis / Processing
-```
-
-إذا احتاجت Operation إلى تعديل الصورة:
-
-```python
-working_image = image.copy()
-```
-
-أو سلوك مكافئ يضمن عدم تعديل المدخل الأصلي.
-
----
-
-# 37. المسار المعماري النهائي
+## 17. إضافة عملية جديدة
 
 ```mermaid
 flowchart TD
-
-    A["Original Manuscript"]
-    B["Examination"]
-    C["Diagnosis"]
-    D["Preservation Profile"]
-    E["Recommendation"]
-    F["Treatment"]
-    G["Processed Result"]
-    H["Preservation Verification"]
-    I{"Assessment"}
-    J["Acceptable"]
-    K["Caution"]
-    L["High Risk"]
-    M["Comparison"]
-    N["Download"]
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-
-    A --> H
-    G --> H
-
-    H --> I
-
-    I --> J
-    I --> K
-    I --> L
-
-    J --> M
-    K --> M
-    L --> M
-
-    M --> N
+    A["تعريف خوارزمية OpenCV"] --> B["اختبار النوع والقنوات"]
+    B --> C["اختبار عدم تعديل المدخل"]
+    C --> D["اختبار المعاملات والحدود"]
+    D --> E["تسجيل العملية في registry"]
+    E --> F["إضافة تعريف الواجهة"]
+    F --> G["تقييم بصري ومحافظة"]
+    G --> H["إدخالها Smart فقط إذا برر التقييم ذلك"]
 ```
+
+إضافة عملية لا تعني تشغيلها تلقائياً. يجب أولاً تحديد هدفها، معاملاتها، مخاطرها، دعمها للمعاينة، ودليل صلاحيتها على صور متنوعة.
 
 ---
 
-# 38. الهدف المعماري النهائي
+## 18. حدود المعمارية
 
-> **Manuscript Doctor يجب أن يستطيع التطور بإضافة Metrics أو Operations أو Preservation Checks جديدة دون الحاجة إلى إعادة بناء التطبيق أو خلط المسؤوليات.**
+لا تشمل المعمارية الحالية OCR، أو YOLO، أو Segmentation، أو تدريب Deep Learning، أو Generative Restoration، أو حسابات المستخدمين، أو قاعدة بيانات، أو تخزيناً دائماً، أو معالجة سحابية. كما لا تُعد Super Resolution الحالية نموذجاً عميقاً ولا ضماناً لاستعادة المعلومات المفقودة.
 
-المعيار الذي يحكم كل تعديل معماري:
+---
+
+## 19. التحقق من المعمارية
+
+تُراجع المعمارية من خلال:
+
+```bash
+PYTHONPATH=. pytest -q tests
+for f in static/js/parts/*.js; do node --check "$f"; done
+```
+
+النتيجة المرجعية الحالية:
 
 ```text
-هل هذا المنطق في الملف الصحيح؟
-        ↓
-هل يمكن اختباره مستقلًا؟
-        ↓
-هل يكرر مسؤولية موجودة؟
-        ↓
-هل يغير API بلا ضرورة؟
-        ↓
-هل يزيد التعقيد دون قيمة؟
+333 passed, 16 skipped
 ```
 
-إذا كانت الإجابة الأخيرة:
-
-> نعم
-
-فالحل يجب تبسيطه قبل اعتماده.
+وتغطي اختبارات المشروع عمليات OpenCV، Flask API، التحضير، اتجاه الصورة، السلسلة اليدوية، التحقق المحافظ، وSuper Resolution.
 
 ---
+
+## مراجع التوثيق الداخلي
+
+| الموضوع | الملف |
+| --- | --- |
+| الفكرة والنطاق | [`overview.md`](overview.md) |
+| المتطلبات وقابلية التتبع | [`requirements.md`](requirements.md) |
+| تدفق المستخدم | [`workflow.md`](workflow.md) |
+| تخطيط الواجهة | [`wireframes.md`](wireframes.md) |
+| حالات الواجهة | [`ui-states.md`](ui-states.md) |
+| مكونات Frontend | [`frontend-components.md`](frontend-components.md) |
+| الاختبارات | [`testing.md`](testing.md) و[`e2e-testing.md`](e2e-testing.md) |
+| تقييم العمليات | [`operation-evaluation.md`](operation-evaluation.md) |
+| القرارات | [`decisions.md`](decisions.md) |
+| خط تجهيز الوثيقة وSmart Pipeline | [`phase-c-report.md`](phase-c-report.md) |
 
 <div align="center">
 
 ### Architectural Principle
 
-**Analyze clearly.**
-**Treat deliberately.**
-**Preserve carefully.**
-**Verify independently.**
+**ضع كل منطق في مكانه الصحيح.**
+
+**عاين بسرعة. اعتمد بدقة. تحقّق بصدق.**
 
 </div>
 

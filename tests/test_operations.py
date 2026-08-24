@@ -26,7 +26,8 @@ from processing.operations import (
     weak_structure_suppress,
     morphological_top_hat,
     morphological_black_hat,
-    deskew
+    deskew,
+    super_resolution
 )
 
 
@@ -281,6 +282,43 @@ def test_non_uint8_image_is_rejected():
         clahe(image)
 
 
+def test_super_resolution_scales_color_image_and_preserves_dtype():
+    image = make_color_image()
+
+    result = super_resolution(image, scale=2)
+
+    assert result.shape == (image.shape[0] * 2, image.shape[1] * 2, 3)
+    assert result.dtype == image.dtype
+    assert not np.array_equal(result, cv2.resize(image, (image.shape[1] * 2, image.shape[0] * 2), interpolation=cv2.INTER_NEAREST))
+
+
+def test_super_resolution_preserves_alpha_channel():
+    bgr = make_color_image()
+    alpha = np.full(bgr.shape[:2], 173, dtype=np.uint8)
+    image = np.dstack((bgr, alpha))
+
+    result = super_resolution(image, scale=2)
+
+    assert result.shape == (image.shape[0] * 2, image.shape[1] * 2, 4)
+    assert np.array_equal(result[:, :, 3], cv2.resize(alpha, (alpha.shape[1] * 2, alpha.shape[0] * 2), interpolation=cv2.INTER_LANCZOS4))
+
+
+def test_super_resolution_rejects_invalid_scale_and_amount():
+    image = make_color_image()
+
+    with pytest.raises(ValueError):
+        super_resolution(image, scale=4)
+    with pytest.raises(ValueError):
+        super_resolution(image, amount=1.1)
+
+
+def test_super_resolution_rejects_unsafe_output_size():
+    image = np.zeros((4000, 4000), dtype=np.uint8)
+
+    with pytest.raises(ValueError, match="safe limit"):
+        super_resolution(image, scale=2)
+
+
 def test_registry_contains_expected_operations():
     operations = list_operations()
 
@@ -298,7 +336,8 @@ def test_registry_contains_expected_operations():
         "otsu_threshold",
         "adaptive_threshold",
         "morphological_opening",
-        "morphological_closing"
+        "morphological_closing",
+        "super_resolution"
     }.issubset(ids)
 
 

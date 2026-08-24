@@ -46,6 +46,7 @@ MANUAL_ONLY_OPERATIONS = {
     "non_local_means_denoise",
     "background_suppress",
     "weak_structure_suppress",
+    "super_resolution",
     "faded_text_enhance",
     "morphological_opening",
     "morphological_closing",
