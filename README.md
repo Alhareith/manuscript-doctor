@@ -18,7 +18,15 @@
   <img src="static/assets/header-workspace-background.png" alt="هوية طبيب الوثائق ومعالجة الوثائق" width="100%">
 </p>
 
+<p align="center">
+  <a href="https://manuscript-doctor.onrender.com/" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/جرّب_الموقع_الحي-افتح_التطبيق-0b7a62?style=for-the-badge" alt="جرّب الموقع الحي">
+  </a>
+</p>
+
 <div dir="rtl" align="right">
+
+> **سبب تأخر بعض النتائج:** المعاينة الخفيفة تظهر محلياً، أما الاعتماد والعمليات الثقيلة فتمر عبر Flask/OpenCV؛ لذلك يتأثر زمن النتيجة بحجم الصورة وتعقيد العملية وزمن استجابة الخادم.
 
 > **الفكرة:** لا نطبق المعالجة لمجرد تغيير الصورة؛ نقرأ حالتها، نختار العملية، نراجع before/after، ثم نعتمد النتيجة بعد التحقق.
 
