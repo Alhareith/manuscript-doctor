@@ -106,6 +106,7 @@ for f in static/js/parts/*.js; do node --check "$f"; done
 ```
 
 ## بنية المشروع
+</div>
 
 ```text
 image_project_split/
@@ -126,6 +127,7 @@ image_project_split/
 ├── evaluation/
 └── docs/
 ```
+<div dir="rtl" align="right">
 
 ## التوثيق
 
