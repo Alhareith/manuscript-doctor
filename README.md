@@ -31,10 +31,22 @@
 > **الفكرة:** لا نطبق المعالجة لمجرد تغيير الصورة؛ نقرأ حالتها، نختار العملية، نراجع before/after، ثم نعتمد النتيجة بعد التحقق.
 
 <p align="center">
-  <img src="evaluation/output/auto_deskew/b01_before.jpg" alt="قبل تصحيح الميل" width="220">
-  &nbsp;&nbsp;&nbsp;
-  <img src="evaluation/output/auto_deskew/b01_after.jpg" alt="بعد تصحيح الميل" width="220">
+  <img src="static/assets/document-before.png" alt="قبل المعالجة: وثيقة مائلة فوق طاولة" width="31%">
+  &nbsp;
+  <img src="static/assets/document-edges.png" alt="توضيح الحواف المكتشفة بخط أخضر نحيف" width="31%">
+  &nbsp;
+  <img src="static/assets/document-after.png" alt="بعد المعالجة: وثيقة مستقيمة ومقصوصة أوضح قراءة" width="31%">
 </p>
+
+<p align="center">
+  <strong>قبل المعالجة</strong>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <strong>الحواف المكتشفة</strong>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <strong>بعد المعالجة</strong>
+</p>
+
+> **قراءة التسلسل:** تُظهر الصورة الأولى وثيقة مائلة على سطح تصوير، وتوضح الصورة الوسطى حدود الوثيقة التي يمكن استخدامها لاكتشاف الميل، بينما تعرض الصورة الأخيرة نتيجة مستقيمة ومقصوصة مع تحسين محافظ لوضوح الكتابة.
 
 ---
 
