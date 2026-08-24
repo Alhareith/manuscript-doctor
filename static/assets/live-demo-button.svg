@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="118" viewBox="0 0 720 118" role="img" aria-labelledby="title desc">
+  <title id="title">جرّب الموقع الحي الآن</title>
+  <desc id="desc">زر يفتح النسخة المنشورة من Manuscript Doctor</desc>
+  <defs>
+    <linearGradient id="button" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b8b70"/>
+      <stop offset="0.55" stop-color="#0b6e59"/>
+      <stop offset="1" stop-color="#064b40"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f4c866"/>
+      <stop offset="1" stop-color="#ffe8a8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#123d35" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="10" y="10" width="700" height="98" rx="22" fill="url(#button)" stroke="#e8bd55" stroke-width="3" filter="url(#shadow)"/>
+  <path d="M32 30h656" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+  <circle cx="78" cy="59" r="27" fill="#f7d77d"/>
+  <path d="M78 43v23m0 0-9-9m9 9 9-9M66 73h24" fill="none" stroke="#075848" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="385" y="58" text-anchor="middle" direction="rtl" fill="#fffdf2" font-family="Tahoma, Arial, sans-serif" font-size="29" font-weight="700">جرّب الموقع الحي الآن</text>
+  <text x="385" y="85" text-anchor="middle" direction="rtl" fill="#d9f1e7" font-family="Tahoma, Arial, sans-serif" font-size="16">افتح Manuscript Doctor واستكشف المعالجة مباشرة</text>
+  <rect x="532" y="42" width="142" height="34" rx="17" fill="url(#shine)"/>
+  <text x="603" y="65" text-anchor="middle" direction="rtl" fill="#174b3d" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="700">فتح التطبيق</text>
+</svg>

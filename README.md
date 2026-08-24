@@ -20,7 +20,7 @@
 
 <p align="center">
   <a href="https://manuscript-doctor.onrender.com/" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.shields.io/badge/جرّب_الموقع_الحي-افتح_التطبيق-0b7a62?style=for-the-badge" alt="جرّب الموقع الحي">
+    <img src="static/assets/live-demo-button.svg" alt="جرّب الموقع الحي الآن — افتح Manuscript Doctor" width="720">
   </a>
 </p>
 
