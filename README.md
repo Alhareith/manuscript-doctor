@@ -89,7 +89,7 @@ flowchart LR
 ## التشغيل المحلي
 
 ```bash
-cd image_project_split
+cd manuscript-doctor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -109,7 +109,8 @@ for f in static/js/parts/*.js; do node --check "$f"; done
 </div>
 
 ```text
-image_project_split/
+
+manuscript-doctor/
 ├── app.py
 ├── templates/index.html
 ├── static/
