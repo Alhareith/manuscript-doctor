@@ -104,4 +104,70 @@ def test_deskew_only_fallback_works_without_boundary_or_crop():
 def test_invalid_input_raises_value_error():
     with pytest.raises(ValueError):
         prepare_document(None)
-        
+
+
+def test_boundary_proxy_restores_corners_to_original_coordinates():
+    image = np.full((800, 1200, 3), 220, dtype=np.uint8)
+    seen_shapes = []
+
+    def detector(proxy):
+        seen_shapes.append(proxy.shape)
+        return {
+            "detected": True,
+            "corners": [[40, 30], [360, 30], [360, 230], [40, 230]],
+            "confidence": 0.95,
+            "area_ratio": 0.5,
+            "reason": "accepted: test candidate",
+        }
+
+    result = prepare_document(
+        image,
+        boundary_detector=detector,
+        boundary_max_dimension=400,
+    )
+
+    assert seen_shapes == [(267, 400, 3)]
+    assert result["boundary"]["corners"] == [
+        [120, 90],
+        [1080, 90],
+        [1080, 690],
+        [120, 690],
+    ]
+    assert result["boundary"]["detection_dimensions"] == {
+        "width": 400,
+        "height": 267,
+    }
+    assert result["boundary"]["detection_scale"] == round(400 / 1200, 6)
+
+
+def test_boundary_proxy_does_not_resize_small_images():
+    image = np.full((300, 350, 3), 220, dtype=np.uint8)
+    seen_shapes = []
+
+    def detector(proxy):
+        seen_shapes.append(proxy.shape)
+        return {
+            "detected": False,
+            "corners": [],
+            "confidence": 0.0,
+            "area_ratio": 0.0,
+            "reason": "rejected: test candidate",
+        }
+
+    prepare_document(
+        image,
+        boundary_detector=detector,
+        boundary_max_dimension=400,
+    )
+
+    assert seen_shapes == [image.shape]
+
+
+def test_boundary_proxy_rejects_invalid_dimension():
+    image = np.zeros((100, 100, 3), dtype=np.uint8)
+
+    with pytest.raises(ValueError, match="positive integer"):
+        prepare_document(image, boundary_max_dimension=0)
+
+    with pytest.raises(ValueError, match="positive integer"):
+        prepare_document(image, boundary_max_dimension=400.0)

@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 
 from processing.auto_deskew import apply_auto_deskew
@@ -9,6 +10,9 @@ from processing.document_rectification import rectify_document
 from processing.skew_detector import detect_skew
 
 
+BOUNDARY_DETECTION_MAX_DIMENSION = 640
+
+
 def _validate_image(image):
     if image is None or not isinstance(image, np.ndarray):
         raise ValueError("Image must be a valid NumPy array.")
@@ -17,11 +21,71 @@ def _validate_image(image):
         raise ValueError("Image cannot be empty.")
 
 
-def prepare_document(image, boundary_detector=detect_document_boundary):
+def _make_boundary_proxy(image, max_dimension):
+    if not isinstance(max_dimension, int) or isinstance(max_dimension, bool):
+        raise ValueError("max boundary dimension must be a positive integer.")
+
+    if max_dimension <= 0:
+        raise ValueError("max boundary dimension must be a positive integer.")
+
+    height, width = image.shape[:2]
+    scale = min(1.0, max_dimension / max(height, width))
+
+    if scale >= 1.0:
+        return image.copy(), scale
+
+    proxy_size = (
+        max(1, int(round(width * scale))),
+        max(1, int(round(height * scale))),
+    )
+
+    proxy = cv2.resize(image, proxy_size, interpolation=cv2.INTER_AREA)
+    return proxy, scale
+
+
+def _restore_boundary_coordinates(boundary, scale, width, height):
+    if not isinstance(boundary, dict) or scale >= 1.0:
+        return boundary
+
+    restored = dict(boundary)
+    corners = boundary.get("corners")
+
+    if corners:
+        restored["corners"] = [
+            [
+                int(np.clip(round(float(x) / scale), 0, width - 1)),
+                int(np.clip(round(float(y) / scale), 0, height - 1)),
+            ]
+            for x, y in np.asarray(corners, dtype=np.float32).reshape(-1, 2)
+        ]
+
+    restored["detection_scale"] = round(float(scale), 6)
+    restored["detection_dimensions"] = {
+        "width": int(round(width * scale)),
+        "height": int(round(height * scale)),
+    }
+    return restored
+
+
+def prepare_document(
+    image,
+    boundary_detector=detect_document_boundary,
+    boundary_max_dimension=BOUNDARY_DETECTION_MAX_DIMENSION,
+):
     _validate_image(image)
 
     original = image.copy()
-    boundary = boundary_detector(image)
+    proxy, boundary_scale = _make_boundary_proxy(
+        image,
+        boundary_max_dimension,
+    )
+    boundary = boundary_detector(proxy)
+    boundary = _restore_boundary_coordinates(
+        boundary,
+        boundary_scale,
+        image.shape[1],
+        image.shape[0],
+    )
 
     result = {
         "prepared": False,
