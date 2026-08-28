@@ -40,6 +40,12 @@ function setStopExplanation(message) { if (elements.stopExplanation) elements.st
 function renderPipelineResult(data) {
     state.lastPipeline = data;
     showPrimaryResult(data.result, "pipeline");
+    show(elements.treatmentSection);
+    showSection("manualEditor");
+    setManualPreviewResult(data.result, "smart_pipeline", data.decision?.status || "accepted");
+    if (data.preparation?.orientation?.requires_manual_review && elements.manualPreviewNote) {
+        elements.manualPreviewNote.textContent = "المعالجة الذكية · تم تصحيح الميل والقص؛ راجع الاتجاه العام 180° يدويًا عند الحاجة.";
+    }
     renderDecision(data.decision);
     data.preservation ? renderPreservation(data.preservation) : hideSection("verificationSection");
     renderBinarizationCandidates(data.binarization_candidates);

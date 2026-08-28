@@ -782,11 +782,14 @@ def create_app(test_config=None):
             return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
 
         try:
-            preparation = prepare_document(original)
+            preparation = prepare_document(
+                original,
+                boundary_detector=detect_preparation_boundary,
+            )
             preparation_verification = verify_preparation(preparation)
             preparation_used = bool(
                 preparation.get("prepared")
-                and preparation_verification.get("status") == "accept"
+                and preparation_verification.get("verified") is True
             )
             treatment_input = preparation["image"] if preparation_used else original
             analysis = analyze_image(treatment_input)
@@ -803,6 +806,13 @@ def create_app(test_config=None):
             "method_used": preparation.get("boundary", {}).get("method_used") or ("deskew-only" if preparation.get("deskew", {}).get("applied") else None),
             "boundary_detected": bool(preparation.get("boundary", {}).get("detected")),
             "deskew": preparation.get("deskew"),
+            "orientation": preparation.get("orientation", {
+                "status": "manual_review",
+                "absolute_orientation_known": False,
+                "automatic_180_correction": False,
+                "requires_manual_review": True,
+                "reason": "لا يمكن استنتاج اتجاه 180° بأمان من هندسة الصفحة وحدها.",
+            }),
             "steps": preparation.get("steps", []),
         }
         preparation_step = {
@@ -810,6 +820,7 @@ def create_app(test_config=None):
             "parameters": {},
             "reason": (
                 "تم إدراج تجهيز الوثيقة تلقائياً قبل المعالجة الذكية بعد نجاح التحقق المحافظ."
+                + " الاتجاه العام 180° يحتاج مراجعة يدوية."
                 if preparation_used
                 else "لم تُدرج Preparation تلقائياً لأن التحقق المحافظ لم يسمح باستخدامها؛ بقيت الصورة الأصلية."
             ),

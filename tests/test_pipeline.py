@@ -512,7 +512,7 @@ def test_caution_is_rejected_for_high_sensitivity(
     )
 
 
-def test_only_one_step_accepted_per_run(
+def test_two_accepted_steps_are_allowed_when_verified(
     monkeypatch
 ):
     image = make_image()
@@ -547,10 +547,13 @@ def test_only_one_step_accepted_per_run(
         apply_behavior
     )
 
+    analysis_calls = {"count": 0}
+
     def analysis_behavior(image):
+        analysis_calls["count"] += 1
         return make_analysis(
-            contrast=50.0,
-            sharpness=150.0
+            contrast=50.0 + analysis_calls["count"] * 5.0,
+            sharpness=150.0 + analysis_calls["count"] * 10.0
         )
 
     monkeypatch.setattr(
@@ -576,7 +579,7 @@ def test_only_one_step_accepted_per_run(
     )
 
     assert (
-        apply_calls["count"] == 1
+        apply_calls["count"] == 2
     )
 
     statuses = [
@@ -585,11 +588,11 @@ def test_only_one_step_accepted_per_run(
     ]
 
     assert (
-        statuses.count("accepted") == 1
+        statuses.count("accepted") == 2
     )
 
     assert (
-        statuses.count("deferred") == 1
+        statuses.count("deferred") == 0
     )
 
     assert (

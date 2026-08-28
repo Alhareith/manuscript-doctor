@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="طبيب الوثائق — مساحة عمل احترافية لفحص الوثائق المصورة ومعالجتها والتحقق من أثر المعالجة مع المحافظة على التفاصيل الأصلية.">
-    <meta name="theme-color" content="#3b241c">
+    <meta name="theme-color" content="#20242a">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa+Ink:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -105,6 +105,7 @@
                     <h2 id="workspaceTitle">الصورة ونتائج الفحص</h2>
                 </div>
                 <div class="editor-state" aria-live="polite"><span class="status-dot"></span><span>الصورة الأصلية هي المرجع الحالي</span></div>
+                <button class="button button-ghost button-compact technical-details-trigger" type="button" data-open-technical-details disabled><i class="bi bi-braces-asterisk"></i><span>إظهار التفاصيل التقنية</span></button>
             </header>
 
             <div class="analysis-stage-card">
@@ -122,18 +123,18 @@
                     </section>
 
                     <section id="diagnosisSection" class="analysis-compact-panel hidden" aria-labelledby="diagnosisTitle">
-                        <header><span><i class="bi bi-activity"></i></span><div><small>التشخيص</small><h3 id="diagnosisTitle">المشكلات المكتشفة</h3></div></header>
+                        <header><span><i class="bi bi-activity"></i></span><div><small>التشخيص</small><h3 id="diagnosisTitle">المشكلات المكتشفة</h3></div><button class="panel-toggle" type="button" data-panel-toggle aria-expanded="false"><span>عرض</span><i class="bi bi-chevron-down"></i></button></header>
                         <div id="diagnosisList" class="diagnosis-list"><div class="empty-state">لم يتم إجراء الفحص بعد.</div></div>
                     </section>
 
                     <section id="preservationProfileSection" class="analysis-compact-panel hidden" aria-labelledby="preservationProfileTitle">
-                        <header><span><i class="bi bi-shield-check"></i></span><div><small>ملف المحافظة</small><h3 id="preservationProfileTitle">حساسية التفاصيل</h3></div><div id="preservationLevelBadge" class="preservation-badge neutral"><strong>—</strong></div></header>
+                        <header><span><i class="bi bi-shield-check"></i></span><div><small>ملف المحافظة</small><h3 id="preservationProfileTitle">حساسية التفاصيل</h3></div><div id="preservationLevelBadge" class="preservation-badge neutral"><strong>—</strong></div><button class="panel-toggle" type="button" data-panel-toggle aria-expanded="false"><span>عرض</span><i class="bi bi-chevron-down"></i></button></header>
                         <p id="preservationMessage">—</p>
                         <div id="preservationIndicators" class="preservation-indicators"></div>
                     </section>
 
                     <section id="treatmentPlanSection" class="analysis-compact-panel recommendation-panel hidden" aria-labelledby="recommendationTitle">
-                        <header><span><i class="bi bi-lightbulb-fill"></i></span><div><small>التوصية</small><h3 id="recommendationTitle">المعالجة المقترحة</h3></div></header>
+                        <header><span><i class="bi bi-lightbulb-fill"></i></span><div><small>التوصية</small><h3 id="recommendationTitle">المعالجة المقترحة</h3></div><button class="panel-toggle" type="button" data-panel-toggle aria-expanded="false"><span>عرض</span><i class="bi bi-chevron-down"></i></button></header>
                         <div id="recommendationList" class="recommendation-list"></div>
                         <div id="automaticExclusions" class="automatic-exclusions hidden">
                             <button class="details-summary" type="button" aria-expanded="false"><i class="bi bi-info-circle"></i> لماذا استُبعدت بدائل أخرى؟</button>
@@ -142,6 +143,14 @@
                     </section>
                 </div>
             </div>
+        </section>
+
+        <section id="technicalDetailsSection" class="technical-details-panel hidden" data-technical-details aria-labelledby="technicalDetailsTitle">
+            <header class="section-head compact-head">
+                <div><span class="eyebrow"><i class="bi bi-braces-asterisk"></i> TECHNICAL VIEW</span><h2 id="technicalDetailsTitle">التفاصيل التقنية</h2><p>بيانات الفحص والتوصيات والمسار الحالي بصيغة قابلة للمراجعة.</p></div>
+                <button class="button button-ghost button-compact" type="button" aria-label="إخفاء التفاصيل التقنية"><i class="bi bi-x-lg"></i><span>إخفاء</span></button>
+            </header>
+            <div class="technical-details-body" aria-live="polite"></div>
         </section>
 
         <!-- Dashboard -->

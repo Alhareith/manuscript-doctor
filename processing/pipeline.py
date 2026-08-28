@@ -5,7 +5,8 @@
 #   Benefit Gate → Preservation Gate → Accept OR Rollback] → Stop
 #
 # القواعد الصارمة:
-#   * لا Filter Chains: خطوة واحدة مقبولة فقط لكل جلسة (MAX_ACCEPTED_STEPS).
+#   * تسلسل قصير مضبوط: خطوتان مقبولتان كحد أقصى لكل جلسة (MAX_ACCEPTED_STEPS).
+
 #   * accepted_image و candidate_image منفصلان دائمًا؛
 #     الرفض يعني تجاهل المرشح والبقاء على accepted_image (Rollback).
 #   * بوابة المنفعة: قبول Preservation لا يكفي؛ يجب أن يتحسن المقياس
@@ -61,7 +62,8 @@ BINARIZATION_OPERATIONS = {
 
 # حدود الحلقة (Loop Protection)
 
-MAX_ACCEPTED_STEPS = 1
+MAX_ACCEPTED_STEPS = 2
+
 MAX_ATTEMPTS_PER_RUN = 4
 
 # عتبات بوابة المنفعة (Benefit Gate)
@@ -649,12 +651,15 @@ def _run_enhancement_loop(
             "operation_id"
         )
 
+        if stopped_after_caution:
+            deferred_ids.add(operation_id)
+            continue
+
         if accepted_count >= MAX_ACCEPTED_STEPS:
             stopped_after_accept = True
-
             deferred_ids.add(operation_id)
-
             continue
+
 
         if operation_id in attempted:
             continue
@@ -777,9 +782,9 @@ def _run_enhancement_loop(
                     recommendation,
                     execution_status="deferred",
                     note=(
-                        "توقفت الجلسة بعد قبول خطوة "
-                        "واحدة وفق سياسة عدم تسلسل "
-                        "الفلاتر (No Filter Chains)."
+                        "توقفت الجلسة بعد بلوغ حد "
+                        f"{MAX_ACCEPTED_STEPS} خطوات تحسين تلقائية "
+                        "وفق سياسة السلسلة القصيرة المحافظة."
                     )
                 )
             )
@@ -896,7 +901,8 @@ def _final_decision(
             "caution_count"
         ] > 0:
             message = (
-                "تم اعتماد خطوة معالجة واحدة مع "
+                "تم اعتماد "
+                f"{enhancement_result['accepted_count']} خطوات معالجة مع "
                 "مؤشرات تستدعي المراجعة، وتوقفت "
                 "الجلسة تلقائيًا عندها."
             )
@@ -919,8 +925,8 @@ def _final_decision(
         return {
             "status": "accepted",
             "message": (
-                "تم اعتماد خطوة معالجة واحدة "
-                "محققة للمنفعة وسليمة أمام "
+                "تم اعتماد خطوات المعالجة المقبولة "
+                "المحققة للمنفعة والسليمة أمام "
                 "Preservation، ثم توقفت الجلسة."
             )
         }
@@ -1073,9 +1079,10 @@ def run_smart_pipeline(
             "philosophy": (
                 "diagnose_treat_preserve_verify"
             ),
-            "single_accepted_step_per_run": (
-                MAX_ACCEPTED_STEPS == 1
+            "max_accepted_enhancement_steps": (
+                MAX_ACCEPTED_STEPS
             ),
+
             "max_attempts_per_run": (
                 MAX_ATTEMPTS_PER_RUN
             ),

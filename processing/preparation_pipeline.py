@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 
 from processing.auto_deskew import apply_auto_deskew
@@ -9,6 +10,10 @@ from processing.document_rectification import rectify_document
 from processing.skew_detector import detect_skew
 
 
+BOUNDARY_DETECTION_MAX_DIMENSION = 640
+BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
+
+
 def _validate_image(image):
     if image is None or not isinstance(image, np.ndarray):
         raise ValueError("Image must be a valid NumPy array.")
@@ -17,11 +22,81 @@ def _validate_image(image):
         raise ValueError("Image cannot be empty.")
 
 
-def prepare_document(image, boundary_detector=detect_document_boundary):
+def _make_boundary_proxy(image, max_dimension):
+    if not isinstance(max_dimension, int) or isinstance(max_dimension, bool):
+        raise ValueError("max boundary dimension must be a positive integer.")
+
+    if max_dimension <= 0:
+        raise ValueError("max boundary dimension must be a positive integer.")
+
+    height, width = image.shape[:2]
+    scale = min(1.0, max_dimension / max(height, width))
+
+    if scale >= 1.0:
+        return image.copy(), scale
+
+    proxy_size = (
+        max(1, int(round(width * scale))),
+        max(1, int(round(height * scale))),
+    )
+
+    proxy = cv2.resize(image, proxy_size, interpolation=cv2.INTER_AREA)
+    return proxy, scale
+
+
+def _restore_boundary_coordinates(boundary, scale, width, height):
+    if not isinstance(boundary, dict) or scale >= 1.0:
+        return boundary
+
+    restored = dict(boundary)
+    corners = boundary.get("corners")
+
+    if corners:
+        restored["corners"] = [
+            [
+                int(np.clip(round(float(x) / scale), 0, width - 1)),
+                int(np.clip(round(float(y) / scale), 0, height - 1)),
+            ]
+            for x, y in np.asarray(corners, dtype=np.float32).reshape(-1, 2)
+        ]
+
+    restored["detection_scale"] = round(float(scale), 6)
+    restored["detection_dimensions"] = {
+        "width": int(round(width * scale)),
+        "height": int(round(height * scale)),
+    }
+    return restored
+
+
+def prepare_document(
+    image,
+    boundary_detector=detect_document_boundary,
+    boundary_max_dimension=BOUNDARY_DETECTION_MAX_DIMENSION,
+):
     _validate_image(image)
 
     original = image.copy()
-    boundary = boundary_detector(image)
+    boundary_dimensions = [boundary_max_dimension]
+    if boundary_detector is detect_preparation_boundary:
+        boundary_dimensions.extend(
+            dimension
+            for dimension in BOUNDARY_FALLBACK_MAX_DIMENSIONS
+            if dimension < boundary_max_dimension
+        )
+
+    boundary = None
+    boundary_scale = 1.0
+    for dimension in boundary_dimensions:
+        proxy, boundary_scale = _make_boundary_proxy(image, dimension)
+        candidate = boundary_detector(proxy)
+        boundary = _restore_boundary_coordinates(
+            candidate,
+            boundary_scale,
+            image.shape[1],
+            image.shape[0],
+        )
+        if boundary.get("detected") or boundary.get("status") != "reject":
+            break
 
     result = {
         "prepared": False,
@@ -30,6 +105,13 @@ def prepare_document(image, boundary_detector=detect_document_boundary):
         "perspective": None,
         "skew": None,
         "deskew": None,
+        "orientation": {
+            "status": "manual_review",
+            "absolute_orientation_known": False,
+            "automatic_180_correction": False,
+            "requires_manual_review": True,
+            "reason": "لا يمكن استنتاج اتجاه 180° بأمان من هندسة الصفحة وحدها.",
+        },
         "steps": [],
         "reason": "",
     }

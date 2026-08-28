@@ -4,7 +4,9 @@ import cv2
 import numpy as np
 import pytest
 
+from processing.document_boundary import detect_preparation_boundary
 from processing.preparation_pipeline import prepare_document
+from processing.preparation_verification import verify_preparation
 
 
 INPUT_DIR = Path("evaluation/input")
@@ -29,6 +31,8 @@ def test_prepares_clear_document():
     assert result["perspective"]["applied"] is True
     assert result["skew"] is not None
     assert result["deskew"] is not None
+    assert result["orientation"]["requires_manual_review"] is True
+    assert result["orientation"]["automatic_180_correction"] is False
     assert result["image"] is not None
     assert result["image"].size > 0
 
@@ -101,7 +105,110 @@ def test_deskew_only_fallback_works_without_boundary_or_crop():
     assert any(step["step"] == "auto_deskew" and step["status"] == "applied" for step in result["steps"])
 
 
+@pytest.mark.parametrize("name", ["check/c04.jpg", "check/c05.jpg", "check/c06.jpg"])
+def test_preparation_detector_fallback_restores_document_crop(name):
+    result = prepare_document(
+        _load_image(name),
+        boundary_detector=detect_preparation_boundary,
+    )
+
+    assert result["prepared"] is True
+    assert result["boundary"]["detected"] is True
+    assert result["perspective"]["applied"] is True
+    assert result["image"].shape[0] < _load_image(name).shape[0]
+    assert result["image"].shape[1] < _load_image(name).shape[1]
+
+
+def test_c08_preparation_and_verification_are_repeatable():
+    image = _load_image("check/c08.jpg")
+
+    observations = []
+    for _ in range(5):
+        result = prepare_document(image, boundary_detector=detect_preparation_boundary)
+        verification = verify_preparation(result)
+        observations.append(
+            (
+                result["boundary"]["corners"],
+                result["skew"],
+                result["deskew"],
+                verification["status"],
+                verification["verified"],
+                result["orientation"]["automatic_180_correction"],
+            )
+        )
+
+    assert all(observation == observations[0] for observation in observations)
+    assert observations[0][4] is True
+    assert observations[0][5] is False
+
+
 def test_invalid_input_raises_value_error():
     with pytest.raises(ValueError):
         prepare_document(None)
-        
+
+
+def test_boundary_proxy_restores_corners_to_original_coordinates():
+    image = np.full((800, 1200, 3), 220, dtype=np.uint8)
+    seen_shapes = []
+
+    def detector(proxy):
+        seen_shapes.append(proxy.shape)
+        return {
+            "detected": True,
+            "corners": [[40, 30], [360, 30], [360, 230], [40, 230]],
+            "confidence": 0.95,
+            "area_ratio": 0.5,
+            "reason": "accepted: test candidate",
+        }
+
+    result = prepare_document(
+        image,
+        boundary_detector=detector,
+        boundary_max_dimension=400,
+    )
+
+    assert seen_shapes == [(267, 400, 3)]
+    assert result["boundary"]["corners"] == [
+        [120, 90],
+        [1080, 90],
+        [1080, 690],
+        [120, 690],
+    ]
+    assert result["boundary"]["detection_dimensions"] == {
+        "width": 400,
+        "height": 267,
+    }
+    assert result["boundary"]["detection_scale"] == round(400 / 1200, 6)
+
+
+def test_boundary_proxy_does_not_resize_small_images():
+    image = np.full((300, 350, 3), 220, dtype=np.uint8)
+    seen_shapes = []
+
+    def detector(proxy):
+        seen_shapes.append(proxy.shape)
+        return {
+            "detected": False,
+            "corners": [],
+            "confidence": 0.0,
+            "area_ratio": 0.0,
+            "reason": "rejected: test candidate",
+        }
+
+    prepare_document(
+        image,
+        boundary_detector=detector,
+        boundary_max_dimension=400,
+    )
+
+    assert seen_shapes == [image.shape]
+
+
+def test_boundary_proxy_rejects_invalid_dimension():
+    image = np.zeros((100, 100, 3), dtype=np.uint8)
+
+    with pytest.raises(ValueError, match="positive integer"):
+        prepare_document(image, boundary_max_dimension=0)
+
+    with pytest.raises(ValueError, match="positive integer"):
+        prepare_document(image, boundary_max_dimension=400.0)

@@ -56,6 +56,27 @@ function updateTechnicalDetails() {
     elements.technicalDetailsBody.replaceChildren(pre);
 }
 
+function setAnalysisPanelsCollapsed(collapsed = true) {
+    document.querySelectorAll("#diagnosisSection, #preservationProfileSection, #treatmentPlanSection").forEach((panel) => {
+        panel.classList.toggle("is-collapsed", collapsed);
+        const button = panel.querySelector("[data-panel-toggle]");
+        if (button) {
+            button.setAttribute("aria-expanded", String(!collapsed));
+            const label = button.querySelector("span");
+            if (label) label.textContent = collapsed ? "عرض" : "إخفاء";
+        }
+    });
+}
+
+function toggleAnalysisPanel(button) {
+    const panel = button.closest(".analysis-compact-panel");
+    if (!panel) return;
+    const collapsed = panel.classList.toggle("is-collapsed");
+    button.setAttribute("aria-expanded", String(!collapsed));
+    const label = button.querySelector("span");
+    if (label) label.textContent = collapsed ? "عرض" : "إخفاء";
+}
+
 function openTechnicalDetails() { updateTechnicalDetails(); show(elements.technicalDetails); elements.technicalDetails?.scrollIntoView({ behavior: "smooth", block: "start" }); }
 function closeTechnicalDetails() { hide(elements.technicalDetails); }
 

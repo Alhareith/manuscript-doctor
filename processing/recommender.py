@@ -18,7 +18,7 @@
 # معاملات مُثبتة على مجموعة Operation Validation (seed = 20260817)
 
 CLAHE_PARAMS = {"clip_limit": 1.5, "tile_grid_size": 8}
-CLAHE_PARAMS_STRONG = {"clip_limit": 2.0, "tile_grid_size": 8}
+CLAHE_PARAMS_STRONG = {"clip_limit": 1.2, "tile_grid_size": 8}
 
 GAMMA_DARK_PARAMS = {"gamma": 0.85}
 GAMMA_DARK_STRONG_PARAMS = {"gamma": 0.65}
@@ -237,8 +237,7 @@ def _blocked_operations(conditions, preservation_level):
         blocked["morphological_opening"] = "Opening may remove fine document structure."
         blocked["morphological_closing"] = "Closing may merge independent document structures."
 
-    if conditions["uneven_illumination"] != "none":
-        blocked["clahe"] = "CLAHE is deferred until illumination normalization is evaluated."
+
 
     return blocked
 
@@ -339,7 +338,11 @@ def _build_candidate_plan(analysis, conditions, blocked):
             "mode": "candidate",
             "automatic_eligible": True,
             "requires_reanalysis": True,
-            "reason": "Low contrast remains eligible for conservative CLAHE."
+                        "reason": (
+                "Low contrast is evaluated after any higher-priority "
+                "illumination or exposure correction."
+            )
+
         })
 
     if conditions["impulse_noise"]:

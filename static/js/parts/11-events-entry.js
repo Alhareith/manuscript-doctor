@@ -51,8 +51,10 @@ function bindEvents() {
     document.querySelectorAll("[data-ui-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.uiMode)));
     document.querySelectorAll("[data-editor-tab]").forEach((button) => button.addEventListener("click", () => setEditorTab(button.dataset.editorTab)));
     document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => switchViewer(button.dataset.view)));
-    document.querySelectorAll("[data-open-technical-details]").forEach((button) => button.addEventListener("click", openTechnicalDetails));
+        document.querySelectorAll("[data-open-technical-details]").forEach((button) => button.addEventListener("click", openTechnicalDetails));
+    document.querySelectorAll("[data-panel-toggle]").forEach((button) => button.addEventListener("click", () => toggleAnalysisPanel(button)));
     elements.technicalDetails?.querySelector("header button")?.addEventListener("click", closeTechnicalDetails);
+
     document.querySelector(".details-summary")?.addEventListener("click", (event) => toggleExclusions(event.currentTarget));
 }
 

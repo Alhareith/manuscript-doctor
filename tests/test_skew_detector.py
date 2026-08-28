@@ -26,8 +26,18 @@ def make_line_document(angle=0.0):
     )
 
 
-def test_detects_positive_skew():
+def test_detect_skew_is_repeatable_for_same_input():
     image = make_line_document(-5.0)
+
+    results = [detect_skew(image) for _ in range(10)]
+
+    assert all(result == results[0] for result in results)
+
+
+def test_detects_positive_skew():
+
+    image = make_line_document(-5.0)
+
     result = detect_skew(image)
 
     assert result["line_count"] >= 3

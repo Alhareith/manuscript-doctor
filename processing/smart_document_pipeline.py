@@ -2,6 +2,7 @@ import numpy as np
 
 from processing.analyzer import analyze_image
 from processing.pipeline import run_smart_pipeline
+from processing.document_boundary import detect_preparation_boundary
 from processing.preparation_pipeline import prepare_document
 from processing.preparation_verification import verify_preparation
 
@@ -19,7 +20,10 @@ def run_smart_document_pipeline(image):
 
     original = image.copy()
 
-    preparation = prepare_document(image)
+    preparation = prepare_document(
+        image,
+        boundary_detector=detect_preparation_boundary,
+    )
     preparation_verification = verify_preparation(preparation)
 
     result = {
@@ -45,7 +49,7 @@ def run_smart_document_pipeline(image):
 
         return result
 
-    if preparation_verification["status"] != "accept":
+    if preparation_verification.get("verified") is not True:
         result["prepared_image"] = preparation["image"].copy()
 
         result["decision"] = {

@@ -418,11 +418,11 @@ function renderUploadData(data) {
     showSection("diagnosisSection");
     showSection("preservationProfileSection");
     showSection("treatmentPlanSection");
-    show(elements.treatmentSection);
+        show(elements.treatmentSection);
     show(elements.treatmentHistory);
+    setAnalysisPanelsCollapsed(true);
     setWorkflow("treat");
     updateTechnicalDetails();
     updateControls();
-    elements.documentPreviewSection?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 

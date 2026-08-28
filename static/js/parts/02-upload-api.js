@@ -148,6 +148,10 @@ function selectFile(file) {
     show(elements.documentPreviewSection);
     setWorkflow("upload");
     updateControls();
+
+    // Start the examination as soon as a valid image is selected.
+    // The visible button remains available as a manual retry/fallback.
+    startExamination();
 }
 
 async function apiRequest(url, options = {}) {
