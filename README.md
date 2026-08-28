@@ -10,7 +10,7 @@
 [![Flask](https://img.shields.io/badge/Flask-Backend-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-Image%20Processing-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
 [![NumPy](https://img.shields.io/badge/NumPy-Numerical%20Processing-013243?logo=numpy&logoColor=white)](https://numpy.org/)
-[![Tests](https://img.shields.io/badge/Tests-333%20passed-0B7A62)](#التحقق)
+[![Tests](https://img.shields.io/badge/Tests-342%20passed-0B7A62)](#التحقق)
 [![Release](https://img.shields.io/github/v/release/Alhareith/manuscript-doctor?display_name=tag&style=flat-square&color=C7983D)](https://github.com/Alhareith/manuscript-doctor/releases/latest)
 
 </div>
@@ -66,8 +66,18 @@
 | المعاينة | Canvas محلي للعمليات الخفيفة، وPreview خادمي مضغوط للعمليات الثقيلة |
 | الاعتماد | Flask/OpenCV ينشئ نتيجة حقيقية قابلة للحفظ والتنزيل |
 | المسار الذكي | Analyze → Recommend → Apply → Preserve → Verify |
-| العملية المضافة | Super Resolution اختيارية بتكبير Lanczos وUnsharp Masking |
-| الاختبارات | 333 ناجحاً و16 متجاوزاً |
+| الثبات | كشف حدود وميل حتمي (Deterministic Hough) |
+| الاختبارات | 342 ناجحاً و16 متجاوزاً |
+
+## نتائج المعالجة التلقائية (قبل وبعد)
+
+توضح اللوحة التالية نتائج **المسار الذكي المحافظ** على مجموعة اختبارات متنوعة (C01-C10)، حيث يتم اكتشاف حدود الوثيقة وتصحيح المنظور والميل آلياً مع تحسين الإضاءة والتباين عند الحاجة.
+
+<p align="center">
+  <img src="docs/assets/comparison_results.jpg" alt="مقارنة قبل وبعد المعالجة التلقائية - Manuscript Doctor" width="100%">
+</p>
+
+> **ملاحظة تقنية:** تظهر النتائج قدرة النظام على استعادة القص المنظوري (Perspective Crop) حتى في الحالات الصعبة، مع الالتزام بسياسة اتجاه محافظة تترك تدوير 180 درجة للمراجعة اليدوية لضمان الدقة المطلقة.
 
 ## كيف يعمل؟
 
