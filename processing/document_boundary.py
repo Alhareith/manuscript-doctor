@@ -3,6 +3,8 @@ from email.mime import image
 import cv2
 import numpy as np
 
+from processing.deterministic_hough import hough_lines_p
+
 MIN_AREA_RATIO = 0.18
 MAX_AREA_RATIO = 0.98
 MIN_CONFIDENCE = 0.68
@@ -485,13 +487,13 @@ def _extract_hough_document_candidate(image, gray):
 
     maximum_line_gap = max(10, int(diagonal * 0.035))
 
-    lines = cv2.HoughLinesP(
+    lines = hough_lines_p(
         edges,
         rho=1,
         theta=np.pi / 180.0,
         threshold=max(40, int(min(height, width) * 0.06)),
-        minLineLength=minimum_line_length,
-        maxLineGap=maximum_line_gap,
+        min_line_length=minimum_line_length,
+        max_line_gap=maximum_line_gap,
     )
 
     if lines is None:

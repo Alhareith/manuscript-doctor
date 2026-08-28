@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from processing.deterministic_hough import hough_lines_p
+
 
 MAX_ABS_SKEW = 45.0
 MIN_IMAGE_SIDE = 80
@@ -70,13 +72,13 @@ def _collect_line_angles(gray):
     min_line_length = max(40, int(width * MIN_LINE_LENGTH_RATIO))
     max_line_gap = max(8, int(width * 0.025))
 
-    lines = cv2.HoughLinesP(
+    lines = hough_lines_p(
         edges,
         rho=1,
         theta=np.pi / 360.0,
         threshold=max(35, int(width * 0.045)),
-        minLineLength=min_line_length,
-        maxLineGap=max_line_gap
+        min_line_length=min_line_length,
+        max_line_gap=max_line_gap,
     )
 
     if lines is None:

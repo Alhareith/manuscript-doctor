@@ -11,6 +11,7 @@ from processing.skew_detector import detect_skew
 
 
 BOUNDARY_DETECTION_MAX_DIMENSION = 640
+BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
 
 
 def _validate_image(image):
@@ -75,17 +76,27 @@ def prepare_document(
     _validate_image(image)
 
     original = image.copy()
-    proxy, boundary_scale = _make_boundary_proxy(
-        image,
-        boundary_max_dimension,
-    )
-    boundary = boundary_detector(proxy)
-    boundary = _restore_boundary_coordinates(
-        boundary,
-        boundary_scale,
-        image.shape[1],
-        image.shape[0],
-    )
+    boundary_dimensions = [boundary_max_dimension]
+    if boundary_detector is detect_preparation_boundary:
+        boundary_dimensions.extend(
+            dimension
+            for dimension in BOUNDARY_FALLBACK_MAX_DIMENSIONS
+            if dimension < boundary_max_dimension
+        )
+
+    boundary = None
+    boundary_scale = 1.0
+    for dimension in boundary_dimensions:
+        proxy, boundary_scale = _make_boundary_proxy(image, dimension)
+        candidate = boundary_detector(proxy)
+        boundary = _restore_boundary_coordinates(
+            candidate,
+            boundary_scale,
+            image.shape[1],
+            image.shape[0],
+        )
+        if boundary.get("detected") or boundary.get("status") != "reject":
+            break
 
     result = {
         "prepared": False,
@@ -94,6 +105,13 @@ def prepare_document(
         "perspective": None,
         "skew": None,
         "deskew": None,
+        "orientation": {
+            "status": "manual_review",
+            "absolute_orientation_known": False,
+            "automatic_180_correction": False,
+            "requires_manual_review": True,
+            "reason": "لا يمكن استنتاج اتجاه 180° بأمان من هندسة الصفحة وحدها.",
+        },
         "steps": [],
         "reason": "",
     }

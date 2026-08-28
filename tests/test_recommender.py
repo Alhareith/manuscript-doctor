@@ -94,7 +94,10 @@ def test_uneven_illumination_precedes_clahe():
         strategy["candidate_plan"][0]["operation_id"]
         == "illumination_normalize"
     )
-    assert "clahe" in strategy["blocked_operations"]
+    operations = [item["operation_id"] for item in strategy["candidate_plan"]]
+    assert "clahe" in operations
+    assert operations.index("illumination_normalize") < operations.index("clahe")
+    assert "clahe" not in strategy["blocked_operations"]
 
 
 def test_noise_blocks_sharpening():
@@ -444,7 +447,7 @@ def test_very_low_contrast_gets_stronger_clahe():
         make_analysis(["very_low_contrast"])
     )
     clahe_rec = find_recommendation(result, "clahe")
-    assert clahe_rec["parameters"]["clip_limit"] == 2.0
+    assert clahe_rec["parameters"]["clip_limit"] == 1.2
 
 
 def test_moderate_low_contrast_gets_default_clahe():

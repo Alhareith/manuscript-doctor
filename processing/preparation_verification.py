@@ -7,6 +7,7 @@ from processing.skew_detector import detect_skew
 MAX_GOOD_RESIDUAL_SKEW = 0.75
 MAX_CAUTION_RESIDUAL_SKEW = 2.0
 MIN_GOOD_BOUNDARY_CONFIDENCE = 0.68
+MIN_REVIEW_BOUNDARY_CONFIDENCE = 0.47
 MIN_DESKEW_ONLY_CONFIDENCE = 0.80
 MIN_SAFE_RETENTION = 0.95
 
@@ -40,8 +41,8 @@ def _verify_boundary(boundary):
     if len(corners) != 4:
         return False, "accepted boundary does not contain four corners"
 
-    if confidence < MIN_GOOD_BOUNDARY_CONFIDENCE:
-        return False, "boundary confidence is below the preparation safety threshold"
+    if confidence < MIN_REVIEW_BOUNDARY_CONFIDENCE:
+        return False, "boundary confidence is below the review safety threshold"
 
     if not 0.0 < area_ratio <= 1.0:
         return False, "boundary area ratio is invalid"
@@ -108,7 +109,17 @@ def verify_preparation(result):
 
     checks = []
 
-    boundary_ok, boundary_reason = _verify_boundary(result["boundary"])
+    boundary = result["boundary"] if isinstance(result["boundary"], dict) else {}
+    boundary_confidence = float(boundary.get("confidence", 0.0))
+    boundary_needs_caution = bool(
+        boundary.get("detected")
+        and boundary_confidence < MIN_GOOD_BOUNDARY_CONFIDENCE
+    )
+
+    boundary_ok, boundary_reason = _verify_boundary(boundary)
+    if boundary_ok and boundary_needs_caution:
+        boundary_reason = "boundary geometry is valid but confidence requires review"
+
     perspective_ok, perspective_reason = _verify_perspective(result["perspective"])
 
     deskew = result.get("deskew") if isinstance(result.get("deskew"), dict) else {}
@@ -170,7 +181,7 @@ def verify_preparation(result):
         status = "reject"
         verified = False
         reason = "rejected: one or more preparation safety checks failed"
-    elif skew_status in {"caution", "unknown"}:
+    elif boundary_needs_caution or skew_status in {"caution", "unknown"}:
         status = "caution"
         verified = True
         reason = "caution: preparation is usable but one verification signal is not fully reliable"

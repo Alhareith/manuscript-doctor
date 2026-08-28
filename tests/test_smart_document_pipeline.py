@@ -27,6 +27,7 @@ def test_runs_full_pipeline_for_valid_document():
     assert result["preparation"]["prepared"] is True
     assert result["preparation_verification"]["status"] == "accept"
     assert result["prepared_analysis"] is not None
+    assert result["preparation"]["orientation"]["requires_manual_review"] is True
     assert result["treatment"] is not None
     assert result["decision"]["stage"] == "treatment"
 
@@ -42,7 +43,50 @@ def test_runs_full_pipeline_for_second_valid_document():
     assert result["treatment"] is not None
 
 
+def test_verified_caution_preparation_is_used():
+    import processing.smart_document_pipeline as smart_pipeline
+
+    original = np.zeros((80, 100, 3), dtype=np.uint8)
+    prepared = np.full_like(original, 127)
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(
+        smart_pipeline,
+        "prepare_document",
+        lambda image, boundary_detector=None: {"prepared": True, "image": prepared.copy()},
+    )
+    monkeypatch.setattr(
+        smart_pipeline,
+        "verify_preparation",
+        lambda preparation: {"status": "caution", "verified": True},
+    )
+    monkeypatch.setattr(
+        smart_pipeline,
+        "analyze_image",
+        lambda image: {"analysis": "ok"},
+    )
+    monkeypatch.setattr(
+        smart_pipeline,
+        "run_smart_pipeline",
+        lambda image, analysis: {
+            "image": image.copy(),
+            "decision": {"status": "accepted", "message": "ok"},
+        },
+    )
+
+    try:
+        result = smart_pipeline.run_smart_document_pipeline(original)
+    finally:
+        monkeypatch.undo()
+
+    assert result["preparation_verification"]["status"] == "caution"
+    assert result["prepared_image"] is not None
+    assert np.array_equal(result["image"], prepared)
+    assert result["decision"]["stage"] == "treatment"
+
+
 def test_stops_when_preparation_fails():
+
     image = np.full((600, 800, 3), 220, dtype=np.uint8)
     result = run_smart_document_pipeline(image)
 
