@@ -20,8 +20,8 @@ function initializeTheme() {
         applyTheme(saved);
         return;
     }
-    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
-    applyTheme(prefersDark ? "dark" : "light");
+    // The product default is the quiet metallic dark theme; the user can switch to light.
+    applyTheme("dark");
 }
 
 function updateQuickAdjustmentReadout() {

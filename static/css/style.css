@@ -28,6 +28,7 @@
 
 /* ---------- Release candidate UI/UX: quiet graphite metal ---------- */
 html[data-theme="dark"] {
+    color-scheme: dark;
     --bg: #171a1f;
     --bg-soft: #20242a;
     --surface: #252a31;
