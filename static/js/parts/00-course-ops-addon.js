@@ -28,7 +28,7 @@ Object.assign(operationParameters, {
         { name: "high_percentile", label: "High Percentile", type: "number", value: 98, min: 80, max: 100, step: 0.5 }
     ],
     log_transform: [
-        { name: "strength", label: "Strength", type: "number", value: 1.0, min: 0.2, max: 3, step: 0.05 }
+        { name: "strength", label: "Log Curvature", type: "number", value: 1.0, min: 0.2, max: 3, step: 0.05 }
     ]
 });
 
@@ -42,3 +42,12 @@ Object.assign(operationNames, {
     contrast_stretch: ["تمدد التباين المئيني", "Contrast Stretch"],
     log_transform: ["تحويل لوغاريتمي", "Log Transform"]
 });
+
+function syncCourseOperationDescriptions() {
+    const erosionText = document.querySelector('[data-operation-card="erosion"] small');
+    const dilationText = document.querySelector('[data-operation-card="dilation"] small');
+    if (erosionText) erosionText.textContent = "Erosion · ترقيق بنى الحبر الداكنة";
+    if (dilationText) dilationText.textContent = "Dilation · تثخين بنى الحبر الداكنة";
+}
+
+document.addEventListener("DOMContentLoaded", syncCourseOperationDescriptions);
