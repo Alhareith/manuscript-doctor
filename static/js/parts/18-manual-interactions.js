@@ -49,6 +49,12 @@ function bindInlineOperationParameters() {
         requestAnimationFrame(() => mountInlineOperationParameters(elements.manualOperation.value));
     });
 
+    if (elements.manualParameters) {
+        new MutationObserver(() => {
+            requestAnimationFrame(() => mountInlineOperationParameters(elements.manualOperation?.value || ""));
+        }).observe(elements.manualParameters, { childList: true });
+    }
+
     requestAnimationFrame(() => mountInlineOperationParameters(elements.manualOperation?.value || ""));
 }
 
