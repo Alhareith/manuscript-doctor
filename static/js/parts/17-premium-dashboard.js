@@ -60,7 +60,7 @@ function updateAnalysisSnapshot() {
     const diagnoses = Array.isArray(state.diagnoses) ? state.diagnoses : [];
     const high = diagnoses.filter((item) => String(item.severity).toLowerCase() === "high").length;
     const medium = diagnoses.filter((item) => String(item.severity).toLowerCase() === "medium").length;
-    const issueLabels = diagnoses.slice(0, 2).map((item) => item.label || humanizeCode(item.code)).filter(Boolean);
+    const issueLabels = diagnoses.map((item) => item.label || humanizeCode(item.code)).filter(Boolean);
     if (issues) {
         const strong = issues.querySelector("strong");
         const p = issues.querySelector("p");
