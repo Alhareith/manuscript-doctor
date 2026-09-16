@@ -127,7 +127,7 @@ function updatePremiumDashboard() {
         const tone = dashboardTone(key, human);
         card.dataset.tone = tone;
         card.style.setProperty("--metric-order", index);
-        card.classList.toggle("is-populated", human && !human.includes("بانتظار"));
+        card.classList.toggle("is-populated", Boolean(human && !human.includes("بانتظار")));
         card.setAttribute("aria-label", `${premiumMetricMeta[key].label}: ${human || "غير متاح"}، القراءة ${raw}`);
         if (tone === "danger") danger += 1;
         if (tone === "warning") warning += 1;
@@ -161,6 +161,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     [elements.examinationSection, elements.diagnosisList, elements.recommendationList, elements.preservationIndicators].forEach((node) => {
         if (!node) return;
-        new MutationObserver(schedulePremiumDashboardUpdate).observe(node, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class", "style"] });
+        new MutationObserver(schedulePremiumDashboardUpdate).observe(node, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
     });
 });
