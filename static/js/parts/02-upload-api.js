@@ -46,9 +46,8 @@ function updateManualApprovalUI() {
     }
 
     if (elements.manualChainList) {
-                elements.manualChainList.textContent = hasApproved
+        elements.manualChainList.textContent = hasApproved
             ? `الصورة الحالية: ${operationLabel(state.manualApprovedResult.operation?.id || "manual_operation")} — يمكنك إضافة خطوة يدوية أخرى.`
-
             : hasCandidate
                 ? "توجد معاينة غير معتمدة — راجعها قبل الاعتماد."
                 : "المعاينة الحالية غير محفوظة بعد.";
@@ -59,13 +58,8 @@ function updateManualApprovalUI() {
     const canRedo = activeIndex >= -1 && activeIndex < state.manualChain.length - 1 && !state.isBusy;
     if (elements.manualUndoButton) elements.manualUndoButton.disabled = !canUndo;
     if (elements.manualRedoButton) elements.manualRedoButton.disabled = !canRedo;
-    if (elements.manualApprovalButton) {
-        elements.manualApprovalButton.disabled = !hasCandidate || state.isBusy;
-    }
-
-    if (elements.manualManualDownloadButton) {
-        elements.manualManualDownloadButton.disabled = !hasApproved || state.isBusy;
-    }
+    if (elements.manualApprovalButton) elements.manualApprovalButton.disabled = !hasCandidate || state.isBusy;
+    if (elements.manualManualDownloadButton) elements.manualManualDownloadButton.disabled = !hasApproved || state.isBusy;
 }
 
 function resetManualChain() {
@@ -76,7 +70,6 @@ function resetManualChain() {
     state.manualPreviewCandidate = null;
     updateManualApprovalUI();
 }
-
 
 function resetAll() {
     clearTimeout(manualPreviewTimer);
@@ -118,7 +111,7 @@ function selectFile(file) {
     revokePreviewUrl();
     state.selectedFile = file;
     state.previewUrl = URL.createObjectURL(file);
-        state.imageId = null;
+    state.imageId = null;
     state.imageData = null;
     state.analysis = null;
     state.diagnoses = [];
@@ -148,10 +141,6 @@ function selectFile(file) {
     show(elements.documentPreviewSection);
     setWorkflow("upload");
     updateControls();
-
-    // Start the examination as soon as a valid image is selected.
-    // The visible button remains available as a manual retry/fallback.
-    startExamination();
 }
 
 async function apiRequest(url, options = {}) {
@@ -168,4 +157,3 @@ async function apiRequest(url, options = {}) {
     }
     return payload?.data ?? payload;
 }
-
