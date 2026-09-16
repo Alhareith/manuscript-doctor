@@ -1,9 +1,36 @@
 /* UI-only refinements: collapse all post-exam detail by default and enlarge the real crop workspace. */
 
-function syncAnalysisOverviewState(collapsed = true) {
+function ensureAnalysisOverviewStructure() {
     const deck = document.querySelector(".after-exam-deck");
-    const button = document.querySelector("[data-analysis-overview-toggle]");
-    if (!deck || !button) return;
+    const summary = deck?.querySelector(".analysis-summary-card");
+    if (!deck || !summary) return null;
+
+    let details = deck.querySelector(".analysis-details-stack");
+    if (!details) {
+        details = document.createElement("div");
+        details.className = "analysis-details-stack";
+        [...deck.querySelectorAll(":scope > .analysis-compact-panel")].forEach((panel) => details.appendChild(panel));
+        deck.appendChild(details);
+    }
+
+    let button = summary.querySelector("[data-analysis-overview-toggle]");
+    if (!button) {
+        button = document.createElement("button");
+        button.type = "button";
+        button.className = "analysis-overview-toggle";
+        button.dataset.analysisOverviewToggle = "";
+        button.setAttribute("aria-expanded", "false");
+        button.innerHTML = '<span>عرض تفاصيل الفحص</span><i class="bi bi-chevron-down"></i>';
+        summary.appendChild(button);
+    }
+
+    return { deck, button };
+}
+
+function syncAnalysisOverviewState(collapsed = true) {
+    const structure = ensureAnalysisOverviewStructure();
+    if (!structure) return;
+    const { deck, button } = structure;
     deck.classList.toggle("is-collapsed", collapsed);
     button.setAttribute("aria-expanded", String(!collapsed));
     const label = button.querySelector("span");
@@ -32,7 +59,8 @@ function syncClinicCropFocus() {
 }
 
 function bindClinicRefinements() {
-    const overviewToggle = document.querySelector("[data-analysis-overview-toggle]");
+    const structure = ensureAnalysisOverviewStructure();
+    const overviewToggle = structure?.button;
     if (overviewToggle && overviewToggle.dataset.bound !== "true") {
         overviewToggle.dataset.bound = "true";
         overviewToggle.addEventListener("click", toggleAnalysisOverview);
