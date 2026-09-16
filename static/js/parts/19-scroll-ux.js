@@ -69,8 +69,8 @@ function bindStableAnchorScrolling() {
         catch { return; }
         if (!target) return;
 
-        /* Existing workflow/footer controllers may own application state. Only replace raw browser jumps. */
-        if (anchor.hasAttribute("data-workflow-link") || anchor.hasAttribute("data-footer-nav")) return;
+        /* Workflow/footer controllers already own their state and scrolling. */
+        if (anchor.hasAttribute("data-workflow-nav") || anchor.hasAttribute("data-footer-nav")) return;
         event.preventDefault();
         smoothScrollToTarget(target);
         history.replaceState(null, "", href);
