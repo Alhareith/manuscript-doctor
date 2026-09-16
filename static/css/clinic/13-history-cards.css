@@ -1,0 +1,127 @@
+/* Treatment history as compact adjacent visual cards, not a timeline rail. */
+
+.treatment-history {
+    padding: 18px 20px 20px;
+}
+
+.treatment-history .section-head {
+    margin-bottom: 12px;
+}
+
+.history-timeline {
+    position: relative;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(155px, 190px);
+    justify-content: center;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 8px 4px 10px;
+    scroll-snap-type: x proximity;
+}
+
+.history-timeline::before {
+    display: none !important;
+}
+
+.history-timeline li,
+.history-timeline li.is-complete,
+.history-timeline li.is-current,
+.history-timeline li.is-future {
+    position: relative;
+    min-width: 0;
+    min-height: 96px;
+    padding: 15px 14px 13px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--surface) 92%, var(--primary-soft)), var(--surface));
+    box-shadow: var(--shadow-xs);
+    text-align: start;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
+    scroll-snap-align: center;
+    overflow: hidden;
+}
+
+.history-timeline li::before,
+.history-timeline li.is-complete::before,
+.history-timeline li.is-current::before {
+    content: "";
+    position: absolute;
+    top: 13px;
+    inset-inline-start: 13px;
+    transform: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 9px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+}
+
+.history-timeline li.is-complete::before {
+    content: "✓";
+    display: grid;
+    place-items: center;
+    color: #fff;
+    border-color: color-mix(in srgb, var(--primary) 60%, var(--line));
+    background: linear-gradient(145deg, var(--primary), var(--primary-strong));
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.history-timeline li.is-current {
+    border-color: color-mix(in srgb, var(--gold) 64%, var(--line));
+    background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--gold-soft) 72%, transparent), transparent 52%),
+        linear-gradient(145deg, var(--surface), color-mix(in srgb, var(--gold-soft) 34%, var(--surface)));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent), var(--shadow-sm);
+}
+
+.history-timeline li.is-current::before {
+    content: "";
+    border-color: var(--gold);
+    background: linear-gradient(145deg, var(--gold), var(--gold-strong));
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--gold) 12%, transparent);
+}
+
+.history-timeline li span {
+    color: var(--ink-strong);
+    font-size: .88rem;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.history-timeline li small {
+    color: var(--muted);
+    font-size: .72rem;
+    line-height: 1.5;
+}
+
+html[data-theme="dark"] .history-timeline li,
+html[data-theme="dark"] .history-timeline li.is-complete,
+html[data-theme="dark"] .history-timeline li.is-future {
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.035), transparent 26%),
+        linear-gradient(180deg, #23272a, #171a1d);
+    border-color: rgba(190,199,194,.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 22px rgba(0,0,0,.24);
+}
+
+html[data-theme="dark"] .history-timeline li.is-current {
+    background:
+        radial-gradient(circle at 10% 0%, rgba(215,177,96,.13), transparent 50%),
+        linear-gradient(145deg, rgba(255,255,255,.04), transparent 26%),
+        linear-gradient(180deg, #282620, #191916);
+    border-color: rgba(215,177,96,.48);
+}
+
+@media (max-width: 700px) {
+    .history-timeline {
+        justify-content: start;
+        grid-auto-columns: minmax(145px, 170px);
+    }
+}
