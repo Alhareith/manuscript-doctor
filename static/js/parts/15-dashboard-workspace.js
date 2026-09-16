@@ -1,17 +1,18 @@
 "use strict";
 
 function installDashboardWorkspace() {
-    const deck = document.querySelector(".after-exam-deck");
     const dashboard = elements.examinationSection;
-    if (!deck || !dashboard) return;
+    const previewSection = elements.documentPreviewSection;
+    if (!dashboard || !previewSection) return;
 
-    const detailsStack = deck.querySelector(".analysis-details-stack");
-    if (dashboard.parentElement !== deck) {
-        deck.insertBefore(dashboard, detailsStack || null);
+    // Keep the dashboard as a full-width section immediately after the image/status workspace.
+    // Never re-parent it into the compact diagnosis deck.
+    if (dashboard.previousElementSibling !== previewSection) {
+        previewSection.insertAdjacentElement("afterend", dashboard);
     }
 
-    dashboard.classList.add("dashboard-inline");
-    dashboard.classList.remove("is-collapsed");
+    dashboard.classList.remove("dashboard-inline", "is-collapsed");
+    dashboard.classList.add("dashboard-premium");
 
     let advanced = dashboard.querySelector(".dashboard-advanced");
     if (!advanced) {
@@ -29,11 +30,11 @@ function installDashboardWorkspace() {
         toggle.dataset.dashboardBound = "true";
         toggle.setAttribute("aria-expanded", "false");
         const label = toggle.querySelector("span");
-        if (label) label.textContent = "التفاصيل المتقدمة";
+        if (label) label.textContent = "التحليل المتقدم";
         toggle.addEventListener("click", () => {
             const collapsed = advanced.classList.toggle("is-collapsed");
             toggle.setAttribute("aria-expanded", String(!collapsed));
-            if (label) label.textContent = collapsed ? "التفاصيل المتقدمة" : "إخفاء التفاصيل";
+            if (label) label.textContent = collapsed ? "التحليل المتقدم" : "إخفاء التحليل المتقدم";
             const icon = toggle.querySelector("i");
             if (icon) icon.className = collapsed ? "bi bi-chevron-down" : "bi bi-chevron-up";
         });
