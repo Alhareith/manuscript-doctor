@@ -1,0 +1,62 @@
+        <!-- ===================== سجل المعالجة ===================== -->
+        <section class="treatment-history hidden" data-treatment-history aria-labelledby="historyTitle">
+            <header class="section-head compact-head"><div><span class="eyebrow"><i class="bi bi-clock-history"></i> سجل</span><h2 id="historyTitle">سجل المعالجة</h2></div><small>يعرض النتائج التي أنشأها النظام فعليًا.</small></header>
+            <ol class="history-timeline"><li class="is-current"><span>النسخة الأولى</span><small>الصورة المرفوعة</small></li></ol>
+        </section>
+
+        <!-- ===================== تقرير المختبر: التحقق ===================== -->
+        <section id="verificationSection" class="verification-panel hidden" aria-labelledby="verificationTitle">
+            <header class="section-head"><div><span class="eyebrow"><i class="bi bi-shield-check"></i> تحقق</span><h2 id="verificationTitle"><span class="num">05</span>التحقق من المحافظة</h2></div><p>قياس أثر المعالجة على البنية البصرية والتفاصيل قبل اعتماد النتيجة.</p></header>
+            <div class="verification-metrics">
+                <article><i class="bi bi-bezier2"></i><span>الاحتفاظ بالحواف</span><strong id="edgeRetentionMetric">—</strong><small>Edge Retention</small></article>
+                <article><i class="bi bi-boxes"></i><span>الاحتفاظ بالمكونات</span><strong id="componentRetentionMetric">—</strong><small>Component Retention</small></article>
+                <article><i class="bi bi-intersect"></i><span>التشابه البنيوي</span><strong id="structureSimilarityMetric">—</strong><small>Structure Similarity</small></article>
+                <article><i class="bi bi-graph-up-arrow"></i><span>الزيادة في الحواف</span><strong id="edgeInflationMetric">—</strong><small>Edge Inflation</small></article>
+            </div>
+            <div id="preservationWarnings" class="warning-list"></div>
+        </section>
+
+        <!-- ===================== القرار ===================== -->
+        <section id="decisionSection" class="decision-section hidden" aria-labelledby="decisionTitle">
+            <header class="section-head compact-head"><div><span class="eyebrow"><i class="bi bi-check2-square"></i> قرار</span><h2 id="decisionTitle">قرار النتيجة</h2></div></header>
+            <article id="decisionCard" class="decision-card neutral"><div class="decision-icon"><i class="bi bi-shield"></i></div><div><strong id="decisionStatus">—</strong><p id="decisionMessage">—</p></div></article>
+            <article class="stop-explanation" data-stop-explanation><i class="bi bi-sign-stop-fill"></i><div><strong>لماذا توقف النظام هنا؟</strong><p>—</p></div></article>
+        </section>
+
+        <!-- ===================== مرشحو فصل النص ===================== -->
+        <section id="binarizationSection" class="binarization-section hidden" aria-labelledby="binarizationTitle">
+            <header class="section-head"><div><span class="eyebrow"><i class="bi bi-grid-1x2"></i> فصل النص</span><h2 id="binarizationTitle">مرشحو فصل النص</h2><p>مسار اختياري مستقل؛ لا تُحوَّل كل وثيقة تلقائيًا إلى أبيض وأسود.</p></div></header>
+            <div id="binarizationList" class="binarization-list"></div>
+        </section>
+
+        <!-- ===================== المقارنة قبل/بعد ===================== -->
+        <section id="comparisonSection" class="comparison-section hidden" aria-labelledby="comparisonTitle">
+            <header class="section-head compact-head">
+                <div><span class="eyebrow"><i class="bi bi-layout-split"></i> مقارنة</span><h2 id="comparisonTitle">مقارنة النتيجة بالنسخة الأولى</h2></div>
+                <div class="viewer-tabs" role="group" aria-label="طريقة العرض">
+                    <button class="viewer-tab" type="button" data-view="compare"><i class="bi bi-layout-split"></i> منزلق</button>
+                    <button class="viewer-tab is-active" type="button" data-view="original"><i class="bi bi-image"></i> النسخة الأولى فقط</button>
+                </div>
+            </header>
+            <div class="compare-stage" data-compare-stage>
+                <div class="compare-wrap" data-compare-wrap>
+                    <img id="comparisonOriginal" alt="النسخة الأولى قبل المعالجة">
+                    <div class="compare-after"><img id="resultPreview" alt="النتيجة بعد المعالجة"></div>
+                    <div class="compare-tags" aria-hidden="true"><span>النسخة الأولى</span><span>بعد المعالجة</span></div>
+                    <div class="compare-divider" data-compare-divider><span class="compare-handle"><i class="bi bi-arrows-expand"></i></span></div>
+                </div>
+                <input class="compare-range" data-compare-range type="range" min="0" max="100" value="50" step="0.1" aria-label="موضع خط المقارنة بين النسخة الأولى والنتيجة">
+            </div>
+            <p class="compare-hint"><i class="bi bi-hand-index"></i> اسحب في أي مكان على الصورة لتحريك خط الفاصل بين النسخة الأولى والنتيجة.</p>
+        </section>
+
+        <!-- ===================== الإخراج ===================== -->
+        <section id="downloadSection" class="download-section hidden" aria-labelledby="downloadTitle">
+            <div><span class="eyebrow"><i class="bi bi-box-arrow-down"></i> إخراج</span><h2 id="downloadTitle">النتيجة جاهزة</h2><p>نزّل النتيجة الحالية أو ابدأ بوثيقة أخرى.</p></div>
+            <div class="download-actions"><button id="startOverButton" class="button button-ghost" type="button"><i class="bi bi-arrow-counterclockwise"></i> وثيقة جديدة</button><button id="downloadResultButton" class="button button-primary" type="button" disabled><i class="bi bi-download"></i> تنزيل النتيجة</button></div>
+        </section>
+
+        <section class="preview-decision hidden" data-preview-decision aria-live="polite"><div><strong>معاينة غير معتمدة</strong><small>ستُفعّل دورة الاعتماد التراكمية بعد إضافة Working Image API.</small></div></section>
+        <section id="errorSection" class="error-section hidden" role="alert"><i class="bi bi-exclamation-triangle-fill"></i><div><strong>تعذر إكمال الطلب</strong><p id="errorMessage">—</p></div></section>
+    </main>
+

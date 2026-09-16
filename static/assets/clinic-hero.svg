@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" role="img" aria-label="وثيقة تتحول من باهتة إلى واضحة">
+  <defs>
+    <linearGradient id="paper-faded" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ece5d4"/>
+      <stop offset="1" stop-color="#ddd2b8"/>
+    </linearGradient>
+    <linearGradient id="paper-clean" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef4f0"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#b3831d"/>
+      <stop offset="1" stop-color="#0e7261"/>
+    </linearGradient>
+  </defs>
+
+  <!-- خلفية ناعمة -->
+  <circle cx="268" cy="34" r="66" fill="#e1f1ec" opacity=".8"/>
+  <circle cx="42" cy="206" r="52" fill="#faf2de" opacity=".9"/>
+
+  <!-- الوثيقة "قبل": مائلة باهتة -->
+  <g transform="rotate(-8 90 128)">
+    <rect x="38" y="52" width="104" height="140" rx="10" fill="url(#paper-faded)" stroke="#c9ba92" stroke-width="2"/>
+    <g stroke="#b3a379" stroke-width="4" stroke-linecap="round" opacity=".75">
+      <path d="M56 82h64"/>
+      <path d="M56 98h68"/>
+      <path d="M56 114h52"/>
+      <path d="M56 130h62"/>
+      <path d="M56 146h40"/>
+    </g>
+  </g>
+
+  <!-- خط النبض: من الباهت إلى السليم -->
+  <path d="M150 118h26l8-16 10 34 9-22 6 4h20" fill="none" stroke="url(#flow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="150" cy="118" r="5" fill="#b3831d"/>
+  <circle cx="229" cy="118" r="5" fill="#0e7261"/>
+
+  <!-- الوثيقة "بعد": مستقيمة واضحة -->
+  <g transform="rotate(4 236 128)">
+    <rect x="184" y="46" width="106" height="144" rx="10" fill="url(#paper-clean)" stroke="#0e7261" stroke-width="2.5"/>
+    <g stroke="#0e7261" stroke-width="4" stroke-linecap="round" opacity=".8">
+      <path d="M202 78h70"/>
+      <path d="M202 94h74"/>
+      <path d="M202 110h58"/>
+      <path d="M202 126h66"/>
+      <path d="M202 142h44"/>
+    </g>
+    <circle cx="272" cy="172" r="12" fill="#0e7261"/>
+    <path d="m266.5 172 4 4 7-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
