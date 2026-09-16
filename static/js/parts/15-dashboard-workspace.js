@@ -21,6 +21,19 @@ function ensureAnalysisMasterControl() {
     return wrap;
 }
 
+function refreshAnalysisChartsAfterReveal() {
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            if (state.analysis?.metrics && typeof renderDashboardCharts === "function") {
+                renderDashboardCharts(state.analysis.metrics);
+            } else {
+                if (typeof tonalChartInstance !== "undefined") tonalChartInstance?.resize?.();
+                if (typeof qualityChartInstance !== "undefined") qualityChartInstance?.resize?.();
+            }
+        });
+    });
+}
+
 function setAnalysisSuiteExpanded(expanded) {
     const wrap = ensureAnalysisMasterControl();
     const button = wrap?.querySelector("#analysisMasterToggle");
@@ -33,10 +46,7 @@ function setAnalysisSuiteExpanded(expanded) {
     if (title) title.textContent = expanded ? "إخفاء تحليلات الوثيقة" : "عرض تحليلات الوثيقة";
     if (subtitle) subtitle.textContent = expanded ? "إخفاء الصورة ونتائج الفحص ولوحة حالة الوثيقة" : "الصورة على المنصة · نتائج الفحص · لوحة حالة الوثيقة";
     if (chevron) chevron.className = expanded ? "bi bi-chevron-up analysis-master-chevron" : "bi bi-chevron-down analysis-master-chevron";
-    if (expanded) requestAnimationFrame(() => {
-        if (typeof tonalChartInstance !== "undefined") tonalChartInstance?.resize?.();
-        if (typeof qualityChartInstance !== "undefined") qualityChartInstance?.resize?.();
-    });
+    if (expanded) refreshAnalysisChartsAfterReveal();
 }
 
 function syncAnalysisMasterControl() {
