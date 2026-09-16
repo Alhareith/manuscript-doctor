@@ -1,4 +1,5 @@
-/* UI-only refinements: collapse all post-exam detail by default and enlarge the real crop workspace. */
+/* UI-only refinements: collapse secondary exam detail by default and enlarge the real crop workspace.
+   The primary examination dashboard intentionally remains visible after analysis. */
 
 function ensureAnalysisOverviewStructure() {
     const deck = document.querySelector(".after-exam-deck");
@@ -24,7 +25,7 @@ function ensureAnalysisOverviewStructure() {
         summary.appendChild(button);
     }
 
-    return { deck, button };
+    return { deck, button, details };
 }
 
 function syncAnalysisOverviewState(collapsed = true) {
@@ -66,8 +67,8 @@ function bindClinicRefinements() {
         overviewToggle.addEventListener("click", toggleAnalysisOverview);
     }
 
+    // Secondary diagnostic detail starts collapsed. The main dashboard does not.
     syncAnalysisOverviewState(true);
-    elements.examinationSection?.classList.add("is-collapsed");
 
     elements.manualOperation?.addEventListener("change", () => requestAnimationFrame(syncClinicCropFocus));
     document.addEventListener("click", (event) => {
@@ -82,7 +83,6 @@ function bindClinicRefinements() {
             if (selectedFile.classList.contains("hidden")) {
                 document.getElementById("manualEditor")?.classList.remove("clinic-crop-focus");
                 syncAnalysisOverviewState(true);
-                elements.examinationSection?.classList.add("is-collapsed");
             }
         }).observe(selectedFile, { attributes: true, attributeFilter: ["class"] });
     }
@@ -90,10 +90,7 @@ function bindClinicRefinements() {
     const diagnosisList = elements.diagnosisList;
     if (diagnosisList) {
         new MutationObserver(() => {
-            if (state.analysis) {
-                syncAnalysisOverviewState(true);
-                elements.examinationSection?.classList.add("is-collapsed");
-            }
+            if (state.analysis) syncAnalysisOverviewState(true);
         }).observe(diagnosisList, { childList: true, subtree: true });
     }
 
