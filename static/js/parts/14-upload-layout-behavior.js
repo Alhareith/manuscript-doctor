@@ -12,14 +12,40 @@ function installCompactUploadHero() {
     intro.appendChild(glyph);
 }
 
+function setExamButtonState(mode = "idle") {
+    const button = elements.startExaminationButton;
+    if (!button) return;
+
+    const states = {
+        idle: ['<i class="bi bi-activity"></i> فحص الوثيقة', !state.selectedFile],
+        pending: ['<i class="bi bi-clock-history"></i> سيبدأ الفحص تلقائيًا', true],
+        running: ['<span class="processing-spinner exam-button-spinner"></span> جارٍ الفحص', true],
+        ready: ['<i class="bi bi-arrow-repeat"></i> إعادة الفحص', false],
+        retry: ['<i class="bi bi-arrow-clockwise"></i> إعادة محاولة الفحص', false]
+    };
+
+    const [html, disabled] = states[mode] || states.idle;
+    button.innerHTML = html;
+    button.disabled = Boolean(disabled);
+    button.dataset.examState = mode;
+}
+
 function scheduleAutomaticExamination(file) {
     if (!file) return;
     const ticket = ++clinicAutoExamTicket;
-    window.setTimeout(() => {
+    setExamButtonState("pending");
+
+    window.setTimeout(async () => {
         if (ticket !== clinicAutoExamTicket) return;
         if (state.selectedFile !== file || state.imageId || state.isBusy) return;
-        startExamination();
-    }, 180);
+        setExamButtonState("running");
+        try {
+            await startExamination();
+            setExamButtonState(state.imageId ? "ready" : "retry");
+        } catch {
+            setExamButtonState("retry");
+        }
+    }, 220);
 }
 
 function bindAutomaticExamination() {
@@ -35,7 +61,30 @@ function bindAutomaticExamination() {
 
     elements.removeImageButton?.addEventListener("click", () => {
         clinicAutoExamTicket += 1;
+        setExamButtonState("idle");
     });
+
+    elements.startExaminationButton?.addEventListener("click", () => {
+        if (state.imageId && !state.isBusy) {
+            window.setTimeout(() => setExamButtonState("running"), 0);
+            window.setTimeout(() => setExamButtonState(state.imageId ? "ready" : "retry"), 350);
+        }
+    });
+
+    const processing = elements.processingSection;
+    if (processing) {
+        new MutationObserver(() => {
+            if (!state.selectedFile) {
+                setExamButtonState("idle");
+                return;
+            }
+            if (!processing.classList.contains("hidden")) {
+                setExamButtonState("running");
+            } else if (state.imageId) {
+                setExamButtonState("ready");
+            }
+        }).observe(processing, { attributes: true, attributeFilter: ["class"] });
+    }
 }
 
 function bindUsageGuidePlaceholder() {
@@ -50,4 +99,5 @@ document.addEventListener("DOMContentLoaded", () => {
     installCompactUploadHero();
     bindAutomaticExamination();
     bindUsageGuidePlaceholder();
+    setExamButtonState("idle");
 });
