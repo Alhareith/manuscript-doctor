@@ -1,0 +1,419 @@
+/* Final fluid responsive layer. Loaded last: resolves overlap without rewriting earlier design layers. */
+
+:root {
+    --safe-inline: max(var(--gutter), env(safe-area-inset-left));
+    --safe-block-end: max(18px, env(safe-area-inset-bottom));
+}
+
+html {
+    max-width: 100%;
+    overflow-x: clip;
+    scroll-padding-top: calc(var(--header-h) + var(--workflow-h) + 22px);
+    scrollbar-gutter: stable;
+}
+body {
+    max-width: 100%;
+    overflow-x: clip;
+    overscroll-behavior-y: contain;
+}
+
+/* Any flex/grid child that carries images, charts or long Arabic text must be allowed to shrink. */
+.app-shell,
+.container-fluid,
+main,
+section,
+article,
+.app-header-inner,
+.workflow-panel,
+.studio-grid,
+.after-exam-deck,
+.dashboard-layout,
+.dashboard-metrics,
+.dashboard-analytics-pair,
+.treatment-mode-grid,
+.manual-editor-shell,
+.manual-preview-pane,
+.manual-controls-pane,
+.manual-preview-pair,
+.manual-preview-card,
+.manual-preview-image-wrap,
+.operation-browser,
+.operation-group,
+.selected-operation-panel,
+.manual-approval-bar,
+.manual-chain-status,
+.download-section,
+.download-actions,
+.footer-fixed-inner,
+.footer-section-nav {
+    min-width: 0;
+}
+
+h1, h2, h3, p, small, strong, span, button, a, label {
+    overflow-wrap: anywhere;
+}
+
+.container-fluid {
+    width: min(100%, var(--shell-max));
+    padding-inline: clamp(12px, 2.1vw, var(--gutter));
+}
+
+/* Stable media behavior. */
+img, canvas, svg, video {
+    max-width: 100%;
+}
+.document-stage img,
+.manual-preview-image-wrap img,
+.compare-wrap img {
+    object-fit: contain;
+}
+
+/* Header: never collide, progressively compact instead of wrapping unpredictably. */
+.app-header-inner {
+    gap: clamp(8px, 1.5vw, 18px);
+}
+.app-brand { flex: 1 1 auto; }
+.brand-copy { min-width: 0; }
+.brand-copy strong,
+.brand-copy small {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.header-actions {
+    flex: 0 0 auto;
+    gap: clamp(6px, 1vw, 10px);
+}
+.header-actions > * { min-width: 0; }
+
+/* Workflow is allowed to scroll horizontally; it must never squeeze or overlap. */
+.workflow-panel { overflow: hidden; }
+.workflow-list {
+    scroll-snap-type: inline proximity;
+    scroll-padding-inline: 10px;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+}
+.workflow-item { scroll-snap-align: center; }
+
+/* Primary workspaces. */
+.studio-grid {
+    grid-template-columns: minmax(0, 1.28fr) minmax(300px, .82fr);
+    gap: clamp(14px, 2vw, 24px);
+}
+.after-exam-deck { min-width: 0; }
+.document-stage {
+    min-height: clamp(300px, 46dvh, 560px);
+    max-height: min(64dvh, 680px);
+}
+.document-stage img {
+    width: 100%;
+    height: 100%;
+    max-height: inherit;
+}
+
+.dashboard-premium .dashboard-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.dashboard-premium .dashboard-analytics-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dashboard-premium .chart-stage,
+.dashboard-premium .chart-stage-secondary {
+    height: clamp(190px, 24dvh, 270px) !important;
+    min-height: 190px !important;
+}
+
+.treatment-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(12px, 1.5vw, 18px);
+}
+
+.manual-editor-shell {
+    grid-template-columns: minmax(0, 1.42fr) minmax(330px, .92fr);
+    gap: clamp(12px, 1.5vw, 18px);
+    align-items: start;
+}
+.manual-preview-stage {
+    min-width: 0;
+}
+.manual-preview-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 1vw, 12px);
+}
+.manual-preview-card figcaption { min-height: 1.55em; }
+.operation-category-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.operation-category-strip,
+.operation-browser {
+    overscroll-behavior: contain;
+}
+.operation-browser {
+    scrollbar-gutter: stable;
+}
+.orientation-actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.manual-approval-bar {
+    align-items: center;
+}
+.manual-approval-actions {
+    justify-content: flex-end;
+}
+.manual-approval-actions .button {
+    min-height: 44px;
+}
+
+/* Comparison cannot escape its own viewport. */
+.compare-stage,
+.compare-wrap {
+    max-width: 100%;
+    overflow: hidden;
+}
+.compare-wrap {
+    height: clamp(320px, 58dvh, 720px);
+}
+
+/* Footer uses intrinsic columns and wraps before collision. */
+.app-footer.app-footer-fixed .footer-fixed-inner {
+    grid-template-columns: minmax(150px, .7fr) minmax(320px, 1.7fr) minmax(210px, .9fr);
+    align-items: center;
+}
+.footer-section-nav {
+    gap: 6px;
+}
+
+/* Medium desktop / tablet landscape. */
+@media (max-width: 1180px) {
+    .studio-grid,
+    .manual-editor-shell {
+        grid-template-columns: 1fr;
+    }
+    .manual-controls-pane { width: 100%; }
+    .operation-browser { max-height: min(48dvh, 430px); }
+    .dashboard-premium .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .app-footer.app-footer-fixed .footer-fixed-inner {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+    }
+    .footer-section-nav { justify-content: center; }
+    .footer-credits { justify-content: center !important; }
+}
+
+/* Tablet / narrow desktop. */
+@media (max-width: 900px) {
+    :root {
+        --header-h: 60px;
+        --workflow-h: 54px;
+        --gutter: 18px;
+    }
+    .brand-copy strong { font-size: 1.18rem; }
+    .brand-copy small { display: none; }
+    .brand-mark { width: 40px; height: 40px; border-radius: 12px; }
+    .header-actions .theme-toggle-label,
+    .header-actions .usage-guide-button span { display: none; }
+    .header-actions .theme-toggle,
+    .header-actions .usage-guide-button {
+        width: 42px;
+        min-width: 42px;
+        min-height: 42px;
+        justify-content: center;
+        padding: 0;
+    }
+    .workflow-status { display: none; }
+    .workflow-panel { gap: 4px; }
+    .workflow-item a { padding-inline: 10px; }
+
+    .section-head,
+    .manual-editor-head {
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .dashboard-premium .dashboard-analytics-pair { grid-template-columns: 1fr; }
+    .treatment-mode-grid { grid-template-columns: 1fr; }
+    .manual-preview-stage { height: auto !important; max-height: none !important; }
+    .manual-preview-image-wrap { min-height: clamp(260px, 40dvh, 420px) !important; }
+    .compare-wrap { height: clamp(300px, 52dvh, 560px); }
+}
+
+/* Phones and portrait tablets. */
+@media (max-width: 720px) {
+    :root {
+        --header-h: 56px;
+        --workflow-h: 50px;
+        --gutter: 14px;
+    }
+    body { line-height: 1.72; }
+    .app-header-inner { gap: 6px; }
+    .app-brand { gap: 8px; }
+    .brand-mark { width: 36px; height: 36px; border-radius: 10px; }
+    .brand-copy strong { font-size: 1.02rem; }
+    .header-actions { gap: 5px; }
+    .header-actions .theme-toggle,
+    .header-actions .usage-guide-button {
+        width: 38px;
+        min-width: 38px;
+        min-height: 38px;
+    }
+
+    .workflow-list { gap: 3px; }
+    .workflow-item a { padding: 6px 8px; gap: 6px; }
+    .workflow-item strong { font-size: .72rem; }
+    .workflow-item span { width: 23px; height: 23px; }
+
+    .upload-intro h1 { font-size: clamp(1.65rem, 8vw, 2.15rem); }
+    .drop-zone { min-height: 180px; padding-inline: 16px; }
+    .selected-file,
+    .manual-approval-bar,
+    .download-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .selected-file-actions,
+    .manual-approval-actions,
+    .download-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+    .selected-file-actions .button,
+    .manual-approval-actions .button,
+    .download-actions .button { width: 100%; }
+
+    .studio-grid { gap: 12px; }
+    .document-stage {
+        min-height: 280px;
+        height: min(52dvh, 480px);
+        max-height: none;
+    }
+    .after-exam-deck,
+    .analysis-quick-findings {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-premium .dashboard-metrics { grid-template-columns: 1fr; }
+    .dashboard-premium .metric-card {
+        min-height: 124px;
+        grid-template-columns: 58px minmax(0, 1fr);
+    }
+
+    .manual-preview-pair { grid-template-columns: 1fr; }
+    .manual-preview-card { height: auto !important; }
+    .manual-preview-image-wrap {
+        height: min(46dvh, 420px) !important;
+        min-height: 240px !important;
+    }
+    .operation-category-strip {
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        scroll-snap-type: inline mandatory;
+        scrollbar-width: none;
+        padding-bottom: 10px;
+    }
+    .operation-category-strip::-webkit-scrollbar { display: none; }
+    .category-tab {
+        flex: 0 0 min(112px, 30vw);
+        scroll-snap-align: start;
+        min-height: 50px;
+    }
+    .operation-browser {
+        max-height: none;
+        overflow: visible;
+    }
+    .operation-row { padding: 10px; }
+    #manualParameters.inline-operation-parameters { grid-template-columns: 1fr; }
+
+    .compare-wrap { height: min(48dvh, 460px); }
+
+    .footer-section-nav {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        scroll-snap-type: inline proximity;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+    .footer-section-nav::-webkit-scrollbar { display: none; }
+    .footer-section-nav a { flex: 0 0 auto; scroll-snap-align: start; }
+}
+
+/* Small phones: 320–480px. */
+@media (max-width: 480px) {
+    :root { --gutter: 10px; }
+    .brand-copy strong { max-width: 120px; }
+    .workflow-item strong { display: none; }
+    .workflow-item a { padding-inline: 7px; }
+    .workflow-item:not(:last-child)::after { width: 3px; }
+    .section-head h2,
+    .manual-editor-head h2 { font-size: clamp(1.25rem, 6vw, 1.55rem); }
+    .analysis-master-toggle {
+        grid-template-columns: 32px minmax(0, 1fr) 18px;
+        gap: 8px;
+        padding-inline: 10px;
+    }
+    .analysis-master-copy strong { font-size: .82rem; }
+    .analysis-master-copy small { font-size: .66rem; }
+    .document-stage { min-height: 240px; height: min(46dvh, 380px); }
+    .dashboard-premium .metric-card {
+        padding: 14px 14px 25px;
+        border-radius: 17px;
+    }
+    .dashboard-premium .metric-ring { width: 54px; height: 54px; }
+    .dashboard-premium .metric-ring > span { width: 36px; height: 36px; }
+    .orientation-actions-grid { grid-template-columns: 1fr 1fr; }
+    .manual-preview-toolbar {
+        align-items: flex-start;
+    }
+    .manual-preview-toolbar-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .manual-preview-toolbar-actions .button { min-width: 0; flex: 1; }
+    .manual-preview-image-wrap { min-height: 220px !important; height: min(42dvh, 350px) !important; }
+}
+
+/* Very narrow devices. */
+@media (max-width: 360px) {
+    .brand-copy strong { max-width: 96px; font-size: .92rem; }
+    .header-actions .theme-toggle,
+    .header-actions .usage-guide-button { width: 34px; min-width: 34px; min-height: 34px; }
+    .workflow-item span { width: 22px; height: 22px; }
+    .category-tab { flex-basis: 104px; }
+    .orientation-actions-grid { grid-template-columns: 1fr; }
+    .manual-preview-toolbar-actions { flex-wrap: wrap; }
+}
+
+/* Short landscape screens need vertical efficiency more than desktop proportions. */
+@media (min-width: 721px) and (max-height: 620px) {
+    html { scroll-padding-top: calc(var(--header-h) + 10px); }
+    .workflow-bar { position: relative; top: auto; }
+    .document-stage { min-height: 280px; max-height: 58dvh; }
+    .manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
+        min-height: 280px !important;
+        height: 52dvh !important;
+        max-height: 340px !important;
+    }
+    .manual-preview-image-wrap { min-height: 0 !important; }
+    .operation-browser { max-height: 44dvh; }
+}
+
+/* Touch targets: preserve precision without making desktop UI oversized. */
+@media (pointer: coarse) {
+    button, .button, .category-tab, .operation-row, .orientation-action, .viewer-tab, .workflow-item a {
+        min-height: 44px;
+    }
+}
+
+/* Motion accessibility always wins. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+    }
+}
