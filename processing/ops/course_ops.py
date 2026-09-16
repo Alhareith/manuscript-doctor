@@ -29,7 +29,7 @@ def gaussian_blur(image, kernel_size=5, sigma=0.0):
 
 
 def laplacian_sharpen(image, amount=0.5, kernel_size=3):
-    """Sharpen luminance using the magnitude of the Laplacian response."""
+    """Sharpen luminance by subtracting the signed Laplacian response."""
     _validate_image(image)
 
     if not isinstance(amount, (int, float)) or amount < 0:
@@ -41,9 +41,10 @@ def laplacian_sharpen(image, amount=0.5, kernel_size=3):
     amount = float(amount)
 
     def _sharpen(gray):
-        laplacian = cv2.Laplacian(gray, cv2.CV_64F, ksize=kernel_size)
-        boosted = gray.astype(np.float64) + amount * np.abs(laplacian)
-        return np.clip(boosted, 0, 255).astype(np.uint8)
+        source = gray.astype(np.float32)
+        laplacian = cv2.Laplacian(source, cv2.CV_32F, ksize=kernel_size)
+        sharpened = source - amount * laplacian
+        return np.clip(sharpened, 0, 255).astype(np.uint8)
 
     return _apply_to_luminance(image, _sharpen)
 
@@ -89,7 +90,12 @@ def contrast_stretch(image, low_percentile=2, high_percentile=98):
 
 
 def log_transform(image, strength=1.0):
-    """Apply a normalized logarithmic intensity transform."""
+    """Apply a fixed-range logarithmic intensity transform.
+
+    ``strength`` controls the curvature while 0 and 255 remain fixed endpoints.
+    This avoids per-image max normalization, which could incorrectly map a
+    constant mid-gray image to pure white.
+    """
     _validate_image(image)
 
     if not isinstance(strength, (int, float)) or strength <= 0:
@@ -98,11 +104,9 @@ def log_transform(image, strength=1.0):
     strength = float(strength)
 
     def _log_map(gray):
-        logged = np.log1p(gray.astype(np.float64))
-        maximum = float(logged.max())
-        if maximum < 1e-6:
-            return gray.copy()
-        scaled = (logged / maximum) * 255.0 * strength
+        denominator = np.log1p(strength * 255.0)
+        mapped = np.log1p(strength * gray.astype(np.float64))
+        scaled = (mapped / denominator) * 255.0
         return np.clip(scaled, 0, 255).astype(np.uint8)
 
     return _apply_to_luminance(image, _log_map)
