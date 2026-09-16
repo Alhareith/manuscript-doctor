@@ -35,28 +35,35 @@ def morphological_black_hat(image, kernel_size=5):
     return cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
 
 
-def erosion(image, kernel_size=3, iterations=1):
-    """Shrink bright structures using a rectangular structuring element."""
+def _dark_foreground_morph(image, kernel_size, iterations, operation):
+    """Apply morphology with dark document ink treated as the foreground."""
     gray = _to_gray(image)
     _validate_odd_kernel_size(kernel_size, "kernel_size")
     if not isinstance(iterations, int) or iterations < 1:
         raise ValueError("iterations must be a positive integer.")
+
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
-    return cv2.erode(gray, kernel, iterations=iterations)
+    foreground = cv2.bitwise_not(gray)
+    processed = operation(foreground, kernel, iterations=iterations)
+    return cv2.bitwise_not(processed)
+
+
+def erosion(image, kernel_size=3, iterations=1):
+    """Erode dark document ink, making dark foreground structures thinner."""
+    return _dark_foreground_morph(image, kernel_size, iterations, cv2.erode)
 
 
 def dilation(image, kernel_size=3, iterations=1):
-    """Expand bright structures using a rectangular structuring element."""
-    gray = _to_gray(image)
-    _validate_odd_kernel_size(kernel_size, "kernel_size")
-    if not isinstance(iterations, int) or iterations < 1:
-        raise ValueError("iterations must be a positive integer.")
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
-    return cv2.dilate(gray, kernel, iterations=iterations)
+    """Dilate dark document ink, making dark foreground structures thicker."""
+    return _dark_foreground_morph(image, kernel_size, iterations, cv2.dilate)
 
 
 def morphological_gradient(image, kernel_size=3):
-    """Return the standard morphological gradient (dilation minus erosion)."""
+    """Return the standard morphological boundary magnitude.
+
+    The morphological gradient is invariant to foreground inversion, so the
+    standard grayscale formulation is suitable for dark-ink documents too.
+    """
     gray = _to_gray(image)
     _validate_odd_kernel_size(kernel_size, "kernel_size")
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
