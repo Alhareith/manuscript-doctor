@@ -6,7 +6,6 @@ function installDashboardWorkspace() {
     if (!dashboard || !previewSection) return;
 
     // Keep the dashboard as a full-width section immediately after the image/status workspace.
-    // Never re-parent it into the compact diagnosis deck.
     if (dashboard.previousElementSibling !== previewSection) {
         previewSection.insertAdjacentElement("afterend", dashboard);
     }
@@ -19,24 +18,36 @@ function installDashboardWorkspace() {
         advanced = document.createElement("div");
         advanced.className = "dashboard-advanced is-collapsed";
         const analytics = dashboard.querySelector(".dashboard-analytics-pair");
-        const reading = dashboard.querySelector(".dashboard-reading-card");
         if (analytics) advanced.appendChild(analytics);
-        if (reading) advanced.appendChild(reading);
         dashboard.querySelector(".dashboard-layout")?.appendChild(advanced);
     }
+
+    // The former explanatory card duplicated information and added visual noise.
+    dashboard.querySelector(".dashboard-reading-card")?.remove();
 
     const toggle = dashboard.querySelector(".dashboard-head .panel-toggle");
     if (toggle && toggle.dataset.dashboardBound !== "true") {
         toggle.dataset.dashboardBound = "true";
+        toggle.classList.add("dashboard-advanced-toggle");
         toggle.setAttribute("aria-expanded", "false");
         const label = toggle.querySelector("span");
-        if (label) label.textContent = "التحليل المتقدم";
-        toggle.addEventListener("click", () => {
+        const icon = toggle.querySelector("i");
+        if (label) label.textContent = "عرض الرسوم المتقدمة";
+
+        toggle.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             const collapsed = advanced.classList.toggle("is-collapsed");
             toggle.setAttribute("aria-expanded", String(!collapsed));
-            if (label) label.textContent = collapsed ? "التحليل المتقدم" : "إخفاء التحليل المتقدم";
-            const icon = toggle.querySelector("i");
+            if (label) label.textContent = collapsed ? "عرض الرسوم المتقدمة" : "إخفاء الرسوم المتقدمة";
             if (icon) icon.className = collapsed ? "bi bi-chevron-down" : "bi bi-chevron-up";
+
+            if (!collapsed) {
+                requestAnimationFrame(() => {
+                    tonalChartInstance?.resize?.();
+                    qualityChartInstance?.resize?.();
+                });
+            }
         });
     }
 
