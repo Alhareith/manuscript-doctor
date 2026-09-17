@@ -118,9 +118,22 @@ def _detect_skew_on_proxy(image, max_dimension=SKEW_DETECTION_MAX_DIMENSION):
     return skew
 
 
-def _prefer_bright_fallback(primary, fallback):
+def _prefer_bright_fallback(primary, fallback, width, height):
+    """Use the bright-paper detector only as a rescue path.
+
+    A primary Guided/Region candidate that is already safe for automatic
+    perspective remains authoritative. This protects previously-correct cases
+    from being replaced by a visually plausible but worse fallback polygon.
+    """
     if not fallback.get("detected"):
         return False
+
+    primary_safe, _, _ = _boundary_is_safe_for_automatic_perspective(
+        primary, width, height
+    )
+    if primary_safe:
+        return False
+
     if not primary or not primary.get("detected"):
         return True
 
@@ -128,25 +141,12 @@ def _prefer_bright_fallback(primary, fallback):
     if primary_status is not None and primary_status != "accept_automatic":
         return True
 
-    primary_area = float(primary.get("area_ratio", 0.0) or 0.0)
-    fallback_area = float(fallback.get("area_ratio", 0.0) or 0.0)
-    primary_confidence = float(primary.get("confidence", 0.0) or 0.0)
-    fallback_confidence = float(fallback.get("confidence", 0.0) or 0.0)
-
-    if fallback_confidence >= primary_confidence + 0.06:
-        return True
-
-    # A common failure on phone screenshots is selecting the whole photo/viewer
-    # region instead of the sheet. Prefer the compact paper candidate only when
-    # it is clearly smaller and still strongly supported.
-    if (
-        fallback_confidence >= 0.72
-        and fallback_area > 0
-        and primary_area >= fallback_area * 1.25
-    ):
-        return True
-
-    return False
+    # At this point the primary may only be unsafe because it reaches the image
+    # frame. A fully-visible fallback is preferable to that candidate.
+    fallback_safe, _, _ = _boundary_is_safe_for_automatic_perspective(
+        fallback, width, height
+    )
+    return bool(fallback_safe)
 
 
 def prepare_document(
@@ -180,9 +180,7 @@ def prepare_document(
             break
 
     # Keep the established Guided/Region detector as the primary path. For
-    # preparation only, compare a cheap bright-paper fallback against it. This
-    # repairs difficult phone photos/screenshots without replacing the detector
-    # that already works on ordinary documents.
+    # preparation only, use the bright-paper detector strictly as a rescue path.
     if boundary_detector is detect_preparation_boundary:
         fallback_proxy, fallback_scale = _make_boundary_proxy(
             image, BOUNDARY_DETECTION_MAX_DIMENSION
@@ -194,7 +192,12 @@ def prepare_document(
             image.shape[1],
             image.shape[0],
         )
-        if _prefer_bright_fallback(boundary, fallback_boundary):
+        if _prefer_bright_fallback(
+            boundary,
+            fallback_boundary,
+            image.shape[1],
+            image.shape[0],
+        ):
             fallback_boundary["fallback_used"] = "bright_paper_region"
             boundary = fallback_boundary
 
