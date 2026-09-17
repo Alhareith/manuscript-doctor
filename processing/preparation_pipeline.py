@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from processing.auto_deskew import apply_auto_deskew
+from processing.bright_document_fallback import detect_bright_document_boundary
 from processing.document_boundary import (
     detect_document_boundary,
     detect_preparation_boundary,
@@ -13,7 +14,7 @@ from processing.skew_detector import detect_skew
 BOUNDARY_DETECTION_MAX_DIMENSION = 640
 BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
 SKEW_DETECTION_MAX_DIMENSION = 1280
-PREPARATION_MIN_FRAME_CLEARANCE_RATIO = 0.03
+PREPARATION_MIN_FRAME_CLEARANCE_RATIO = 0.005
 
 
 def _validate_image(image):
@@ -100,10 +101,10 @@ def _boundary_is_safe_for_automatic_perspective(boundary, width, height):
     clearance = _boundary_frame_clearance_ratio(boundary, width, height)
     if clearance < PREPARATION_MIN_FRAME_CLEARANCE_RATIO:
         return False, clearance, (
-            "document boundary is too close to the image frame; the page may be partially clipped"
+            "document boundary reaches the image frame; the page may be partially clipped"
         )
 
-    return True, clearance, "boundary has safe background clearance on all four sides"
+    return True, clearance, "boundary has visible background clearance on all four sides"
 
 
 def _detect_skew_on_proxy(image, max_dimension=SKEW_DETECTION_MAX_DIMENSION):
@@ -115,6 +116,37 @@ def _detect_skew_on_proxy(image, max_dimension=SKEW_DETECTION_MAX_DIMENSION):
         "height": int(proxy.shape[0]),
     }
     return skew
+
+
+def _prefer_bright_fallback(primary, fallback):
+    if not fallback.get("detected"):
+        return False
+    if not primary or not primary.get("detected"):
+        return True
+
+    primary_status = primary.get("status")
+    if primary_status is not None and primary_status != "accept_automatic":
+        return True
+
+    primary_area = float(primary.get("area_ratio", 0.0) or 0.0)
+    fallback_area = float(fallback.get("area_ratio", 0.0) or 0.0)
+    primary_confidence = float(primary.get("confidence", 0.0) or 0.0)
+    fallback_confidence = float(fallback.get("confidence", 0.0) or 0.0)
+
+    if fallback_confidence >= primary_confidence + 0.06:
+        return True
+
+    # A common failure on phone screenshots is selecting the whole photo/viewer
+    # region instead of the sheet. Prefer the compact paper candidate only when
+    # it is clearly smaller and still strongly supported.
+    if (
+        fallback_confidence >= 0.72
+        and fallback_area > 0
+        and primary_area >= fallback_area * 1.25
+    ):
+        return True
+
+    return False
 
 
 def prepare_document(
@@ -146,6 +178,25 @@ def prepare_document(
         )
         if boundary.get("detected") or boundary.get("status") != "reject":
             break
+
+    # Keep the established Guided/Region detector as the primary path. For
+    # preparation only, compare a cheap bright-paper fallback against it. This
+    # repairs difficult phone photos/screenshots without replacing the detector
+    # that already works on ordinary documents.
+    if boundary_detector is detect_preparation_boundary:
+        fallback_proxy, fallback_scale = _make_boundary_proxy(
+            image, BOUNDARY_DETECTION_MAX_DIMENSION
+        )
+        fallback_candidate = detect_bright_document_boundary(fallback_proxy)
+        fallback_boundary = _restore_boundary_coordinates(
+            fallback_candidate,
+            fallback_scale,
+            image.shape[1],
+            image.shape[0],
+        )
+        if _prefer_bright_fallback(boundary, fallback_boundary):
+            fallback_boundary["fallback_used"] = "bright_paper_region"
+            boundary = fallback_boundary
 
     perspective_allowed, frame_clearance, perspective_reason = (
         _boundary_is_safe_for_automatic_perspective(
@@ -194,7 +245,7 @@ def prepare_document(
             "status": "skipped",
             "reason": (
                 "skipped: automatic perspective crop requires a fully visible document "
-                "with safe background clearance on all four sides"
+                "with visible background on all four sides"
             ),
         })
     else:
