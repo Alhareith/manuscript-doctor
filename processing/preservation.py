@@ -24,6 +24,9 @@ INK_RETENTION_CAUTION = 0.80
 INK_RETENTION_HIGH_RISK = 0.60
 INK_INFLATION_CAUTION = 1.80
 
+PRESERVATION_MAX_PIXELS = 2_500_000
+PRESERVATION_MAX_DIMENSION = 1800
+
 # Matches the analyzer's high impulse rating. Below this, tiny genuine
 # marks (diacritics) may look like impulses and keep strict protection.
 IMPULSE_NOISE_REFERENCE_THRESHOLD = 0.012
