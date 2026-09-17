@@ -237,7 +237,7 @@ def save_png_result(image, folder):
     if image.dtype != np.uint8:
         raise ValueError("Result image must be 8-bit.")
 
-    success, encoded = cv2.imencode(".png", image)
+    success, encoded = cv2.imencode(".png", image, [cv2.IMWRITE_PNG_COMPRESSION, 1])
 
     if not success:
         raise RuntimeError("Could not encode result image.")
