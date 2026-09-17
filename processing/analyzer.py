@@ -566,17 +566,20 @@ def _estimate_skew(gray):
     }
 
 
-ANALYSIS_MAX_PIXELS = 12_000_000
+ANALYSIS_MAX_PIXELS = 2_500_000
+ANALYSIS_MAX_DIMENSION = 1800
 
 
 def _analysis_proxy(gray):
     """Use a bounded analysis copy for very large images while preserving the original image."""
     height, width = gray.shape[:2]
 
-    if height * width <= ANALYSIS_MAX_PIXELS:
+    if height * width <= ANALYSIS_MAX_PIXELS and max(height, width) <= ANALYSIS_MAX_DIMENSION:
         return gray
 
-    scale = (ANALYSIS_MAX_PIXELS / (height * width)) ** 0.5
+    pixel_scale = (ANALYSIS_MAX_PIXELS / max(height * width, 1)) ** 0.5
+    dimension_scale = ANALYSIS_MAX_DIMENSION / max(height, width)
+    scale = min(1.0, pixel_scale, dimension_scale)
     new_width = max(1, int(round(width * scale)))
     new_height = max(1, int(round(height * scale)))
 
