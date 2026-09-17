@@ -968,6 +968,19 @@ def create_app(test_config=None):
                 max_height=PREPARATION_PREVIEW_MAX_DIMENSION,
             )
             boundary = detect_document_boundary(boundary_source)
+            if boundary.get("corners") and boundary_source.shape[:2] != image.shape[:2]:
+                source_h, source_w = boundary_source.shape[:2]
+                image_h, image_w = image.shape[:2]
+                scale_x = image_w / max(source_w, 1)
+                scale_y = image_h / max(source_h, 1)
+                boundary = dict(boundary)
+                boundary["corners"] = [
+                    [
+                        int(np.clip(round(float(x) * scale_x), 0, image_w - 1)),
+                        int(np.clip(round(float(y) * scale_y), 0, image_h - 1)),
+                    ]
+                    for x, y in boundary["corners"]
+                ]
 
         except ValueError as error:
             return error_response(
