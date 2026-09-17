@@ -962,7 +962,12 @@ def create_app(test_config=None):
             return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
 
         try:
-            boundary = detect_document_boundary(image)
+            boundary_source = resize_for_preview(
+                image,
+                max_width=PREPARATION_PREVIEW_MAX_DIMENSION,
+                max_height=PREPARATION_PREVIEW_MAX_DIMENSION,
+            )
+            boundary = detect_document_boundary(boundary_source)
 
         except ValueError as error:
             return error_response(
