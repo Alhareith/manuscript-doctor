@@ -84,7 +84,7 @@ def contrast_stretch(image, low_percentile=2, high_percentile=98):
         if high - low < 1e-6:
             return gray.copy()
         stretched = (gray.astype(np.float64) - low) * (255.0 / (high - low))
-        return np.clip(stretched, 0, 255).astype(np.uint8)
+        return np.rint(np.clip(stretched, 0, 255)).astype(np.uint8)
 
     return _apply_to_luminance(image, _stretch)
 
