@@ -1,15 +1,14 @@
-"""Conservative single-image super-resolution for document previews.
+"""Deterministic document upscaling with conservative edge recovery.
 
-This module intentionally avoids hallucinating missing characters. It enlarges the
-source with Lanczos interpolation and applies a restrained luminance-only unsharp
-mask so small text can become easier to inspect without changing its colors.
+This operation is intentionally not marketed as neural super-resolution. It
+enlarges the existing pixels, improves local luminance contrast gently, and
+recovers existing edge contrast without inventing missing character strokes.
 """
 
 import cv2
 import numpy as np
 
 from .common import _apply_to_luminance, _validate_image
-
 
 MAX_OUTPUT_PIXELS = 60_000_000
 
@@ -26,12 +25,33 @@ def _integer_scale(value):
     return int(numeric)
 
 
-def super_resolution(image, scale=2, amount=0.35, sigma=1.0):
-    """Enlarge a document image and recover readable edge contrast conservatively.
+def _enhance_luminance(channel, amount, sigma):
+    """Improve existing document detail while limiting artificial halos."""
+    clahe = cv2.createCLAHE(clipLimit=1.35, tileGridSize=(8, 8))
+    local = clahe.apply(channel)
+    base = cv2.addWeighted(channel, 0.82, local, 0.18, 0)
 
-    This is a deterministic OpenCV fallback: it does not invent character strokes.
-    ``scale`` is limited to 2x/3x and the output pixel count is bounded to keep the
-    Flask process safe for large uploads.
+    blurred = cv2.GaussianBlur(
+        base,
+        (0, 0),
+        sigmaX=float(sigma),
+        sigmaY=float(sigma),
+    )
+
+    base_f = base.astype(np.float32)
+    high = base_f - blurred.astype(np.float32)
+    high = np.clip(high, -24.0, 24.0)
+    enhanced = base_f + (float(amount) * high)
+
+    return np.clip(np.rint(enhanced), 0, 255).astype(np.uint8)
+
+
+def super_resolution(image, scale=2, amount=0.45, sigma=0.9):
+    """Upscale a document and improve readability of detail already present.
+
+    Despite the historical operation id, this is a deterministic document
+    upscaler, not an AI reconstruction model. It cannot recover character
+    information that is absent from the source image.
     """
     _validate_image(image)
     scale = _integer_scale(scale)
@@ -56,19 +76,7 @@ def super_resolution(image, scale=2, amount=0.35, sigma=1.0):
     output_size = (int(width) * scale, int(height) * scale)
     upscaled = cv2.resize(image, output_size, interpolation=cv2.INTER_LANCZOS4)
 
-    def sharpen_luminance(channel):
-        blurred = cv2.GaussianBlur(
-            channel,
-            (0, 0),
-            sigmaX=float(sigma),
-            sigmaY=float(sigma),
-        )
-        return cv2.addWeighted(
-            channel,
-            1.0 + float(amount),
-            blurred,
-            -float(amount),
-            0,
-        )
-
-    return _apply_to_luminance(upscaled, sharpen_luminance)
+    return _apply_to_luminance(
+        upscaled,
+        lambda channel: _enhance_luminance(channel, amount, sigma),
+    )
