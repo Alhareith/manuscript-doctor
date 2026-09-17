@@ -50,7 +50,7 @@ function syncClinicCropFocus() {
     const editor = document.getElementById("manualEditor");
     if (!editor || !elements.manualOperation) return;
     const cropActive = elements.manualOperation.value === "crop";
-    editor.classList.toggle("clinic-crop-focus", cropActive);
+    editor.classList.remove("clinic-crop-focus");
     if (cropActive) {
         requestAnimationFrame(() => {
             syncCropGuide();
