@@ -21,7 +21,7 @@ function renderParameterFields(operationId) {
             ? "سيحاول النظام اكتشاف الحدود أولًا ويطبق Perspective Crop عند الحاجة. إذا لم تكن الحدود موثوقة فسيطبق Deskew على الإطار الكامل دون اقتصاص ثم يعرض النتيجة للمراجعة."
             : "هذه العملية محسومة الإعدادات في الـBackend الحالي؛ اختيارها ينشئ معاينة مباشرة دون قيمة رقمية مصطنعة.";
         if (operationId === "super_resolution") {
-            note.textContent = "تكبير محافظ عبر Lanczos + Unsharp Masking. قد يحسن قابلية قراءة النص، لكنه لا يستعيد تفاصيل فُقدت تماماً بسبب الضبابية أو انخفاض الدقة.";
+            note.textContent = "يكبر الوثيقة 2× أو 3× ثم يحسن التباين المحلي والحواف الموجودة فقط. لا يعيد حرفًا أو تفصيلًا غير موجود في الصورة الأصلية.";
         }
 
         elements.manualParameters.appendChild(note);
@@ -31,7 +31,7 @@ function renderParameterFields(operationId) {
     if (operationId === "super_resolution") {
         const note = document.createElement("p");
         note.className = "parameter-note";
-        note.textContent = "تكبير محافظ عبر Lanczos + Unsharp Masking. قد يحسن قابلية قراءة النص، لكنه لا يستعيد تفاصيل فُقدت تماماً بسبب الضبابية أو انخفاض الدقة.";
+        note.textContent = "يكبر الوثيقة 2× أو 3× ثم يحسن التباين المحلي والحواف الموجودة فقط. لا يعيد حرفًا أو تفصيلًا غير موجود في الصورة الأصلية.";
         elements.manualParameters.appendChild(note);
     }
     fields.forEach((field) => {
