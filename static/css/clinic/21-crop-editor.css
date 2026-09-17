@@ -1,0 +1,91 @@
+.manual-live-image-wrap.crop-editor-active {
+    cursor: crosshair;
+    touch-action: none;
+    user-select: none;
+}
+
+.manual-live-image-wrap.crop-editor-active #manualLivePreview {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.manual-crop-guide {
+    touch-action: none;
+    cursor: move;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, .32), 0 0 0 1px rgba(255, 255, 255, .88);
+}
+
+.manual-crop-guide::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid rgba(212, 175, 55, .92);
+}
+
+.manual-crop-guide .crop-handle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #cda434;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .28);
+}
+
+.manual-crop-guide .crop-handle-n,
+.manual-crop-guide .crop-handle-s {
+    cursor: ns-resize;
+}
+
+.manual-crop-guide .crop-handle-e,
+.manual-crop-guide .crop-handle-w {
+    cursor: ew-resize;
+}
+
+.manual-crop-guide .crop-handle-ne,
+.manual-crop-guide .crop-handle-sw {
+    cursor: nesw-resize;
+}
+
+.manual-crop-guide .crop-handle-nw,
+.manual-crop-guide .crop-handle-se {
+    cursor: nwse-resize;
+}
+
+.manual-live-image-wrap.crop-editor-active::after {
+    content: "اسحب على الصورة لتحديد منطقة جديدة · اسحب داخل الإطار لتحريكه · انقر مرتين لإعادة القص لكامل الصورة";
+    position: absolute;
+    inset-inline: 12px;
+    bottom: 10px;
+    z-index: 8;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba(8, 12, 10, .78);
+    color: rgba(255, 255, 255, .9);
+    font-size: .72rem;
+    line-height: 1.45;
+    text-align: center;
+    pointer-events: none;
+    backdrop-filter: blur(5px);
+}
+
+@media (max-width: 720px) {
+    .manual-crop-guide .crop-handle {
+        width: 20px;
+        height: 20px;
+    }
+
+    .manual-live-image-wrap.crop-editor-active::after {
+        font-size: .68rem;
+        inset-inline: 8px;
+        bottom: 8px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .manual-crop-guide,
+    .manual-crop-guide .crop-handle {
+        transition: none !important;
+    }
+}
