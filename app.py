@@ -102,6 +102,7 @@ def image_dimensions(image):
 
 PREVIEW_MAX_WIDTH = 720
 PREVIEW_MAX_HEIGHT = 960
+PREPARATION_PREVIEW_MAX_DIMENSION = 1400
 
 
 def resize_for_preview(image, max_width=PREVIEW_MAX_WIDTH, max_height=PREVIEW_MAX_HEIGHT):
@@ -995,8 +996,13 @@ def create_app(test_config=None):
             return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
 
         try:
-            preparation = prepare_document(
+            preview_source = resize_for_preview(
                 image,
+                max_width=PREPARATION_PREVIEW_MAX_DIMENSION,
+                max_height=PREPARATION_PREVIEW_MAX_DIMENSION,
+            )
+            preparation = prepare_document(
+                preview_source,
                 boundary_detector=detect_preparation_boundary,
             )
         except (ValueError, RuntimeError) as error:
@@ -1117,20 +1123,35 @@ def create_app(test_config=None):
                 409,
             )
 
-        preview_path = resolve_preparation_preview_file(
-            preparation_preview_folder,
-            preparation_id,
-        )
-        prepared_image = read_stored_image(preview_path)
+        source_path = resolve_upload_file(upload_folder, image_id)
+        original_image = read_stored_image(source_path) if source_path is not None else None
 
-        if prepared_image is None:
+        if original_image is None:
             return error_response(
-                "UNREADABLE_PREPARATION",
-                "تعذر قراءة معاينة Preparation.",
+                "UNREADABLE_IMAGE",
+                "تعذر قراءة الصورة الأصلية عند اعتماد التجهيز.",
                 500,
             )
 
         try:
+            final_preparation = prepare_document(
+                original_image,
+                boundary_detector=detect_preparation_boundary,
+            )
+            if not final_preparation.get("prepared"):
+                return error_response(
+                    "PREPARATION_REJECTED",
+                    "تعذر إعادة تجهيز الصورة الأصلية بدقتها الكاملة.",
+                    422,
+                )
+
+            prepared_image = final_preparation["image"]
+            final_metadata = preparation_public_metadata(final_preparation)
+            final_method = (
+                final_metadata.get("boundary", {}).get("method_used")
+                or ("deskew-only" if final_metadata.get("deskew", {}).get("applied") else None)
+            )
+
             result_id, _ = save_result_artifact(
                 prepared_image,
                 result_folder,
@@ -1138,10 +1159,10 @@ def create_app(test_config=None):
                 origin="preparation",
                 status="approved",
                 parent_result_id=None,
-                method_used=manifest.get("method_used"),
+                method_used=final_method,
                 extra={
                     "preparation_id": preparation_id,
-                    "preparation": manifest.get("preparation", {}),
+                    "preparation": final_metadata,
                 },
             )
         except (ValueError, RuntimeError, OSError):
@@ -1172,9 +1193,9 @@ def create_app(test_config=None):
                     origin="preparation",
                     status="approved",
                     parent_result_id=None,
-                    method_used=manifest.get("method_used"),
+                    method_used=final_method,
                 ),
-                "preparation": manifest.get("preparation", {}),
+                "preparation": final_metadata,
             },
             message="تم اعتماد نتيجة Preparation.",
             status=201,
