@@ -199,7 +199,7 @@ const operationParameters = {
     super_resolution: [
         {
             name: "scale",
-            label: "Scale Factor",
+            label: "مقدار التكبير",
             type: "number",
             value: 2,
             min: 2,
@@ -208,18 +208,18 @@ const operationParameters = {
         },
         {
             name: "amount",
-            label: "Edge Recovery",
+            label: "استعادة وضوح الحواف",
             type: "number",
-            value: 0.35,
+            value: 0.45,
             min: 0,
             max: 1,
             step: 0.05
         },
         {
             name: "sigma",
-            label: "Detail Sigma",
+            label: "نعومة استعادة التفاصيل",
             type: "number",
-            value: 1.0,
+            value: 0.9,
             min: 0.5,
             max: 3,
             step: 0.1
@@ -511,7 +511,7 @@ const operationNames = {
     histogram_equalization: ["موازنة المدرج", "Histogram Equalization"],
     median_denoise: ["إزالة الضوضاء النقطية", "Median Denoising"],
     sharpen: ["زيادة وضوح التفاصيل", "Sharpen"],
-    super_resolution: ["تحسين دقة النص", "Super Resolution · Lanczos + Unsharp"],
+    super_resolution: ["تكبير وتحسين وضوح الوثيقة", "Document Upscale · Lanczos + Local Contrast + Edge Recovery"],
     global_threshold: ["فصل بعتبة ثابتة", "Global Threshold"],
     otsu_threshold: ["فصل تلقائي للنص", "Otsu Threshold"],
     adaptive_threshold: ["فصل تكيفي للنص", "Adaptive Threshold"],
