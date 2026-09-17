@@ -42,13 +42,13 @@ OPERATIONS = {
     },
     "super_resolution": {
         "function": super_resolution,
-        "name": "Super Resolution",
+        "name": "Document Upscale",
         "category": "detail",
-        "purpose": "تكبير الصورة وتحسين قابلية قراءة النص",
-        "description": "يكبر الصورة بتدخل Lanczos ثم يطبق Unsharp Masking محافظاً على luminance دون اختلاق حروف مفقودة.",
-        "risk": "medium-high",
+        "purpose": "تكبير الوثيقة وتحسين وضوح التفاصيل الموجودة",
+        "description": "يكبر الصورة بـLanczos ثم يحسن التباين المحلي والحواف الموجودة بشكل محافظ. لا يستعيد حروفاً أو تفاصيل غير موجودة في الأصل.",
+        "risk": "medium",
         "automatic": False,
-        "default_parameters": {"scale": 2, "amount": 0.35, "sigma": 1.0},
+        "default_parameters": {"scale": 2, "amount": 0.45, "sigma": 0.9},
     },
     "global_threshold": {
         "function": global_threshold,
