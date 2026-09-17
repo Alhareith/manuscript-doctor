@@ -1,0 +1,174 @@
+/* Quiet metallic dark theme: graphite surfaces, brushed highlights, restrained gold/green accents. */
+
+html[data-theme="dark"] {
+    --bg: #0b0d0e;
+    --bg-soft: #101315;
+    --surface: #171a1d;
+    --surface-2: #202429;
+    --surface-3: #2a3035;
+    --ink: #e5e8e6;
+    --ink-strong: #f7f8f6;
+    --ink-soft: #b7bdb9;
+    --muted: #8c9590;
+    --line: #30363a;
+    --line-strong: #4a5256;
+    --primary: #79b7a5;
+    --primary-strong: #61a58f;
+    --primary-deep: #437c6b;
+    --primary-soft: #172723;
+    --primary-glow: rgba(121, 183, 165, .15);
+    --gold: #d7b160;
+    --gold-strong: #eccb83;
+    --gold-soft: #302819;
+    --danger: #d27e6b;
+    --danger-strong: #e69a87;
+    --danger-soft: #34211d;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.38);
+    --shadow-sm: 0 12px 30px rgba(0,0,0,.38);
+    --shadow-md: 0 22px 52px rgba(0,0,0,.5);
+    --shadow-lg: 0 34px 80px rgba(0,0,0,.62);
+}
+
+html[data-theme="dark"] body {
+    background:
+        radial-gradient(72rem 30rem at 82% -12%, rgba(215,177,96,.065), transparent 62%),
+        radial-gradient(60rem 32rem at 12% 0%, rgba(121,183,165,.045), transparent 64%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.006) 0, rgba(255,255,255,.006) 1px, transparent 1px, transparent 4px),
+        linear-gradient(180deg, #090b0c 0%, #0f1214 48%, #090b0c 100%);
+}
+
+html[data-theme="dark"] .app-header {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.055), transparent 14%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0, rgba(255,255,255,.012) 1px, transparent 1px, transparent 5px),
+        linear-gradient(180deg, #24282b 0%, #171a1c 38%, #0f1113 100%);
+    border-bottom: 1px solid rgba(220,225,222,.13);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.09),
+        inset 0 -1px 0 rgba(0,0,0,.68),
+        0 12px 34px rgba(0,0,0,.46);
+}
+
+html[data-theme="dark"] .workflow-bar {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.026), transparent 20%),
+        linear-gradient(180deg, #171a1c, #101214);
+    border-bottom-color: rgba(213,220,216,.11);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+}
+
+html[data-theme="dark"] .panel-card,
+html[data-theme="dark"] .document-viewer-main,
+html[data-theme="dark"] .analysis-summary-card,
+html[data-theme="dark"] .analysis-compact-panel,
+html[data-theme="dark"] .document-dashboard,
+html[data-theme="dark"] .treatment-studio,
+html[data-theme="dark"] .manual-preview-pane,
+html[data-theme="dark"] .manual-controls-pane,
+html[data-theme="dark"] .treatment-history,
+html[data-theme="dark"] .verification-panel,
+html[data-theme="dark"] .decision-section,
+html[data-theme="dark"] .comparison-section,
+html[data-theme="dark"] .download-section {
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.042) 0%, rgba(255,255,255,.012) 22%, transparent 23%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.006) 0, rgba(255,255,255,.006) 1px, transparent 1px, transparent 5px),
+        linear-gradient(155deg, #222629 0%, #191c1f 52%, #111315 100%);
+    border-color: rgba(185,195,190,.19);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.075),
+        inset 0 -1px 0 rgba(0,0,0,.48),
+        0 16px 36px rgba(0,0,0,.34);
+}
+
+html[data-theme="dark"] .metric-card,
+html[data-theme="dark"] .dashboard-chart-card,
+html[data-theme="dark"] .dashboard-reading-card,
+html[data-theme="dark"] .diagnosis-item,
+html[data-theme="dark"] .recommendation-item,
+html[data-theme="dark"] .preservation-indicator,
+html[data-theme="dark"] .operation-row,
+html[data-theme="dark"] .orientation-actions {
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.035), transparent 27%),
+        linear-gradient(180deg, #22262a, #181b1e);
+    border-color: rgba(185,195,190,.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+}
+
+html[data-theme="dark"] .button-ghost,
+html[data-theme="dark"] .theme-toggle,
+html[data-theme="dark"] .usage-guide-button,
+html[data-theme="dark"] .panel-toggle,
+html[data-theme="dark"] .analysis-overview-toggle,
+html[data-theme="dark"] .viewer-tab.is-active {
+    color: #e9ecea;
+    border-color: rgba(202,210,206,.23);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.075), transparent 22%),
+        linear-gradient(180deg, #2b3034 0%, #1c2023 54%, #141719 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.11),
+        inset 0 -1px 0 rgba(0,0,0,.48),
+        0 5px 12px rgba(0,0,0,.24);
+}
+
+html[data-theme="dark"] .button-primary {
+    color: #15130d;
+    border-color: rgba(244,214,145,.45);
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.48), transparent 20%),
+        linear-gradient(145deg, #e7cf91 0%, #c49a43 42%, #7d5d1d 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.58),
+        inset 0 -4px 8px rgba(73,46,7,.30),
+        0 10px 24px rgba(0,0,0,.34);
+    text-shadow: 0 1px 0 rgba(255,255,255,.18);
+}
+
+html[data-theme="dark"] .button-primary:hover:not(:disabled) {
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.52), transparent 20%),
+        linear-gradient(145deg, #efdba5 0%, #cda44e 44%, #866521 100%);
+}
+
+html[data-theme="dark"] .brand-mark,
+html[data-theme="dark"] .upload-hero-glyph,
+html[data-theme="dark"] .upload-icon,
+html[data-theme="dark"] .mode-card-icon {
+    color: #17140e;
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.52), transparent 21%),
+        linear-gradient(145deg, #e4cf96 0%, #b88d38 40%, #66501f 62%, #d0aa58 100%);
+    border: 1px solid rgba(245,224,170,.34);
+    box-shadow:
+        inset 0 2px 2px rgba(255,255,255,.44),
+        inset 0 -4px 8px rgba(0,0,0,.36),
+        0 9px 22px rgba(0,0,0,.38);
+}
+
+html[data-theme="dark"] .drop-zone {
+    background:
+        radial-gradient(circle at 50% -12%, rgba(215,177,96,.08), transparent 52%),
+        linear-gradient(145deg, rgba(255,255,255,.035), transparent 28%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.006) 0, rgba(255,255,255,.006) 1px, transparent 1px, transparent 5px),
+        linear-gradient(180deg, #1d2124, #131618);
+    border-color: rgba(178,190,184,.22);
+    box-shadow:
+        0 28px 62px rgba(0,0,0,.38),
+        inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+html[data-theme="dark"] .drop-zone::before {
+    border-color: rgba(215,177,96,.26);
+}
+
+html[data-theme="dark"] .health-scale,
+html[data-theme="dark"] .workflow-item::after {
+    background: #343a3f;
+}
+
+html[data-theme="dark"] .status-dot,
+html[data-theme="dark"] .workflow-item.is-current > a > span {
+    box-shadow: 0 0 0 4px rgba(121,183,165,.09);
+}

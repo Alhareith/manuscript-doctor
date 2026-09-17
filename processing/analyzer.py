@@ -496,7 +496,6 @@ def _structural_metrics(gray):
     }
 
 
-
 def _estimate_skew(gray):
     if gray is None:
         return {"angle": 0.0, "confidence": 0.0, "line_count": 0}
@@ -505,12 +504,9 @@ def _estimate_skew(gray):
     if h < 30 or w < 30:
         return {"angle": 0.0, "confidence": 0.0, "line_count": 0}
 
-    # 1. إبراز الحواف الأفقية للنصوص والأسطر
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     edges = cv2.Canny(blurred, 50, 150, apertureSize=3)
 
-    # 2. البحث عن الخطوط باستخدام HoughLinesP
-    # نحدد طول الخط الأدنى ليلتقط أسطر الكلمات
     min_line_len = max(40, w // 12)
     lines = cv2.HoughLinesP(
         edges,
@@ -528,28 +524,21 @@ def _estimate_skew(gray):
         line_count = len(lines)
         for line in lines.reshape(-1, 4):
             x1, y1, x2, y2 = line
-
-            # حساب الزاوية بالدرجات
             angle_rad = np.arctan2(float(y2 - y1), float(x2 - x1))
             angle_deg = np.degrees(angle_rad)
 
-            # تحويل الزاوية لتكون دائماً بين -90 و +90
             if angle_deg < -90:
                 angle_deg += 180
             elif angle_deg > 90:
                 angle_deg -= 180
 
-            # نأخذ فقط الزوايا شبه الأفقية (الميلان الطبيعي للوثائق يكون عادة بين -30 و 30)
             if -35.0 <= angle_deg <= 35.0:
                 angles.append(angle_deg)
 
-    # 3. حساب الزاوية الغالبة
     if len(angles) >= 3:
-        # استخدام الوسيط لتجاهل القيم الشاذة الناتجة عن تراكيب الحروف
         detected_angle = float(np.median(angles))
         confidence = float(min(1.0, len(angles) / 20.0))
     else:
-        # كشف احتياطي عبر إحداثيات المستطيل الأدنى لكامل بكسلات النص (Foreground Pixels)
         _, thresh = cv2.threshold(
             blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
         )
@@ -576,18 +565,37 @@ def _estimate_skew(gray):
         "line_count": line_count,
     }
 
+
+ANALYSIS_MAX_PIXELS = 12_000_000
+
+
+def _analysis_proxy(gray):
+    """Use a bounded analysis copy for very large images while preserving the original image."""
+    height, width = gray.shape[:2]
+
+    if height * width <= ANALYSIS_MAX_PIXELS:
+        return gray
+
+    scale = (ANALYSIS_MAX_PIXELS / (height * width)) ** 0.5
+    new_width = max(1, int(round(width * scale)))
+    new_height = max(1, int(round(height * scale)))
+
+    return cv2.resize(gray, (new_width, new_height), interpolation=cv2.INTER_AREA)
+
+
 def analyze_image(image):
     gray = _to_gray(image)
 
     dimensions = _get_dimensions(image)
+    analysis_gray = _analysis_proxy(gray)
 
-    metrics = _build_metrics(gray)
+    metrics = _build_metrics(analysis_gray)
 
-    clipping = _clipping_metrics(gray)
+    clipping = _clipping_metrics(analysis_gray)
 
-    bleed_indicators = _bleed_through_indicators(gray)
-    structural = _structural_metrics(gray)
-    skew = _estimate_skew(gray)
+    bleed_indicators = _bleed_through_indicators(analysis_gray)
+    structural = _structural_metrics(analysis_gray)
+    skew = _estimate_skew(analysis_gray)
     metrics["dark_clipped_ratio"] = {
         "value": round(clipping["dark_clipped_ratio"], 4),
         "unit": "ratio",

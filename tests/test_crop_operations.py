@@ -104,3 +104,15 @@ def test_crop_api_rejects_rectangle_outside_source(tmp_path):
     )
     assert response.status_code in (400, 422)
     assert response.get_json()["success"] is False
+
+
+def test_manual_crop_is_exact_on_large_source_image():
+    image = np.zeros((3000, 4000, 3), dtype=np.uint8)
+    image[:, :] = (25, 35, 45)
+    image[600:2400, 800:3200] = (210, 220, 230)
+
+    result = crop(image, 800, 600, 2400, 1800)
+
+    assert result.shape == (1800, 2400, 3)
+    assert np.array_equal(result[0, 0], image[600, 800])
+    assert np.array_equal(result[-1, -1], image[2399, 3199])

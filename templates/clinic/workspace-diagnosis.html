@@ -1,0 +1,110 @@
+        <!-- ===================== الرفع ===================== -->
+        <section id="uploadSection" class="upload-entry" aria-labelledby="uploadTitle">
+            <div class="upload-intro">
+                <div class="upload-intro-copy">
+                    <span class="eyebrow"><i class="bi bi-stars"></i> استوديو الوثائق</span>
+                    <h1 id="uploadTitle">وثيقتك بين يدي <span class="grad">خبرة معالجة دقيقة</span> — وكل خطوة أمام عينيك</h1>
+                    <p>الفحص يشرح حالة الوثيقة بمؤشرات قابلة للقياس، والمعالجة تعرض المعاينة بجانب التحكم، ولا تُعتمد نتيجة قبل التحقق من أثرها على التفاصيل الأصلية.</p>
+                </div>
+                <img class="upload-visual" src="{{ url_for('static', filename='assets/clinic-hero.svg') }}" alt="" aria-hidden="true">
+            </div>
+
+            <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="اسحب صورة الوثيقة هنا أو اخترها من الجهاز">
+                <input id="imageInput" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
+                <span class="upload-icon"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+                <strong>ارفع صورة الوثيقة</strong>
+                <span>اسحب الصورة وأفلتها هنا، أو انقر للاختيار من جهازك</span>
+                <small>JPG · JPEG · PNG</small>
+            </div>
+
+            <div id="selectedFile" class="selected-file hidden" aria-live="polite">
+                <div class="selected-file-info">
+                    <span class="file-icon"><i class="bi bi-file-earmark-image"></i></span>
+                    <div><strong id="selectedFileName">—</strong><small id="selectedFileMeta">—</small></div>
+                </div>
+                <div class="selected-file-actions">
+                    <button id="removeImageButton" class="button button-ghost" type="button"><i class="bi bi-arrow-repeat"></i> تغيير الصورة</button>
+                    <button id="startExaminationButton" class="button button-primary" type="button" disabled><i class="bi bi-activity"></i> فحص الوثيقة</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="processingStateSection" class="processing-state hidden" aria-live="polite" aria-busy="true">
+            <span class="processing-spinner" aria-hidden="true"></span>
+            <div><strong id="processingTitle">جارٍ التنفيذ</strong><p id="processingMessage">يرجى الانتظار...</p></div>
+        </section>
+
+        <section id="documentPreviewSection" class="analysis-workspace hidden" aria-labelledby="workspaceTitle">
+            <header class="section-head compact-head">
+                <div><span class="eyebrow"><i class="bi bi-window-stack"></i> مساحة الفحص</span><h2 id="workspaceTitle"><span class="num">02</span>الوثيقة على المنصة</h2></div>
+                <div class="editor-state stage-toolbar-state" aria-live="polite"><span class="status-dot"></span><span>الصورة الأصلية هي المرجع الحالي</span></div>
+            </header>
+
+            <div class="studio-grid">
+                <section class="document-viewer-main" aria-label="معاينة الوثيقة">
+                    <div class="stage-toolbar">
+                        <div class="viewer-tabs" role="group" aria-label="عرض الصورة">
+                            <button class="viewer-tab is-active" type="button" data-view="original"><i class="bi bi-image"></i> النسخة الأولى</button>
+                            <button class="viewer-tab" type="button" data-view="compare" disabled><i class="bi bi-layout-split"></i> مقارنة</button>
+                        </div>
+                        <div class="editor-state" aria-live="polite"><span class="status-dot"></span><span>الصورة الأصلية هي المرجع الحالي</span></div>
+                    </div>
+                    <div class="document-stage analysis-stage">
+                        <img id="originalPreview" alt="معاينة الوثيقة">
+                        <span class="stage-badge"><i class="bi bi-file-earmark-check"></i> الوثيقة المرفوعة</span>
+                    </div>
+                </section>
+
+                <div class="after-exam-deck" aria-label="نتائج فحص الوثيقة">
+                    <section class="document-status-block analysis-summary-card">
+                        <div class="analysis-summary-icon"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+                        <div><small>حالة الوثيقة الآن</small><strong>بانتظار التشخيص</strong><p>سيظهر التقييم العام بعد الفحص.</p></div>
+                    </section>
+
+                    <section id="diagnosisSection" class="analysis-compact-panel hidden" aria-labelledby="diagnosisTitle">
+                        <header><span><i class="bi bi-activity"></i></span><div><small>التشخيص</small><h3 id="diagnosisTitle">المشكلات المكتشفة</h3></div><button class="panel-toggle" type="button" data-panel-toggle aria-expanded="false"><span>عرض</span><i class="bi bi-chevron-down"></i></button></header>
+                        <div id="diagnosisList" class="diagnosis-list"><div class="empty-state">لم يتم إجراء الفحص بعد.</div></div>
+                    </section>
+
+                    <section id="preservationProfileSection" class="analysis-compact-panel hidden" aria-labelledby="preservationProfileTitle">
+                        <header><span><i class="bi bi-shield-check"></i></span><div><small>ملف المحافظة</small><h3 id="preservationProfileTitle">حساسية التفاصيل</h3></div><div id="preservationLevelBadge" class="preservation-badge neutral"><strong>—</strong></div><button class="panel-toggle" type="button" data-panel-toggle aria-expanded="false"><span>عرض</span><i class="bi bi-chevron-down"></i></button></header>
+                        <p id="preservationMessage">—</p>
+                        <div id="preservationIndicators" class="preservation-indicators"></div>
+                    </section>
+
+                    <section id="treatmentPlanSection" class="analysis-compact-panel recommendation-panel hidden" aria-labelledby="recommendationTitle">
+                        <header><span><i class="bi bi-lightbulb-fill"></i></span><div><small>التوصية</small><h3 id="recommendationTitle">المعالجة المقترحة</h3></div><button class="panel-toggle" type="button" data-panel-toggle aria-expanded="false"><span>عرض</span><i class="bi bi-chevron-down"></i></button></header>
+                        <div id="recommendationList" class="recommendation-list"></div>
+                        <div id="automaticExclusions" class="automatic-exclusions hidden">
+                            <button class="details-summary" type="button" aria-expanded="false"><i class="bi bi-info-circle"></i> لماذا استُبعدت بدائل أخرى؟</button>
+                            <div id="automaticExclusionList" class="automatic-exclusion-list hidden"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <section id="examinationSection" class="document-dashboard hidden" aria-labelledby="dashboardTitle">
+            <header class="section-head dashboard-head">
+                <div><span class="eyebrow"><i class="bi bi-speedometer2"></i> مؤشرات الوثيقة</span><h2 id="dashboardTitle"><span class="num">03</span>لوحة حالة الوثيقة</h2><p>التقييم البشري هو القراءة الأساسية، والرقم الصغير مرجع تقني مساعد — انقر أي بطاقة لقراءة تفسيرها.</p></div>
+                <div class="dashboard-head-actions"><span class="dashboard-badge"><i class="bi bi-broadcast-pin"></i> تحليل الصورة الحالية</span><button class="panel-toggle" type="button" data-panel-toggle aria-expanded="false"><span>عرض</span><i class="bi bi-chevron-down"></i></button></div>
+            </header>
+
+            <div class="dashboard-layout">
+                <div class="dashboard-metrics">
+                    <article class="metric-card" data-metric="brightness"><div class="metric-ring"><span><i class="bi bi-sun-fill"></i></span></div><div class="metric-copy"><small>السطوع</small><strong data-human-metric="brightness">بانتظار الفحص</strong><em id="brightnessMetric">—</em></div><div class="health-scale" aria-hidden="true"><span></span></div></article>
+                    <article class="metric-card" data-metric="contrast"><div class="metric-ring"><span><i class="bi bi-circle-half"></i></span></div><div class="metric-copy"><small>التباين</small><strong data-human-metric="contrast">بانتظار الفحص</strong><em id="contrastMetric">—</em></div><div class="health-scale" aria-hidden="true"><span></span></div></article>
+                    <article class="metric-card" data-metric="noise"><div class="metric-ring"><span><i class="bi bi-grid-3x3-gap-fill"></i></span></div><div class="metric-copy"><small>الضوضاء</small><strong data-human-metric="noise">بانتظار الفحص</strong><em id="noiseMetric">—</em></div><div class="health-scale" aria-hidden="true"><span></span></div></article>
+                    <article class="metric-card" data-metric="sharpness"><div class="metric-ring"><span><i class="bi bi-crosshair"></i></span></div><div class="metric-copy"><small>الحدة</small><strong data-human-metric="sharpness">بانتظار الفحص</strong><em id="sharpnessMetric">—</em></div><div class="health-scale" aria-hidden="true"><span></span></div></article>
+                    <article class="metric-card metric-card-secondary" data-metric="illumination"><div class="metric-ring"><span><i class="bi bi-lightbulb-fill"></i></span></div><div class="metric-copy"><small>تجانس الإضاءة</small><strong data-human-metric="illumination">بانتظار الفحص</strong><em id="illuminationMetric">—</em></div><div class="health-scale" aria-hidden="true"><span></span></div></article>
+                    <article class="metric-card metric-card-secondary" data-metric="edges"><div class="metric-ring"><span><i class="bi bi-bezier2"></i></span></div><div class="metric-copy"><small>كثافة الحواف</small><strong data-human-metric="edges">بانتظار الفحص</strong><em id="edgeDensityMetric">—</em></div><div class="health-scale" aria-hidden="true"><span></span></div></article>
+                </div>
+
+                <div class="dashboard-analytics-pair">
+                    <section class="dashboard-chart-card tonal-card" aria-labelledby="tonalChartTitle"><div class="chart-card-head"><div><small>نطاق الدرجات</small><h3 id="tonalChartTitle">توازن الظلال والإضاءات</h3></div><span class="chart-live"><i class="bi bi-bar-chart-fill"></i> نطاقات فعلية</span></div><p class="chart-intro">تقسيم فعلي للصورة إلى مناطق شديدة الظلمة، نطاق وسطي، ومناطق شديدة السطوع — وليس Histogram كاملًا.</p><div class="chart-stage"><canvas id="tonalDistributionChart" aria-label="رسم بياني لتدرجات الإضاءة"></canvas></div><div class="chart-axis-labels" aria-hidden="true"><span>الظلال</span><span>الدرجات الوسطى</span><span>الإضاءات</span></div></section>
+                    <section class="dashboard-chart-card dashboard-chart-card-secondary quality-card" aria-labelledby="qualityChartTitle"><div class="chart-card-head"><div><small>مؤشرات الجودة</small><h3 id="qualityChartTitle">مستويات المؤشرات المقننة</h3></div><span class="chart-live"><i class="bi bi-graph-up"></i> قراءة مقننة</span></div><p class="chart-intro">مقارنة بصرية مقننة للقراءات؛ لا تعني أن القيمة الأعلى أفضل في جميع المؤشرات.</p><div class="chart-stage chart-stage-secondary"><canvas id="qualityMetricsChart" aria-label="مقارنة مؤشرات جودة الوثيقة"></canvas></div></section>
+                </div>
+
+                <section class="dashboard-reading-card"><span class="reading-icon"><i class="bi bi-chat-square-text-fill"></i></span><div><small>قراءة الحالة</small><h3>كيف تقرأ هذه المؤشرات؟</h3><p data-dashboard-interpretation>سيظهر هنا تفسير مختصر مبني على نتائج التشخيص الفعلية.</p></div></section>
+            </div>
+        </section>

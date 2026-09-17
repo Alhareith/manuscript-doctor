@@ -1,0 +1,64 @@
+                        <div class="selected-operation-panel">
+                            <div class="selected-operation-head">
+                                <div><small>العملية الحالية</small><strong id="selectedOperationFriendly">اختر عملية</strong><span id="selectedOperationTechnical">ستظهر إعداداتها هنا.</span></div>
+                                <i class="bi bi-sliders2"></i>
+                            </div>
+
+                            <!-- عقد توافق مع JS/Backend القائم -->
+                            <label class="visually-hidden" for="manualOperation">اختر العملية</label>
+                            <select id="manualOperation" class="compatibility-select" disabled>
+                                <option value="">اختر عملية معالجة</option>
+                                <option value="illumination_normalize">توحيد الإضاءة</option>
+                                <option value="gamma_correct">تصحيح جاما</option>
+                                <option value="intensity_adjust">ضبط الشدة</option>
+                                <option value="clahe">CLAHE</option>
+                                <option value="histogram_equalization">Histogram Equalization</option>
+                                <option value="faded_text_enhance">Faded Text Enhancement</option>
+                                <option value="median_denoise">Median Denoising</option>
+                                <option value="bilateral_denoise">Bilateral Denoising</option>
+                                <option value="non_local_means_denoise">Non-Local Means</option>
+                                <option value="sharpen">Sharpen</option>
+                                <option value="super_resolution">Super Resolution</option>
+                                <option value="global_threshold">Global Threshold</option>
+                                <option value="otsu_threshold">Otsu Threshold</option>
+                                <option value="adaptive_threshold">Adaptive Threshold</option>
+                                <option value="morphological_opening">Morphological Opening</option>
+                                <option value="morphological_closing">Morphological Closing</option>
+                                <option value="morphological_top_hat">Top-Hat</option>
+                                <option value="morphological_black_hat">Black-Hat</option>
+                                <option value="background_suppress">Background Suppression</option>
+                                <option value="weak_structure_suppress">Weak Structure Suppression</option>
+                                <option value="deskew">Deskew</option>
+                                <option value="rotate_right">Rotate Right</option>
+                                <option value="rotate_left">Rotate Left</option>
+                                <option value="flip_vertical">Flip Vertical</option>
+                                <option value="flip_horizontal">Flip Horizontal</option>
+                                <option value="document_prepare">تصحيح الميل والاقتصاص التلقائي</option>
+                                <option value="crop">اقتصاص يدوي</option>
+                                <option value="erosion">Erosion</option>
+                                <option value="dilation">Dilation</option>
+                                <option value="morphological_gradient">Morphological Gradient</option>
+                                <option value="gaussian_blur">Gaussian Blur</option>
+                                <option value="laplacian_sharpen">Laplacian Sharpen</option>
+                                <option value="sobel_edges">Sobel Edges</option>
+                                <option value="contrast_stretch">Contrast Stretch</option>
+                                <option value="log_transform">Log Transform</option>
+                            </select>
+
+                            <div id="manualParameters" class="manual-parameters slider-parameters" aria-live="polite"></div>
+
+                            <section class="manual-change-chart manual-change-chart-inline" aria-labelledby="manualChangeChartTitle">
+                                <div class="manual-change-chart-head">
+                                    <div><small>خريطة الأثر اللحظية</small><h3 id="manualChangeChartTitle">أثر المعاينة</h3></div>
+                                    <span id="manualChangeChartStatus">بانتظار المعاينة</span>
+                                </div>
+                                <p>مقارنة مصغرة لتوزيع درجات الإضاءة في الصورة الحالية قبل وبعد العملية.</p>
+                                <div class="manual-change-chart-stage"><canvas id="manualChangeChart" aria-label="مخطط تغير درجات الإضاءة قبل وبعد المعالجة"></canvas></div>
+                                <div class="manual-change-legend"><span><i class="legend-before"></i>قبل</span><span><i class="legend-after"></i>بعد</span></div>
+                            </section>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </section>
+

@@ -1,0 +1,90 @@
+/* Progressive scroll polish. Content remains fully usable if JavaScript never runs. */
+
+html.scroll-enhanced .scroll-reveal-target {
+    opacity: .985;
+    transform: translateY(7px);
+    transition:
+        opacity 420ms cubic-bezier(.2,.72,.25,1),
+        transform 420ms cubic-bezier(.2,.72,.25,1),
+        box-shadow 240ms ease;
+    will-change: opacity, transform;
+}
+html.scroll-enhanced .scroll-reveal-target.is-scroll-visible {
+    opacity: 1;
+    transform: translateY(0);
+    will-change: auto;
+}
+
+/* Native scrolling should feel deliberate without trapping the page. */
+html { scroll-behavior: smooth; }
+body { scroll-behavior: smooth; }
+.workflow-list,
+.operation-category-strip,
+.footer-section-nav,
+.operation-browser {
+    scroll-behavior: smooth;
+}
+
+/* Refined scrollbars for internal work areas. */
+.operation-browser,
+.workflow-list,
+.footer-section-nav {
+    scrollbar-color: color-mix(in srgb, var(--gold) 42%, var(--line-strong)) transparent;
+}
+.operation-browser::-webkit-scrollbar { width: 8px; height: 8px; }
+.operation-browser::-webkit-scrollbar-track { background: transparent; }
+.operation-browser::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 99px;
+    background: color-mix(in srgb, var(--gold) 38%, var(--line-strong));
+    background-clip: padding-box;
+}
+.operation-browser::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--gold) 62%, var(--line-strong));
+    background-clip: padding-box;
+}
+
+/* Anchored sections settle below sticky navigation. */
+#uploadSection,
+#analysisMasterControl,
+#documentPreviewSection,
+#examinationSection,
+#treatmentSection,
+#manualEditor,
+#verificationSection,
+#downloadSection {
+    scroll-margin-top: calc(var(--header-h) + var(--workflow-h) + 20px);
+}
+
+/* Focus/hover polish: movement is tiny enough not to create layout shift. */
+.button,
+.category-tab,
+.operation-row,
+.treatment-mode-card,
+.metric-card,
+.analysis-master-toggle {
+    transform-origin: center;
+}
+@media (hover: hover) and (pointer: fine) {
+    .button:hover:not(:disabled),
+    .category-tab:hover:not(:disabled),
+    .operation-row:hover:not(:disabled) {
+        transition-duration: 180ms;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html, body,
+    .workflow-list,
+    .operation-category-strip,
+    .footer-section-nav,
+    .operation-browser {
+        scroll-behavior: auto !important;
+    }
+    html.scroll-enhanced .scroll-reveal-target,
+    html.scroll-enhanced .scroll-reveal-target.is-scroll-visible {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+}

@@ -1,0 +1,108 @@
+                    <!-- جانب الأدوات -->
+                    <section class="manual-controls-pane" aria-label="أدوات المعالجة اليدوية">
+                        <div class="operation-category-strip" role="tablist" aria-label="مجموعات المعالجة">
+                            <button class="category-tab is-active" type="button" data-operation-group="page"><i class="bi bi-file-earmark-break-fill"></i><span>تجهيز الوثيقة</span></button>
+                            <button class="category-tab" type="button" data-operation-group="lighting"><i class="bi bi-sun-fill"></i><span>الإضاءة</span></button>
+                            <button class="category-tab" type="button" data-operation-group="contrast"><i class="bi bi-circle-half"></i><span>التباين</span></button>
+                            <button class="category-tab" type="button" data-operation-group="noise"><i class="bi bi-grid-3x3-gap-fill"></i><span>الضوضاء</span></button>
+                            <button class="category-tab" type="button" data-operation-group="detail"><i class="bi bi-crosshair"></i><span>التفاصيل</span></button>
+                            <button class="category-tab" type="button" data-operation-group="threshold"><i class="bi bi-toggle-on"></i><span>فصل النص</span></button>
+                            <button class="category-tab" type="button" data-operation-group="structure"><i class="bi bi-bounding-box"></i><span>البنية</span></button>
+                            <button class="category-tab" type="button" data-operation-group="background"><i class="bi bi-eraser-fill"></i><span>الخلفية</span></button>
+                        </div>
+
+                        <div class="operation-browser" aria-label="العمليات المتاحة">
+                            <div class="operation-group" data-operation-group-panel="lighting">
+                                <button class="operation-row" data-operation-card="illumination_normalize" type="button"><i class="bi bi-brightness-high-fill"></i><span><strong>توحيد الإضاءة</strong><small>Illumination Normalization</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="gamma_correct" type="button"><i class="bi bi-sun"></i><span><strong>تصحيح جاما</strong><small>Gamma Correction</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="log_transform" type="button"><i class="bi bi-activity"></i><span><strong>تحويل لوغاريتمي</strong><small>Log Transform · كشف تفاصيل الظلال</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="intensity_adjust" type="button"><i class="bi bi-sliders"></i><span><strong>السطوع والتباين</strong><small>Intensity Adjustment</small></span><i class="bi bi-chevron-left"></i></button>
+                            </div>
+
+                            <div class="operation-group" data-operation-group-panel="contrast">
+                                <button class="operation-row" data-operation-card="clahe" type="button"><i class="bi bi-circle-half"></i><span><strong>تحسين التباين المحلي</strong><small>CLAHE</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="histogram_equalization" type="button"><i class="bi bi-bar-chart-fill"></i><span><strong>موازنة المدرج</strong><small>Histogram Equalization</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="faded_text_enhance" type="button"><i class="bi bi-fonts"></i><span><strong>تحسين النص الباهت</strong><small>Faded Text Enhancement</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="contrast_stretch" type="button"><i class="bi bi-arrows-collapse-vertical"></i><span><strong>تمدد التباين المئيني</strong><small>Contrast Stretch · خطي مقطعي قياسي</small></span><i class="bi bi-chevron-left"></i></button>
+                            </div>
+
+                            <div class="operation-group" data-operation-group-panel="noise">
+                                <button class="operation-row" data-operation-card="median_denoise" type="button"><i class="bi bi-grid"></i><span><strong>إزالة الضوضاء النقطية</strong><small>Median Denoising</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="bilateral_denoise" type="button"><i class="bi bi-layers-fill"></i><span><strong>إزالة ضوضاء محافظة</strong><small>Bilateral Denoising</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="non_local_means_denoise" type="button"><i class="bi bi-diagram-3-fill"></i><span><strong>إزالة ضوضاء متقدمة</strong><small>Non-Local Means</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="gaussian_blur" type="button"><i class="bi bi-droplet"></i><span><strong>تمهيد غاوسي</strong><small>Gaussian Blur · ترشيح مكاني قياسي</small></span><i class="bi bi-chevron-left"></i></button>
+                            </div>
+
+                            <div class="operation-group" data-operation-group-panel="detail">
+                                <button class="operation-row" data-operation-card="sharpen" type="button"><i class="bi bi-crosshair2"></i><span><strong>زيادة وضوح التفاصيل</strong><small>Sharpen</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="laplacian_sharpen" type="button"><i class="bi bi-plus-slash-minus"></i><span><strong>حدّة لابلاسيان</strong><small>Laplacian Sharpen · بالمشتقة الثانية</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="sobel_edges" type="button"><i class="bi bi-border-style"></i><span><strong>حواف سوبل</strong><small>Sobel Edges · خريطة تدرج مرئية</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row operation-row-special" data-operation-card="super_resolution" type="button"><i class="bi bi-arrows-angle-expand"></i><span><strong>تحسين دقة النص</strong><small>Super Resolution · Lanczos + Unsharp · خادمي</small></span><i class="bi bi-chevron-left"></i></button>
+                            </div>
+
+                            <div class="operation-group" data-operation-group-panel="threshold">
+                                <button class="operation-row" data-operation-card="global_threshold" type="button"><i class="bi bi-toggle-on"></i><span><strong>عتبة ثابتة</strong><small>Global Threshold</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="otsu_threshold" type="button"><i class="bi bi-magic"></i><span><strong>عتبة أوتسو</strong><small>Otsu Threshold</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="adaptive_threshold" type="button"><i class="bi bi-grid-1x2-fill"></i><span><strong>عتبة تكيفية</strong><small>Adaptive Threshold</small></span><i class="bi bi-chevron-left"></i></button>
+                            </div>
+
+                            <div class="operation-group" data-operation-group-panel="structure">
+                                <button class="operation-row" data-operation-card="morphological_opening" type="button"><i class="bi bi-arrows-collapse"></i><span><strong>فتح مورفولوجي</strong><small>Morphological Opening</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="morphological_closing" type="button"><i class="bi bi-arrows-expand"></i><span><strong>إغلاق مورفولوجي</strong><small>Morphological Closing</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="erosion" type="button"><i class="bi bi-dash-circle"></i><span><strong>تآكل بنيوي</strong><small>Erosion · تقليص المناطق الفاتحة</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="dilation" type="button"><i class="bi bi-plus-circle"></i><span><strong>توسيع بنيوي</strong><small>Dilation · توسيع المناطق الفاتحة</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="morphological_gradient" type="button"><i class="bi bi-circle"></i><span><strong>حدود البنى المورفولوجية</strong><small>Morphological Gradient · توسيع ناقص تآكل</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="morphological_top_hat" type="button"><i class="bi bi-triangle"></i><span><strong>إبراز البنى الفاتحة</strong><small>Top-Hat</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="morphological_black_hat" type="button"><i class="bi bi-triangle-fill"></i><span><strong>إبراز البنى الداكنة</strong><small>Black-Hat</small></span><i class="bi bi-chevron-left"></i></button>
+                            </div>
+
+                            <div class="operation-group" data-operation-group-panel="background">
+                                <button class="operation-row" data-operation-card="background_suppress" type="button"><i class="bi bi-back"></i><span><strong>تقليل أثر الخلفية</strong><small>Background Suppression</small></span><i class="bi bi-chevron-left"></i></button>
+                                <button class="operation-row" data-operation-card="weak_structure_suppress" type="button"><i class="bi bi-filter-circle-fill"></i><span><strong>تقليل البنى الضعيفة</strong><small>Weak Structure Suppression</small></span><i class="bi bi-chevron-left"></i></button>
+                            </div>
+
+                            <div class="operation-group is-active" data-operation-group-panel="page">
+                                <button class="operation-row operation-row-primary" data-operation-card="document_prepare" type="button">
+                                    <i class="bi bi-bounding-box-circles"></i>
+                                    <span>
+                                        <strong>تصحيح الميل والاقتصاص التلقائي</strong>
+                                        <small>Deskew + Optional Perspective Crop · الخيار الأول</small>
+                                    </span>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <button class="operation-row" data-operation-card="crop" type="button">
+                                    <i class="bi bi-crop"></i>
+                                    <span>
+                                        <strong>اقتصاص يدوي</strong>
+                                        <small>Manual Crop · حرّك الإطار ثم اعتمد العملية لتطبيق القص</small>
+                                    </span>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+
+                                <div class="orientation-actions" aria-label="تدوير واتجاه الصورة">
+                                    <div class="orientation-actions-title"><i class="bi bi-arrow-repeat"></i><strong>تدوير واتجاه الصورة</strong><small>كل زر ينفذ حركة واحدة على النتيجة الحالية</small></div>
+                                    <div class="orientation-actions-grid">
+                                        <button class="orientation-action" data-operation-card="rotate_right" type="button"><i class="bi bi-arrow-clockwise"></i><span>لليمين</span><small>90°</small></button>
+                                        <button class="orientation-action" data-operation-card="rotate_left" type="button"><i class="bi bi-arrow-counterclockwise"></i><span>لليسار</span><small>90°</small></button>
+                                        <button class="orientation-action" data-operation-card="flip_vertical" type="button"><i class="bi bi-distribute-vertical"></i><span>للأعلى / للأسفل</span><small>قلب رأسي</small></button>
+                                        <button class="orientation-action" data-operation-card="flip_horizontal" type="button"><i class="bi bi-distribute-horizontal"></i><span>يمين / يسار</span><small>قلب أفقي</small></button>
+                                    </div>
+                                </div>
+
+                                <button class="operation-row" data-operation-card="deskew" type="button">
+                                    <i class="bi bi-rulers"></i>
+                                    <span>
+                                        <strong>تصحيح الميل اليدوي</strong>
+                                        <small>Deskew · اضبط زاوية الميل يدويًا</small>
+                                    </span>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+
+                                <div class="capability-note">
+                                    <i class="bi bi-shield-check"></i>
+                                    <span>يختار النظام Guided أولًا ثم Region عند الحاجة، ثم يعرض النتيجة للمراجعة قبل الاعتماد.</span>
+                                </div>
+                            </div>
+
+                        </div>
+

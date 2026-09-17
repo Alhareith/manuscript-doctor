@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from numpy.strings import center
+
 
 def _validate_image(image):
     if image is None or not isinstance(image, np.ndarray):
@@ -21,6 +21,7 @@ def _validate_image(image):
     if image.shape[2] not in {1, 3, 4}:
         raise ValueError("Unsupported number of image channels.")
 
+
 def _to_gray(image):
     _validate_image(image)
 
@@ -37,6 +38,7 @@ def _to_gray(image):
 
     return cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
 
+
 def _validate_odd_kernel_size(value, name):
     if not isinstance(value, int):
         raise ValueError(f"{name} must be an integer.")
@@ -47,6 +49,7 @@ def _validate_odd_kernel_size(value, name):
     if value % 2 == 0:
         raise ValueError(f"{name} must be odd.")
 
+
 def _apply_to_luminance(image, operation):
     _validate_image(image)
 
@@ -55,26 +58,17 @@ def _apply_to_luminance(image, operation):
 
     if image.shape[2] == 1:
         gray = image[:, :, 0]
-
         result = operation(gray.copy())
-
         return result[:, :, np.newaxis]
 
     if image.shape[2] == 3:
         lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-
         lightness, a, b = cv2.split(lab)
-
         processed_lightness = operation(lightness)
-
         processed_lab = cv2.merge((processed_lightness, a, b))
-
         return cv2.cvtColor(processed_lab, cv2.COLOR_LAB2BGR)
 
     alpha = image[:, :, 3].copy()
     bgr = image[:, :, :3]
-
     processed_bgr = _apply_to_luminance(bgr, operation)
-
     return np.dstack((processed_bgr, alpha))
-

@@ -1,0 +1,175 @@
+/* Dashboard/workspace layer: keep primary analysis visible, compact and beside the document. */
+
+.after-exam-deck {
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+    align-content: start;
+    min-width: 0;
+}
+
+.dashboard-inline {
+    margin: 0;
+    padding: 15px;
+    border-radius: 22px;
+    min-width: 0;
+    box-shadow: var(--shadow-xs);
+}
+
+.dashboard-inline .dashboard-head {
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.dashboard-inline .dashboard-head > div:first-child p {
+    display: none;
+}
+
+.dashboard-inline .dashboard-head h2 {
+    font-size: clamp(1.05rem, 1.6vw, 1.28rem);
+    margin-block: 2px 0;
+}
+
+.dashboard-inline .dashboard-badge {
+    display: none;
+}
+
+.dashboard-inline .dashboard-layout {
+    display: block;
+}
+
+.dashboard-inline .dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.dashboard-inline .metric-card {
+    min-height: 104px;
+    padding: 12px 12px 20px;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    border-radius: 16px;
+}
+
+.dashboard-inline .metric-ring {
+    width: 38px;
+    height: 38px;
+    margin: 0;
+}
+
+.dashboard-inline .metric-ring span {
+    inset: 5px;
+    font-size: 13px;
+}
+
+.dashboard-inline .metric-copy {
+    display: block;
+    min-width: 0;
+}
+
+.dashboard-inline .metric-copy small {
+    display: block;
+    margin-bottom: 2px;
+    font-size: .72rem;
+}
+
+.dashboard-inline .metric-copy strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .86rem;
+}
+
+.dashboard-inline .metric-copy em {
+    display: block;
+    margin-top: 1px;
+    font-size: .7rem;
+    opacity: .78;
+}
+
+.dashboard-inline .health-scale {
+    inset-inline: 12px;
+    bottom: 9px;
+    height: 4px;
+}
+
+.dashboard-advanced {
+    margin-top: 12px;
+    display: grid;
+    gap: 12px;
+}
+
+.dashboard-advanced.is-collapsed {
+    display: none;
+}
+
+.dashboard-inline .dashboard-analytics-pair {
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.dashboard-inline .dashboard-chart-card,
+.dashboard-inline .dashboard-chart-card-secondary {
+    min-height: 0;
+    padding: 14px;
+}
+
+.dashboard-inline .chart-stage,
+.dashboard-inline .chart-stage-secondary {
+    height: 180px;
+    min-height: 180px;
+}
+
+.dashboard-inline .dashboard-reading-card {
+    margin: 0;
+}
+
+/* Keep the analysis area usable as a single desktop view. */
+.studio-grid {
+    grid-template-columns: minmax(320px, .82fr) minmax(440px, 1.18fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.document-stage.analysis-stage {
+    height: clamp(300px, 52vh, 520px);
+    min-height: 0;
+}
+
+.after-exam-deck {
+    max-height: clamp(420px, 62vh, 620px);
+    overflow: auto;
+    scrollbar-width: thin;
+    padding-inline-end: 3px;
+}
+
+.after-exam-deck.is-collapsed .analysis-details-stack {
+    display: none;
+}
+
+.analysis-details-stack {
+    display: grid;
+    gap: 10px;
+}
+
+@media (max-width: 1050px) {
+    .studio-grid { grid-template-columns: minmax(280px, .9fr) minmax(360px, 1.1fr); }
+    .dashboard-inline .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+    .studio-grid { grid-template-columns: 1fr; }
+    .document-viewer-main, .after-exam-deck { grid-column: 1; }
+    .document-stage.analysis-stage { height: min(44vh, 410px); }
+    .after-exam-deck { max-height: none; overflow: visible; }
+    .dashboard-inline .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 520px) {
+    .dashboard-inline .dashboard-metrics { grid-template-columns: 1fr; }
+    .dashboard-inline .metric-card { min-height: 92px; }
+}

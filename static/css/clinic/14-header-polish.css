@@ -1,0 +1,69 @@
+/* Header polish + compact automatic-exam feedback. */
+
+.app-header-inner {
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.app-brand {
+    min-width: 0;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+    flex-wrap: nowrap;
+}
+
+.usage-guide-button,
+.theme-toggle {
+    min-height: 40px;
+    border-radius: 14px;
+}
+
+.usage-guide-button {
+    padding-inline: 13px;
+}
+
+.usage-guide-button i,
+.theme-toggle i {
+    font-size: 1rem;
+}
+
+.exam-button-spinner {
+    width: 15px;
+    height: 15px;
+    border-width: 2px;
+    border-color: currentColor;
+    border-top-color: transparent;
+}
+
+#startExaminationButton[data-exam-state="pending"] {
+    opacity: .82;
+}
+
+#startExaminationButton[data-exam-state="running"] {
+    cursor: progress;
+}
+
+@media (max-width: 720px) {
+    .app-header-inner { gap: 10px; }
+    .brand-copy small { display: none; }
+    .header-actions { gap: 6px; }
+    .usage-guide-button,
+    .theme-toggle { min-height: 38px; padding: 7px 10px; }
+    .usage-guide-button span,
+    .theme-toggle-label { display: none; }
+    .usage-guide-button i,
+    .theme-toggle i { font-size: 1.08rem; }
+}
+
+@media (max-width: 420px) {
+    .brand-copy strong { font-size: .95rem; }
+    .brand-mark { width: 38px; height: 38px; }
+}

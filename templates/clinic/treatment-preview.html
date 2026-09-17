@@ -1,0 +1,64 @@
+        <!-- ===================== غرفة المعالجة ===================== -->
+        <section id="treatmentSection" class="treatment-studio hidden" aria-labelledby="treatmentTitle">
+            <header class="section-head treatment-studio-head">
+                <div>
+                    <span class="eyebrow"><i class="bi bi-sliders2"></i> استوديو المعالجة</span>
+                    <h2 id="treatmentTitle"><span class="num">04</span>اختر طريقة المعالجة</h2>
+                    <p>يمكنك بدء المعالجة اليدوية مباشرة دون تشغيل المسار الذكي. كل تغيير يدوي يُعاين بجانب أدواته، ولا يصبح نتيجة حتى اعتماده.</p>
+                </div>
+            </header>
+
+            <div class="treatment-mode-grid">
+                <article class="treatment-mode-card smart-mode-card" data-standard-mode-panel>
+                    <div class="mode-card-icon"><i class="bi bi-magic"></i></div>
+                    <div><small>المسار التلقائي المحافظ</small><h3>المعالجة الذكية</h3><p>يطبق النظام المرشح المؤهل ثم يعيد التقييم والتحقق قبل إرجاع النتيجة.</p><span id="smartPipelineHint" class="smart-pipeline-hint" aria-live="polite"><i class="bi bi-hourglass-split"></i> ارفع الوثيقة ثم أكمل الفحص لتفعيل المسار.</span></div>
+                    <button id="runPipelineButton" class="button button-primary" type="button" disabled><i class="bi bi-stars"></i> تشغيل المعالجة الذكية</button>
+                </article>
+                <article class="treatment-mode-card manual-mode-card">
+                    <div class="mode-card-icon"><i class="bi bi-hand-index-thumb"></i></div>
+                    <div><small>تحكم مباشر</small><h3>المعالجة اليدوية</h3><p>اختر العملية، حرّك الإعداد، وشاهد المعاينة في نفس المساحة.</p></div>
+                    <a class="button button-ghost" href="#manualEditor"><i class="bi bi-arrow-down"></i> ابدأ يدويًا</a>
+                </article>
+            </div>
+
+            <section id="manualEditor" class="manual-editor" aria-labelledby="manualEditorTitle">
+                <header class="manual-editor-head">
+                    <div><span class="eyebrow"><i class="bi bi-eye-fill"></i> معاينة مباشرة</span><h2 id="manualEditorTitle">تجهيز الوثيقة والمعالجة اليدوية</h2><p>ابدأ بتجهيز الوثيقة، ثم جرّب المعالجة اليدوية وشاهد أثر كل خطوة داخل مساحة النتيجة نفسها.</p></div>
+                    <span id="manualPreviewStatus" class="preview-status"><i class="bi bi-circle-fill"></i> جاهز</span>
+                </header>
+
+                <div class="manual-editor-shell">
+                    <section class="manual-preview-pane" aria-label="معاينة المعالجة اليدوية">
+                        <div class="manual-preview-toolbar">
+                            <div><small>المعاينة الحالية</small><strong id="manualPreviewNote">النسخة الأولى حتى تختار عملية</strong></div>
+                            <div class="manual-preview-toolbar-actions">
+                                <button id="manualUndoButton" class="button button-ghost button-compact" type="button" disabled title="التراجع عن آخر عملية معتمدة"><i class="bi bi-arrow-counterclockwise"></i><span>تراجع</span></button>
+                                <button id="manualRedoButton" class="button button-ghost button-compact" type="button" disabled title="إعادة العملية التي تم التراجع عنها"><i class="bi bi-arrow-clockwise"></i><span>إعادة</span></button>
+                                <span class="live-pill"><i class="bi bi-lightning-charge-fill"></i> LIVE</span>
+                            </div>
+                        </div>
+                        <div class="manual-preview-stage">
+                            <div class="manual-preview-pair" aria-label="مقارنة المعاينة قبل وبعد">
+                                <figure class="manual-preview-card"><figcaption>قبل — النسخة الأولى</figcaption><div class="manual-preview-image-wrap"><img id="manualOriginalPreview" alt="النسخة الأولى قبل المعالجة اليدوية"></div></figure>
+                                <figure class="manual-preview-card">
+                                    <figcaption>بعد — المعاينة الحالية</figcaption>
+                                    <div class="manual-preview-image-wrap manual-live-image-wrap">
+                                        <img id="manualLivePreview" alt="المعاينة الحالية للمعالجة اليدوية">
+                                        <div id="manualCropGuide" class="manual-crop-guide hidden" data-crop-handle="move" role="slider" aria-label="منطقة الاقتصاص اليدوي" aria-valuetext="منطقة القص الحالية">
+                                            <span class="crop-grid-lines" aria-hidden="true"></span>
+                                            <span class="crop-handle crop-handle-nw" data-crop-handle="nw" aria-hidden="true"></span><span class="crop-handle crop-handle-n" data-crop-handle="n" aria-hidden="true"></span><span class="crop-handle crop-handle-ne" data-crop-handle="ne" aria-hidden="true"></span><span class="crop-handle crop-handle-e" data-crop-handle="e" aria-hidden="true"></span><span class="crop-handle crop-handle-se" data-crop-handle="se" aria-hidden="true"></span><span class="crop-handle crop-handle-s" data-crop-handle="s" aria-hidden="true"></span><span class="crop-handle crop-handle-sw" data-crop-handle="sw" aria-hidden="true"></span><span class="crop-handle crop-handle-w" data-crop-handle="w" aria-hidden="true"></span>
+                                        </div>
+                                    </div>
+                                </figure>
+                            </div>
+                            <div id="manualPreviewOverlay" class="manual-preview-overlay hidden" aria-live="polite"><span class="processing-spinner"></span><strong>جارٍ تحديث المعاينة...</strong></div>
+                        </div>
+                        <div class="manual-preview-footer"><span><i class="bi bi-info-circle"></i> المعاينة لا تصبح نتيجة نهائية حتى تنفذ العملية.</span></div>
+                        <div class="manual-approval-bar" aria-live="polite">
+                            <div class="manual-chain-status"><span class="status-dot idle"></span><div><strong id="manualChainStatus">لا توجد عملية معتمدة</strong><small id="manualChainList">المعاينة الحالية غير محفوظة بعد.</small></div></div>
+                            <div class="manual-approval-actions">
+                                <button id="manualApprovalButton" class="button button-primary" type="button" disabled><i class="bi bi-check2-circle"></i> اعتماد العملية وإضافتها للسلسلة</button>
+                                <button id="manualManualDownloadButton" class="button button-ghost" type="button" disabled><i class="bi bi-download"></i> تنزيل آخر عملية معتمدة</button>
+                            </div>
+                        </div>
+                    </section>

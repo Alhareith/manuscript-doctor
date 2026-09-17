@@ -1,0 +1,263 @@
+/* Consolidation layer: one analysis disclosure, inline operation parameters, stable manual flow. */
+
+/* --------------------------------------------------------------------------
+   One compact control owns the whole analysis suite
+   -------------------------------------------------------------------------- */
+.analysis-master-control {
+    width: 100%;
+    margin: 12px 0 16px;
+}
+.analysis-master-toggle {
+    width: 100%;
+    min-height: 52px;
+    padding: 9px 16px;
+    border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--line));
+    border-radius: 18px;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    text-align: start;
+    color: var(--ink);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--gold-soft) 38%, var(--surface)), var(--surface));
+    box-shadow: var(--shadow-xs);
+    transition: border-color var(--speed) ease, box-shadow var(--speed) ease, transform var(--speed) var(--ease);
+}
+.analysis-master-toggle:hover,
+.analysis-master-toggle:focus-visible {
+    outline: none;
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--gold) 62%, var(--line));
+    box-shadow: 0 12px 26px color-mix(in srgb, var(--gold) 10%, transparent);
+}
+.analysis-master-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: var(--gold-strong);
+    background: var(--gold-soft);
+    border: 1px solid color-mix(in srgb, var(--gold) 28%, transparent);
+}
+.analysis-master-copy { min-width: 0; }
+.analysis-master-copy strong {
+    display: block;
+    color: var(--ink-strong);
+    font-size: .92rem;
+    line-height: 1.35;
+}
+.analysis-master-copy small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: .74rem;
+    line-height: 1.45;
+}
+.analysis-master-chevron { color: var(--gold-strong); font-size: .9rem; }
+body.analysis-suite-collapsed #documentPreviewSection,
+body.analysis-suite-collapsed #examinationSection {
+    display: none !important;
+}
+.dashboard-premium .dashboard-head .panel-toggle[hidden] { display: none !important; }
+.dashboard-premium .dashboard-advanced,
+.dashboard-premium .dashboard-advanced.is-collapsed {
+    display: block !important;
+}
+
+html[data-theme="dark"] .analysis-master-toggle {
+    color: #f7ead0;
+    border-color: rgba(226,179,82,.42);
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.045), transparent 28%),
+        linear-gradient(180deg, #24231d, #171713);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 10px 24px rgba(0,0,0,.28);
+}
+html[data-theme="dark"] .analysis-master-icon {
+    color: #211603;
+    background: linear-gradient(145deg, #efd17e, #b7862d 62%, #785316);
+    border-color: rgba(255,225,145,.52);
+}
+html[data-theme="dark"] .analysis-master-chevron { color: #e7c66e; }
+
+/* --------------------------------------------------------------------------
+   Dashboard text hierarchy: labels and states must never visually collide
+   -------------------------------------------------------------------------- */
+.dashboard-premium .metric-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+}
+.dashboard-premium .metric-copy small,
+.dashboard-premium .metric-copy strong,
+.dashboard-premium .metric-copy em {
+    display: block;
+    width: fit-content;
+}
+.dashboard-premium .metric-copy small { margin: 0; line-height: 1.3; }
+.dashboard-premium .metric-copy strong { margin: 0; line-height: 1.45; }
+.dashboard-premium .metric-copy em { margin-top: 3px; }
+
+/* --------------------------------------------------------------------------
+   The chosen operation owns its parameters directly beneath its button
+   -------------------------------------------------------------------------- */
+.selected-operation-head,
+.compatibility-select {
+    display: none !important;
+}
+.selected-operation-panel {
+    display: contents;
+}
+.operation-row[aria-expanded="true"] {
+    margin-bottom: 0;
+    border-end-start-radius: 8px;
+    border-end-end-radius: 8px;
+    border-bottom-color: color-mix(in srgb, var(--gold) 32%, var(--line));
+}
+.operation-row .operation-disclosure-icon {
+    transition: transform var(--speed) var(--ease), color var(--speed) ease;
+}
+.operation-row[aria-expanded="true"] .operation-disclosure-icon {
+    color: var(--gold-strong);
+}
+#manualParameters.inline-operation-parameters {
+    width: 100%;
+    margin: -1px 0 9px;
+    padding: 10px 12px 11px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    border: 1px solid color-mix(in srgb, var(--gold) 22%, var(--line));
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--gold-soft) 18%, var(--surface)), var(--surface));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+}
+#manualParameters.inline-operation-parameters.hidden { display: none !important; }
+#manualParameters.inline-operation-parameters .parameter-slider {
+    min-width: 0;
+    padding: 8px 9px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface-2) 42%, var(--surface));
+}
+#manualParameters.inline-operation-parameters .parameter-slider-head {
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+#manualParameters.inline-operation-parameters .parameter-slider-head label {
+    color: var(--ink-strong);
+    font-size: .75rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+#manualParameters.inline-operation-parameters output {
+    min-width: 44px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    color: var(--gold-strong);
+    background: var(--gold-soft);
+    font-size: .72rem;
+    font-weight: 800;
+    text-align: center;
+}
+#manualParameters.inline-operation-parameters input[type="range"] {
+    width: 100%;
+    accent-color: var(--gold);
+}
+#manualParameters.inline-operation-parameters .parameter-slider-meta {
+    margin-top: 2px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: .64rem;
+}
+.manual-change-chart-inline {
+    margin: 10px 12px 12px;
+}
+html[data-theme="dark"] #manualParameters.inline-operation-parameters {
+    border-color: rgba(226,179,82,.34);
+    background: linear-gradient(180deg, rgba(226,179,82,.08), rgba(255,255,255,.018));
+}
+html[data-theme="dark"] #manualParameters.inline-operation-parameters .parameter-slider {
+    border-color: rgba(226,179,82,.18);
+    background: #181915;
+}
+html[data-theme="dark"] #manualParameters.inline-operation-parameters output {
+    color: #251905;
+    background: linear-gradient(145deg, #efd17d, #b9862d);
+}
+
+/* --------------------------------------------------------------------------
+   Manual preview flow: images, then approval; history remains a separate block
+   -------------------------------------------------------------------------- */
+.manual-preview-pane,
+.manual-preview-stage,
+.manual-preview-pair,
+.manual-preview-card,
+.manual-preview-image-wrap {
+    min-width: 0;
+}
+.manual-preview-stage {
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+}
+.manual-preview-image-wrap { overflow: hidden; }
+.manual-approval-bar {
+    position: relative !important;
+    inset: auto !important;
+    z-index: 2;
+    width: 100%;
+    margin-top: 12px !important;
+    transform: none !important;
+    clear: both;
+}
+.manual-approval-actions { position: static !important; }
+.treatment-history {
+    position: relative !important;
+    inset: auto !important;
+    transform: none !important;
+    clear: both;
+    margin-top: 18px !important;
+    z-index: 0;
+}
+.manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
+    min-height: clamp(340px, 44vh, 500px);
+}
+.manual-editor:not(.clinic-crop-focus) .manual-preview-image-wrap {
+    min-height: 0;
+    height: clamp(285px, 38vh, 425px);
+}
+
+/* --------------------------------------------------------------------------
+   Comparison: the whole image is a real drag target, not only the hidden range
+   -------------------------------------------------------------------------- */
+.compare-stage,
+.compare-wrap {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.compare-stage { cursor: ew-resize; }
+.compare-stage.is-dragging { cursor: grabbing; }
+.compare-wrap img {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+.compare-divider { pointer-events: none; }
+
+@media (max-width: 720px) {
+    #manualParameters.inline-operation-parameters { grid-template-columns: 1fr; }
+    .analysis-master-toggle {
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        padding-inline: 12px;
+    }
+    .analysis-master-copy small { font-size: .7rem; }
+}

@@ -1,0 +1,43 @@
+    <!-- ===================== الهيدر المضغوط ===================== -->
+    <header class="app-header">
+        <div class="container-fluid app-header-inner">
+            <a class="app-brand" href="#workspace" aria-label="طبيب الوثائق — الانتقال إلى مساحة العمل">
+                <span class="brand-mark" aria-hidden="true"><img src="{{ url_for('static', filename='assets/doctor-logo.svg') }}" alt=""></span>
+                <span class="brand-copy">
+                    <strong>طبيب الوثائق</strong>
+                    <small>شخّص ← عالج ← حافظ ← تحقق</small>
+                </span>
+            </a>
+
+            <div class="header-actions">
+                <button id="usageGuideButton" class="usage-guide-button" type="button" aria-label="دليل الاستخدام — سيضاف لاحقاً">
+                    <i class="bi bi-journal-text"></i>
+                    <span>دليل الاستخدام</span>
+                </button>
+                <button id="themeToggleButton" class="theme-toggle" type="button" aria-label="تفعيل الوضع الليلي" aria-pressed="false">
+                    <i class="bi bi-moon-stars-fill theme-toggle-icon"></i>
+                    <span class="theme-toggle-label">الوضع الليلي</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================== الملف الطبي: شريط المراحل ===================== -->
+    <nav id="workflow" class="workflow-bar" aria-label="مراحل معالجة الوثيقة">
+        <div class="container-fluid workflow-panel">
+            <ol class="workflow-list">
+                <li class="workflow-item is-current" data-workflow-step="upload"><a href="#uploadSection" data-workflow-nav aria-label="الانتقال إلى رفع الوثيقة"><span>01</span><strong>رفع</strong></a></li>
+                <li class="workflow-item" data-workflow-step="prepare"><a href="#documentPreviewSection" data-workflow-nav aria-label="الانتقال إلى معاينة الوثيقة"><span>02</span><strong>تهيئة</strong></a></li>
+                <li class="workflow-item" data-workflow-step="diagnose"><a href="#examinationSection" data-workflow-nav aria-label="الانتقال إلى فحص الوثيقة"><span>03</span><strong>تشخيص</strong></a></li>
+                <li class="workflow-item" data-workflow-step="treat"><a href="#treatmentSection" data-workflow-nav aria-label="الانتقال إلى المعالجة"><span>04</span><strong>معالجة</strong></a></li>
+                <li class="workflow-item" data-workflow-step="verify"><a href="#verificationSection" data-workflow-nav aria-label="الانتقال إلى التحقق"><span>05</span><strong>تحقق</strong></a></li>
+                <li class="workflow-item" data-workflow-step="output"><a href="#downloadSection" data-workflow-nav aria-label="الانتقال إلى النتيجة"><span>06</span><strong>إخراج</strong></a></li>
+            </ol>
+            <div class="workflow-status" aria-live="polite">
+                <span class="status-dot idle" aria-hidden="true"></span>
+                <span id="workflowStatus">بانتظار الوثيقة — ارفع صورة للبدء</span>
+            </div>
+        </div>
+    </nav>
+
+    <main id="workspace" class="workspace container-fluid" tabindex="-1">
