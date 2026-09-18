@@ -395,6 +395,60 @@ function updateDocumentStatus(diagnoses, recommendations) {
     if (elements.documentStatusMessage) elements.documentStatusMessage.textContent = message;
 }
 
+function renderInstantExamination(data) {
+    state.analysis = data.analysis || null;
+    state.diagnoses = Array.isArray(data.diagnoses) ? data.diagnoses : [];
+    state.preservationProfile = data.preservation_profile || null;
+    state.recommendations = Array.isArray(data.recommendations) ? data.recommendations : [];
+    state.exclusions = Array.isArray(data.excluded_from_automatic) ? data.excluded_from_automatic : [];
+
+    renderDashboard(state.analysis, state.diagnoses);
+    renderDiagnoses(state.diagnoses);
+    renderPreservationProfile(state.preservationProfile);
+    renderRecommendations(state.recommendations, data.recommendation_summary);
+    renderExclusions(state.exclusions);
+    updateDocumentStatus(state.diagnoses, state.recommendations);
+
+    showSection("diagnosisSection");
+    showSection("preservationProfileSection");
+    showSection("treatmentPlanSection");
+    setWorkflow("diagnose");
+
+    const elapsed = Number(state.analysis?.elapsed_ms);
+    if (elements.dashboardInterpretation && Number.isFinite(elapsed)) {
+        elements.dashboardInterpretation.textContent += ` · الفحص الفوري المحلي: ${Math.round(elapsed)} ms.`;
+    }
+
+    updateTechnicalDetails();
+    updateControls();
+}
+
+function attachUploadedImage(image) {
+    if (!image?.image_id) return;
+
+    state.imageId = image.image_id;
+    state.imageData = { ...(state.imageData || {}), ...image };
+
+    const originalUrl = `/api/images/${encodeURIComponent(state.imageId)}`;
+    if (elements.originalPreview) elements.originalPreview.src = originalUrl;
+    if (elements.comparisonOriginal) elements.comparisonOriginal.src = originalUrl;
+    if (elements.manualLivePreview) elements.manualLivePreview.src = originalUrl;
+    if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = originalUrl;
+
+    if (state.imageData && elements.selectedFileMeta) {
+        const dims = state.imageData.width && state.imageData.height
+            ? `${state.imageData.width}×${state.imageData.height}`
+            : "";
+        const format = String(state.imageData.format || "").toUpperCase();
+        elements.selectedFileMeta.textContent = [dims, format].filter(Boolean).join(" · ");
+    }
+
+    show(elements.treatmentSection);
+    show(elements.treatmentHistory);
+    setWorkflow("treat");
+    updateControls();
+}
+
 function renderUploadData(data) {
     state.imageId = data.image?.image_id || null;
     state.imageData = data.image || null;
