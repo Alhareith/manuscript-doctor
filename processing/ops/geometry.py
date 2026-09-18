@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from .common import _validate_image
+from processing.document_rectification import rectify_document
 
 def rotate_right(image):
     _validate_image(image)
@@ -88,3 +89,21 @@ def deskew(image, angle):
         borderValue=border_value,
     )
 
+
+
+def perspective_crop(image, x1, y1, x2, y2, x3, y3, x4, y4):
+    """Rectify a manually selected four-corner document quadrilateral."""
+    _validate_image(image)
+
+    values = (x1, y1, x2, y2, x3, y3, x4, y4)
+    if not all(np.isfinite(float(value)) for value in values):
+        raise ValueError("perspective crop coordinates must be finite numbers.")
+
+    corners = [
+        [float(x1), float(y1)],
+        [float(x2), float(y2)],
+        [float(x3), float(y3)],
+        [float(x4), float(y4)],
+    ]
+
+    return rectify_document(image, corners)["image"]
