@@ -255,7 +255,10 @@ async function startExamination() {
             uploadData = await uploadOriginalForExamination(file, dimensions);
         } catch (uploadError) {
             if (ticket === examinationTicket) {
-                showError("اكتمل الفحص، لكن تعذر تجهيز نسخة المعالجة للخادم. أعد المحاولة أو استخدم صورة أصغر.");
+                const code = uploadError?.code ? ` [${uploadError.code}]` : "";
+                const status = uploadError?.status ? ` HTTP ${uploadError.status}` : "";
+                const message = uploadError?.message || "تعذر تجهيز نسخة المعالجة للخادم.";
+                showError(`اكتمل الفحص، لكن تعذر تجهيز نسخة المعالجة للخادم: ${message}${code}${status}`);
             }
             return;
         }
