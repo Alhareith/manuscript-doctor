@@ -791,3 +791,31 @@ def test_deferred_upload_then_analysis(app_and_client):
     assert "metrics" in data["analysis"]
     assert data["analysis"]["mode"] in {"bounded_proxy", "fallback_proxy"}
     assert isinstance(data["analysis"]["elapsed_ms"], (int, float))
+
+
+def test_five_mb_file_limit_is_enforced(app_and_client):
+    _, client, _, _ = app_and_client
+    oversized = b"x" * ((5 * 1024 * 1024) + 1)
+
+    response = client.post(
+        "/api/images?defer_analysis=1",
+        data={"image": (BytesIO(oversized), "oversized.jpg")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 413
+    payload = response.get_json()
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "FILE_TOO_LARGE"
+
+
+def test_instant_examination_worker_is_served(app_and_client):
+    app, client, _, _ = app_and_client
+
+    response = client.get("/static/js/workers/instant-examination-worker.js")
+
+    assert response.status_code == 200
+    source = response.get_data(as_text=True)
+    assert "instant_worker_proxy" in source
+    assert "createImageBitmap" in source
+    assert "OffscreenCanvas" in source
