@@ -25,7 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 
-MAX_UPLOAD_SIZE = 20 * 1024 * 1024
+MAX_FILE_SIZE = 5 * 1024 * 1024
+MAX_UPLOAD_SIZE = MAX_FILE_SIZE + (512 * 1024)
 MAX_IMAGE_PIXELS = 30_000_000
 
 
