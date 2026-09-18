@@ -204,6 +204,7 @@ def save_preparation_preview(image, folder, preparation_metadata):
         "preparation_id": preparation_id,
         "status": "preview",
         "source_image_id": preparation_metadata["source_image_id"],
+        "source_result_id": preparation_metadata.get("source_result_id"),
         "method_used": preparation_metadata.get("method_used"),
         "preparation": preparation_metadata["preparation"],
     }
