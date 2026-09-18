@@ -788,7 +788,6 @@ def create_app(test_config=None):
                 )
 
         dewarping = None
-        dewarping = None
         try:
             if operation_id == "crop":
                 processed = apply_operation(operation_id, working_image, parameters)
@@ -827,6 +826,7 @@ def create_app(test_config=None):
                     "status": "skipped_for_preview",
                     "message": "تم تخطي Preservation Verification لأن هذه معاينة غير نهائية.",
                 },
+                "dewarping": dewarping,
             },
             message="تم تحديث المعاينة.",
             status=200,
