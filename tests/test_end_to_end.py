@@ -767,3 +767,27 @@ def test_error_response_contract(
     assert payload["error"]["code"]
 
     assert "details" in payload["error"]
+
+def test_deferred_upload_then_analysis(app_and_client):
+    _, client, _, _ = app_and_client
+    image = make_document_image()
+    ok, encoded = cv2.imencode(".png", image)
+    assert ok
+
+    uploaded = client.post(
+        "/api/images?defer_analysis=1",
+        data={"image": (BytesIO(encoded.tobytes()), "deferred.png")},
+        content_type="multipart/form-data",
+    )
+    assert uploaded.status_code == 201, uploaded.get_json()
+    upload_data = uploaded.get_json()["data"]
+    assert upload_data["analysis_deferred"] is True
+    image_id = upload_data["image"]["image_id"]
+
+    examined = client.post(f"/api/images/{image_id}/analysis")
+    assert examined.status_code == 200, examined.get_json()
+    data = examined.get_json()["data"]
+    assert data["image"]["image_id"] == image_id
+    assert "metrics" in data["analysis"]
+    assert data["analysis"]["mode"] in {"bounded_proxy", "fallback_proxy"}
+    assert isinstance(data["analysis"]["elapsed_ms"], (int, float))
