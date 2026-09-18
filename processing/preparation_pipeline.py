@@ -15,6 +15,7 @@ BOUNDARY_DETECTION_MAX_DIMENSION = 640
 BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
 SKEW_DETECTION_MAX_DIMENSION = 1280
 PREPARATION_MIN_FRAME_CLEARANCE_RATIO = 0.005
+POST_PERSPECTIVE_DESKEW_MIN_CONFIDENCE = 0.68
 
 
 def _validate_image(image):
@@ -292,7 +293,15 @@ def prepare_document(
         "detection_dimensions": skew["detection_dimensions"],
     })
 
-    deskew_result = apply_auto_deskew(current, skew)
+    deskew_result = apply_auto_deskew(
+        current,
+        skew,
+        min_confidence=(
+            POST_PERSPECTIVE_DESKEW_MIN_CONFIDENCE
+            if perspective_allowed
+            else 0.70
+        ),
+    )
     crop_applied = bool(perspective_allowed and deskew_result.get("crop_applied"))
     crop_reason = deskew_result.get("crop_reason")
 
