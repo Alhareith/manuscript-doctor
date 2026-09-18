@@ -41,7 +41,7 @@ function scheduleAutomaticExamination(file) {
         setExamButtonState("running");
         try {
             await startExamination();
-            setExamButtonState(state.imageId ? "ready" : "retry");
+            setExamButtonState(state.analysis ? "ready" : "retry");
         } catch {
             setExamButtonState("retry");
         }
@@ -67,7 +67,7 @@ function bindAutomaticExamination() {
     elements.startExaminationButton?.addEventListener("click", () => {
         if (state.imageId && !state.isBusy) {
             window.setTimeout(() => setExamButtonState("running"), 0);
-            window.setTimeout(() => setExamButtonState(state.imageId ? "ready" : "retry"), 350);
+            window.setTimeout(() => setExamButtonState(state.analysis ? "ready" : "retry"), 350);
         }
     });
 
@@ -80,8 +80,10 @@ function bindAutomaticExamination() {
             }
             if (!processing.classList.contains("hidden")) {
                 setExamButtonState("running");
-            } else if (state.imageId) {
+            } else if (state.analysis) {
                 setExamButtonState("ready");
+            } else if (state.imageId) {
+                setExamButtonState("retry");
             }
         }).observe(processing, { attributes: true, attributeFilter: ["class"] });
     }
