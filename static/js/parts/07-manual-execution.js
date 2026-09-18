@@ -39,7 +39,9 @@ async function applyManualOperation(options = {}) {
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({}),
+                    body: JSON.stringify({
+                        source_result_id: state.manualWorkingResultId || null
+                    }),
                     signal
                 }
             )
@@ -227,7 +229,7 @@ async function approveManualOperation() {
                     id: "document_prepare",
                     parameters: {}
                 },
-                source_result_id: state.manualActiveIndex >= 0 ? state.manualChain[state.manualActiveIndex]?.result?.id || null : null,
+                source_result_id: data.source_result_id || data.result.parent_result_id || null,
                 previewDataUrl: candidate?.data?.preview?.data_url || null
             });
             state.manualActiveIndex = state.manualChain.length - 1;
