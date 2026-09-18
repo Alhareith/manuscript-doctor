@@ -123,8 +123,12 @@ def verify_preparation(result):
     perspective_ok, perspective_reason = _verify_perspective(result["perspective"])
 
     deskew = result.get("deskew") if isinstance(result.get("deskew"), dict) else {}
+    # A review-only boundary is diagnostic evidence, not an applied crop.
+    # High-confidence deskew-only remains valid whenever automatic perspective
+    # was blocked and the complete frame was preserved.
+    boundary_metadata = result.get("boundary", {}) if isinstance(result.get("boundary"), dict) else {}
     deskew_only_ok = (
-        not result.get("boundary", {}).get("detected", False)
+        not bool(boundary_metadata.get("automatic_crop_eligible", False))
         and bool(deskew.get("applied"))
         and float(deskew.get("confidence", 0.0)) >= MIN_DESKEW_ONLY_CONFIDENCE
         and not bool(deskew.get("crop_applied", False))
