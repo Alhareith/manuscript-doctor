@@ -130,7 +130,8 @@ function renderManualOperationResult(data, options = {}) {
                 insufficient_text: "لا توجد أسطر نص كافية لتطبيق إزالة التعرجات بأمان.",
                 unstable_tracking: "تتبع الأسطر غير مستقر؛ لم تُعدل الوثيقة.",
                 insufficient_improvement: "التحسن المتوقع أقل من 70%؛ لم تُعدل الوثيقة.",
-                verification_failed: "تعذر التحقق من التحسن؛ لم تُعدل الوثيقة."
+                verification_failed: "تعذر التحقق من التحسن؛ لم تُعدل الوثيقة.",
+                insufficient_structure: "لا توجد بنية أفقية كافية لتصحيح التعرج بأمان."
             };
 
             if (data.preview?.data_url) setManualPreviewData(data.preview, operationId);
@@ -159,9 +160,13 @@ function renderManualOperationResult(data, options = {}) {
                 elements.manualPreviewStatus.innerHTML = '<i class="bi bi-bezier2"></i> معاينة إزالة التعرجات';
             }
             if (elements.manualPreviewNote) {
+                const method = info.method === "edge_profile"
+                    ? "تتبع البنية الأفقية"
+                    : "تتبع أسطر النص";
+                const passes = Number(info.passes || 1);
                 elements.manualPreviewNote.textContent = percent == null
-                    ? "تم إنشاء معاينة Dewarping مؤهلة للمراجعة."
-                    : `خفض التعرج المقدر: ${percent}% · راجع النص بصريًا ثم اعتمد إذا كانت النتيجة سليمة.`;
+                    ? `تم إنشاء معاينة Dewarping مؤهلة للمراجعة · ${method}.`
+                    : `خفض التعرج المقدر: ${percent}% · ${method} · ${passes} ${passes === 1 ? "تمريرة" : "تمريرات"} · راجع النص بصريًا ثم اعتمد.`;
             }
             updateManualApprovalUI();
             updateControls();
