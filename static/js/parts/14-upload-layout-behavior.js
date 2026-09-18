@@ -35,9 +35,10 @@ function scheduleAutomaticExamination(file) {
     const ticket = ++clinicAutoExamTicket;
     setExamButtonState("pending");
 
-    window.setTimeout(async () => {
+    queueMicrotask(async () => {
         if (ticket !== clinicAutoExamTicket) return;
-        if (state.selectedFile !== file || state.imageId || state.isBusy) return;
+        if (state.selectedFile !== file || state.isBusy) return;
+
         setExamButtonState("running");
         try {
             await startExamination();
@@ -45,7 +46,7 @@ function scheduleAutomaticExamination(file) {
         } catch {
             setExamButtonState("retry");
         }
-    }, 220);
+    });
 }
 
 function bindAutomaticExamination() {
