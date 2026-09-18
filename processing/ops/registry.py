@@ -8,7 +8,7 @@ from .denoising import bilateral_denoise, median_denoise, non_local_means_denois
 from .thresholding import adaptive_threshold, global_threshold, otsu_threshold
 from .morphology import morphological_closing, morphological_opening, morphological_black_hat, morphological_top_hat
 from .document import background_suppress, faded_text_enhance, weak_structure_suppress
-from .geometry import crop, deskew, flip_horizontal, flip_vertical, rotate_left, rotate_right
+from .geometry import crop, deskew, flip_horizontal, flip_vertical, perspective_crop, rotate_left, rotate_right
 from .super_resolution import super_resolution
 
 OPERATIONS = {
@@ -188,6 +188,16 @@ OPERATIONS = {
         "risk": "high",
         "automatic": False,
         "default_parameters": {"kernel_size": 5},
+    },
+    "perspective_crop": {
+        "function": perspective_crop,
+        "name": "Manual Perspective Scan",
+        "category": "geometry",
+        "purpose": "تحديد زوايا الوثيقة الأربع يدويًا وتصحيح المنظور",
+        "description": "يحوّل شكلاً رباعيًا يحدده المستخدم إلى وثيقة مستطيلة مستقيمة دون التخمين التلقائي للحدود.",
+        "risk": "medium",
+        "automatic": False,
+        "default_parameters": {},
     },
     "crop": {
         "function": crop,
