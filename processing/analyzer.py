@@ -64,6 +64,22 @@ def _get_dimensions(image):
     return {"width": int(width), "height": int(height), "channels": int(channels)}
 
 
+def _bounded_gray(gray, max_pixels=350_000, max_dimension=800):
+    """Return a smaller grayscale proxy for expensive metrics only."""
+    height, width = gray.shape[:2]
+    if height * width <= max_pixels and max(height, width) <= max_dimension:
+        return gray
+
+    pixel_scale = (max_pixels / max(height * width, 1)) ** 0.5
+    dimension_scale = max_dimension / max(height, width)
+    scale = min(1.0, pixel_scale, dimension_scale)
+    size = (
+        max(1, int(round(width * scale))),
+        max(1, int(round(height * scale))),
+    )
+    return cv2.resize(gray, size, interpolation=cv2.INTER_AREA)
+
+
 def _measure_brightness(gray):
     return float(np.mean(gray))
 
@@ -109,22 +125,26 @@ def _noise_metrics(gray):
 
 
 def _measure_illumination_variation(gray):
-    height, width = gray.shape
-
+    # This metric previously blurred the full analysis frame with a very large
+    # sigma. On constrained web runtimes that could dominate the entire request.
+    source = _bounded_gray(gray, max_pixels=120_000, max_dimension=420)
+    height, width = source.shape
     shortest_side = min(height, width)
-
     sigma = max(shortest_side / 30.0, 3.0)
 
-    illumination = cv2.GaussianBlur(gray, (0, 0), sigmaX=sigma, sigmaY=sigma)
+    illumination = cv2.GaussianBlur(
+        source,
+        (0, 0),
+        sigmaX=sigma,
+        sigmaY=sigma,
+        borderType=cv2.BORDER_REPLICATE,
+    )
 
     mean_illumination = float(np.mean(illumination))
-
     if mean_illumination <= 1e-6:
         return 0.0
 
-    variation = float(np.std(illumination) / mean_illumination)
-
-    return variation
+    return float(np.std(illumination) / mean_illumination)
 
 
 def _measure_edge_density(gray):
@@ -441,7 +461,8 @@ def _bleed_through_indicators(gray):
 
 
 def _structural_metrics(gray):
-    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    source = _bounded_gray(gray, max_pixels=300_000, max_dimension=760)
+    blurred = cv2.GaussianBlur(source, (3, 3), 0)
 
     _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
@@ -500,11 +521,12 @@ def _estimate_skew(gray):
     if gray is None:
         return {"angle": 0.0, "confidence": 0.0, "line_count": 0}
 
-    h, w = gray.shape[:2]
+    source = _bounded_gray(gray, max_pixels=350_000, max_dimension=900)
+    h, w = source.shape[:2]
     if h < 30 or w < 30:
         return {"angle": 0.0, "confidence": 0.0, "line_count": 0}
 
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    blurred = cv2.GaussianBlur(source, (5, 5), 0)
     edges = cv2.Canny(blurred, 50, 150, apertureSize=3)
 
     min_line_len = max(40, w // 12)
@@ -566,8 +588,8 @@ def _estimate_skew(gray):
     }
 
 
-ANALYSIS_MAX_PIXELS = 1_500_000
-ANALYSIS_MAX_DIMENSION = 1600
+ANALYSIS_MAX_PIXELS = 700_000
+ANALYSIS_MAX_DIMENSION = 1200
 
 
 def _analysis_proxy_image(image, max_pixels=ANALYSIS_MAX_PIXELS, max_dimension=ANALYSIS_MAX_DIMENSION):
