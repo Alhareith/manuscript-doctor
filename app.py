@@ -409,6 +409,13 @@ def create_app(test_config=None):
                 "UNREADABLE_IMAGE", "ملف الصورة فارغ أو غير قابل للقراءة.", 400
             )
 
+        if len(raw_data) > MAX_FILE_SIZE:
+            return error_response(
+                "FILE_TOO_LARGE",
+                "الحد الأقصى لحجم الصورة هو 5 MB.",
+                413,
+            )
+
         image = decode_image(raw_data)
         if image is None:
             return error_response(
