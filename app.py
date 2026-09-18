@@ -825,6 +825,13 @@ def create_app(test_config=None):
                     404,
                 )
 
+            if source_manifest.get("source_image_id") != image_id:
+                return error_response(
+                    "SOURCE_RESULT_MISMATCH",
+                    "لا يمكن معاينة نتيجة مرتبطة بوثيقة أخرى.",
+                    400,
+                )
+
             source_kind = source_manifest.get("kind")
             source_origin = source_manifest.get("origin")
             source_status = source_manifest.get("status")
