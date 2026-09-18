@@ -566,31 +566,36 @@ def _estimate_skew(gray):
     }
 
 
-ANALYSIS_MAX_PIXELS = 2_500_000
-ANALYSIS_MAX_DIMENSION = 1800
+ANALYSIS_MAX_PIXELS = 1_500_000
+ANALYSIS_MAX_DIMENSION = 1600
 
 
-def _analysis_proxy(gray):
-    """Use a bounded analysis copy for very large images while preserving the original image."""
-    height, width = gray.shape[:2]
+def _analysis_proxy_image(image, max_pixels=ANALYSIS_MAX_PIXELS, max_dimension=ANALYSIS_MAX_DIMENSION):
+    """Bound analysis before expensive color conversion and structural metrics."""
+    if image is None or not isinstance(image, np.ndarray) or image.size == 0:
+        raise ValueError("Image must be a valid NumPy array.")
 
-    if height * width <= ANALYSIS_MAX_PIXELS and max(height, width) <= ANALYSIS_MAX_DIMENSION:
-        return gray
+    height, width = image.shape[:2]
+    if height * width <= max_pixels and max(height, width) <= max_dimension:
+        return image
 
-    pixel_scale = (ANALYSIS_MAX_PIXELS / max(height * width, 1)) ** 0.5
-    dimension_scale = ANALYSIS_MAX_DIMENSION / max(height, width)
+    pixel_scale = (max_pixels / max(height * width, 1)) ** 0.5
+    dimension_scale = max_dimension / max(height, width)
     scale = min(1.0, pixel_scale, dimension_scale)
     new_width = max(1, int(round(width * scale)))
     new_height = max(1, int(round(height * scale)))
+    return cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-    return cv2.resize(gray, (new_width, new_height), interpolation=cv2.INTER_AREA)
+
+def _analysis_proxy(gray):
+    """Backward-compatible grayscale proxy helper used by older tests/tools."""
+    return _analysis_proxy_image(gray)
 
 
 def analyze_image(image):
-    gray = _to_gray(image)
-
     dimensions = _get_dimensions(image)
-    analysis_gray = _analysis_proxy(gray)
+    analysis_image = _analysis_proxy_image(image)
+    analysis_gray = _to_gray(analysis_image)
 
     metrics = _build_metrics(analysis_gray)
 
