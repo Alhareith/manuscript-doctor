@@ -10,6 +10,7 @@ from .morphology import morphological_closing, morphological_opening, morphologi
 from .document import background_suppress, faded_text_enhance, weak_structure_suppress
 from .geometry import crop, deskew, flip_horizontal, flip_vertical, perspective_crop, rotate_left, rotate_right
 from .super_resolution import super_resolution
+from .dewarp import dewarp_document
 
 OPERATIONS = {
     "clahe": {
@@ -188,6 +189,16 @@ OPERATIONS = {
         "risk": "high",
         "automatic": False,
         "default_parameters": {"kernel_size": 5},
+    },
+    "document_dewarp": {
+        "function": dewarp_document,
+        "name": "Document Dewarping",
+        "category": "geometry",
+        "purpose": "إزالة تعرجات وانحناءات الوثيقة اعتمادًا على تتبع أسطر النص",
+        "description": "يتتبع أسطر النص بشكل مستمر، ويطبق Mesh Dewarping فقط عندما يكون التحسن المقدر كافيًا؛ وإلا يمتنع عن التعديل.",
+        "risk": "high",
+        "automatic": False,
+        "default_parameters": {},
     },
     "perspective_crop": {
         "function": perspective_crop,
