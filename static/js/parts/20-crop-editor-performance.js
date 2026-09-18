@@ -130,9 +130,7 @@ function syncCropEditorMode() {
     const wrap = document.querySelector(".manual-live-image-wrap");
     const active = elements.manualOperation?.value === "crop";
     wrap?.classList.toggle("crop-editor-active", active);
-    if (active) {
-        requestAnimationFrame(() => refreshCropParameterBounds({ reset: true }));
-    }
+    if (active) requestAnimationFrame(() => refreshCropParameterBounds({ reset: false }));
 }
 
 async function createFastLocalManualPreview(operationId, parameters = {}) {
@@ -290,6 +288,9 @@ function bindCropEditorEnhancements() {
     elements.manualOriginalPreview?.addEventListener("load", () => {
         syncPreviewAspectFromImage(elements.manualOriginalPreview);
     });
+
+    if (elements.manualLivePreview?.complete) syncPreviewAspectFromImage(elements.manualLivePreview);
+    if (elements.manualOriginalPreview?.complete) syncPreviewAspectFromImage(elements.manualOriginalPreview);
 
     if (typeof createLocalManualPreview === "function") {
         createLocalManualPreview = createFastLocalManualPreview;
