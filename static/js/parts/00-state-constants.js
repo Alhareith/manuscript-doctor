@@ -494,6 +494,7 @@ const operationParameters = {
         }
     ],
     perspective_crop: [],
+    document_dewarp: [],
     crop: [
         { name: "x", label: "بداية القص أفقياً", type: "number", value: 0, min: 0, max: 10000, step: 1 },
         { name: "y", label: "بداية القص عمودياً", type: "number", value: 0, min: 0, max: 10000, step: 1 },
@@ -531,6 +532,7 @@ const operationNames = {
     deskew: ["تصحيح الميل", "Deskew"],
     crop: ["اقتصاص الوثيقة", "Document Crop"],
     perspective_crop: ["مسح ضوئي يدوي بالزوايا", "Manual Perspective Scan"],
+    document_dewarp: ["إزالة تعرجات الوثيقة", "Document Dewarping"],
     document_prepare: ["تصحيح الميل والاقتصاص التلقائي", "Deskew + Optional Perspective Crop"],
     rotate_right: ["تدوير لليمين", "Rotate Right · 90° Clockwise"],
     rotate_left: ["تدوير لليسار", "Rotate Left · 90° Counter-clockwise"],
