@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pytest
 
-from app import create_app
+from app import create_app, MAX_FILE_SIZE, MAX_UPLOAD_SIZE
 
 
 @pytest.fixture
@@ -233,3 +233,25 @@ def test_reject_unsupported_image_depth(client):
     assert response.status_code == 400
     assert payload["error"]["code"] == "UNSUPPORTED_IMAGE_DEPTH"
 
+
+
+def test_five_megabyte_limit_constants():
+    assert MAX_FILE_SIZE == 5 * 1024 * 1024
+    assert MAX_UPLOAD_SIZE > MAX_FILE_SIZE
+
+
+def test_deferred_processing_upload_succeeds(client):
+    image_bytes = make_test_image()
+
+    response = client.post(
+        "/api/images?defer_analysis=1",
+        data={"image": (BytesIO(image_bytes), "processing.jpg")},
+        content_type="multipart/form-data",
+    )
+
+    payload = response.get_json()
+
+    assert response.status_code == 201
+    assert payload["success"] is True
+    assert payload["data"]["analysis_deferred"] is True
+    assert payload["data"]["image"]["image_id"]
