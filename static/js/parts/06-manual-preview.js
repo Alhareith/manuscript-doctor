@@ -249,7 +249,14 @@ function renderPreparationPreview(data) {
         };
         const method = methodLabels[data.method_used] || data.method_used || "Geometry";
         const status = data.status || "review_required";
-        elements.manualPreviewNote.textContent = `Preparation · ${method} · ${statusLabel(status)}`;
+        const perspectiveApplied = Boolean(data.preparation?.perspective?.applied);
+        const deskew = data.preparation?.deskew || {};
+        const angle = Number(deskew.angle);
+        const angleText = deskew.applied && Number.isFinite(angle)
+            ? ` · تصحيح ميل ${angle.toFixed(2)}°`
+            : " · بدون تصحيح ميل";
+        const cropText = perspectiveApplied ? " · قص منظور مطبق" : " · بدون قص منظور";
+        elements.manualPreviewNote.textContent = `Preparation · ${method} · ${statusLabel(status)}${cropText}${angleText}`;
     }
 
     updateManualApprovalUI();
