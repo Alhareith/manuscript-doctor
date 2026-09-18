@@ -155,12 +155,10 @@ function currentCropRect() {
 function initializeCropParameters() {
     const dimensions = cropDimensions();
     if (!dimensions.width || !dimensions.height) return;
-    const marginX = Math.max(1, Math.round(dimensions.width * 0.05));
-    const marginY = Math.max(1, Math.round(dimensions.height * 0.05));
-    setCropInputValue("x", marginX);
-    setCropInputValue("y", marginY);
-    setCropInputValue("width", Math.max(1, dimensions.width - (marginX * 2)));
-    setCropInputValue("height", Math.max(1, dimensions.height - (marginY * 2)));
+    setCropInputValue("x", 0);
+    setCropInputValue("y", 0);
+    setCropInputValue("width", dimensions.width);
+    setCropInputValue("height", dimensions.height);
 }
 
 function syncCropGuide() {
