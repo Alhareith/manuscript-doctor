@@ -11,7 +11,7 @@ function runInstantExaminationWorker(file, ticket) {
             return;
         }
 
-        const worker = new Worker("/static/js/workers/instant-examination-worker.js");
+        const worker = new Worker("/static/js/workers/instant-examination-worker.js?v=20260918-r3");
         const timeout = window.setTimeout(() => {
             worker.terminate();
             reject(new Error("تجاوز الفحص المحلي الزمن المسموح."));
