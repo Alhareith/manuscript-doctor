@@ -108,6 +108,11 @@ function resetAll() {
 function selectFile(file) {
     clearError();
     if (!isSupportedFile(file)) { showError("نوع الملف غير مدعوم. استخدم JPG أو PNG."); return; }
+    if (file.size > MAX_CLIENT_UPLOAD_BYTES) {
+        showError("الحد الأقصى لحجم الصورة هو 5 MB.");
+        if (elements.imageInput) elements.imageInput.value = "";
+        return;
+    }
     revokePreviewUrl();
     state.selectedFile = file;
     state.previewUrl = URL.createObjectURL(file);
