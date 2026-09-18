@@ -158,7 +158,11 @@ async function apiRequest(url, options = {}) {
         try { payload = await response.json(); } catch { payload = null; }
     }
     if (!response.ok || payload?.success === false) {
-        throw new Error(payload?.message || payload?.error?.message || `فشل الطلب (${response.status}).`);
+        const error = new Error(payload?.message || payload?.error?.message || `فشل الطلب (${response.status}).`);
+        error.status = response.status;
+        error.code = payload?.error?.code || null;
+        error.details = payload?.error?.details ?? null;
+        throw error;
     }
     return payload?.data ?? payload;
 }
