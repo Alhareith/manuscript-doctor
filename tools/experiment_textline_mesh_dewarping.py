@@ -251,7 +251,7 @@ def dewarp(gray: np.ndarray) -> tuple[np.ndarray, dict]:
     if detection.status != "ok":
         return gray.copy(), {
             "applied": False,
-            "status": "insufficient_text",
+            "status": detection.status,
             "line_count": detection.line_count,
             "elapsed_ms": (perf_counter() - started) * 1000,
         }
@@ -407,7 +407,8 @@ def evaluate_case(name: str, source: np.ndarray, target: np.ndarray) -> dict:
     before = curvature_metric(source)
     result, metadata = dewarp(source)
     after = curvature_metric(result)
-    structure = text_structure_f1(target, result)
+    structure_reference = source if name == "sparse_text" else target
+    structure = text_structure_f1(structure_reference, result)
     reduction = curvature_reduction(before, after)
 
     reasons = []
@@ -418,8 +419,10 @@ def evaluate_case(name: str, source: np.ndarray, target: np.ndarray) -> dict:
         if structure["f1"] < FLAT_STRUCTURE_F1_MIN:
             reasons.append("flat_structure_not_preserved")
     elif name == "sparse_text":
-        if metadata.get("applied") or metadata.get("status") != "insufficient_text":
+        if metadata.get("applied") or metadata.get("status") not in {"insufficient_text", "unstable_tracking"}:
             reasons.append("sparse_case_did_not_abstain")
+        if structure["f1"] < FLAT_STRUCTURE_F1_MIN:
+            reasons.append("sparse_source_structure_not_preserved")
     else:
         if reduction is None or reduction < CURVATURE_REDUCTION_MIN:
             reasons.append("curvature_reduction_below_70_percent")
