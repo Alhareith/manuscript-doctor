@@ -83,6 +83,7 @@ function selectOperationCard(operationId) {
     elements.manualOperation.value = resolvedOperationId;
     renderParameterFields(resolvedOperationId);
     syncOperationCardSelection(operationId);
+    if (typeof syncPerspectiveEditorMode === "function") syncPerspectiveEditorMode();
 
     updateControls();
 
