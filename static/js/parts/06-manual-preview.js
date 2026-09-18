@@ -241,7 +241,13 @@ function renderPreparationPreview(data) {
     }
 
     if (elements.manualPreviewNote) {
-        const method = data.method_used === "region" ? "Region" : "Guided";
+        const methodLabels = {
+            region: "Region",
+            guided: "Guided",
+            bright_paper_region: "Bright Region",
+            "deskew-only": "Deskew Only"
+        };
+        const method = methodLabels[data.method_used] || data.method_used || "Geometry";
         const status = data.status || "review_required";
         elements.manualPreviewNote.textContent = `Preparation · ${method} · ${statusLabel(status)}`;
     }
