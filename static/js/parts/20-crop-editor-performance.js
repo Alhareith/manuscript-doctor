@@ -14,14 +14,33 @@ function currentCropMetadata() {
 }
 
 function cropDimensions() {
-    const metadata = currentCropMetadata();
-    const source = elements.manualLivePreview?.naturalWidth && elements.manualLivePreview?.naturalHeight
-        ? elements.manualLivePreview
-        : elements.manualOriginalPreview;
+    const activeEntry = Number.isInteger(state.manualActiveIndex) && state.manualActiveIndex >= 0
+        ? state.manualChain[state.manualActiveIndex]
+        : null;
+    const activeMetadata = activeEntry?.result
+        || state.currentResult
+        || state.manualApprovedResult
+        || null;
 
-    const width = Number(metadata?.width || state.imageData?.width || source?.naturalWidth || 0);
-    const height = Number(metadata?.height || state.imageData?.height || source?.naturalHeight || 0);
-    return { width, height };
+    if (activeMetadata?.width && activeMetadata?.height) {
+        return {
+            width: Number(activeMetadata.width),
+            height: Number(activeMetadata.height)
+        };
+    }
+
+    const preview = elements.manualLivePreview;
+    if (preview?.complete && preview.naturalWidth && preview.naturalHeight) {
+        return {
+            width: Number(preview.naturalWidth),
+            height: Number(preview.naturalHeight)
+        };
+    }
+
+    return {
+        width: Number(state.imageData?.width || 0),
+        height: Number(state.imageData?.height || 0)
+    };
 }
 
 function pointToCropSource(event, rect, dimensions) {
@@ -111,7 +130,9 @@ function syncCropEditorMode() {
     const wrap = document.querySelector(".manual-live-image-wrap");
     const active = elements.manualOperation?.value === "crop";
     wrap?.classList.toggle("crop-editor-active", active);
-    if (active) requestAnimationFrame(syncCropGuide);
+    if (active) {
+        requestAnimationFrame(() => refreshCropParameterBounds({ reset: true }));
+    }
 }
 
 async function createFastLocalManualPreview(operationId, parameters = {}) {
@@ -193,6 +214,54 @@ async function createFastLocalManualPreview(operationId, parameters = {}) {
     };
 }
 
+function getCropRenderRect(preview, _dimensions) {
+    if (!preview) return null;
+    const rect = preview.getBoundingClientRect();
+    if (!rect?.width || !rect?.height) return null;
+    return {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height
+    };
+}
+
+function refreshCropParameterBounds({ reset = false } = {}) {
+    if (elements.manualOperation?.value !== "crop") return;
+    const dimensions = cropDimensions();
+    if (!dimensions.width || !dimensions.height) return;
+
+    const definitions = {
+        x: dimensions.width,
+        width: dimensions.width,
+        y: dimensions.height,
+        height: dimensions.height
+    };
+
+    Object.entries(definitions).forEach(([name, max]) => {
+        const input = byId(`parameter-${name}`);
+        if (!input) return;
+        input.max = String(Math.max(1, Math.round(max)));
+        const meta = input.closest(".parameter-slider")?.querySelector(".parameter-slider-meta span:last-child");
+        if (meta) meta.textContent = input.max;
+    });
+
+    const current = currentCropRect();
+    const invalid = current.x < 0
+        || current.y < 0
+        || current.x + current.width > dimensions.width
+        || current.y + current.height > dimensions.height;
+
+    if (reset || invalid) {
+        setCropInputValue("x", 0);
+        setCropInputValue("y", 0);
+        setCropInputValue("width", dimensions.width);
+        setCropInputValue("height", dimensions.height);
+    }
+
+    syncCropGuide();
+}
+
 function bindCropEditorEnhancements() {
     const wrap = document.querySelector(".manual-live-image-wrap");
     if (wrap && wrap.dataset.cropEditorBound !== "true") {
@@ -206,7 +275,9 @@ function bindCropEditorEnhancements() {
 
     elements.manualOperation?.addEventListener("change", syncCropEditorMode);
     elements.manualLivePreview?.addEventListener("load", () => {
-        if (elements.manualOperation?.value === "crop") requestAnimationFrame(syncCropGuide);
+        if (elements.manualOperation?.value === "crop") {
+            requestAnimationFrame(() => refreshCropParameterBounds({ reset: false }));
+        }
     });
 
     if (typeof createLocalManualPreview === "function") {
