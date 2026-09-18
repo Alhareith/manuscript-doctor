@@ -493,6 +493,7 @@ const operationParameters = {
             step: 0.1
         }
     ],
+    perspective_crop: [],
     crop: [
         { name: "x", label: "بداية القص أفقياً", type: "number", value: 0, min: 0, max: 10000, step: 1 },
         { name: "y", label: "بداية القص عمودياً", type: "number", value: 0, min: 0, max: 10000, step: 1 },
@@ -529,6 +530,7 @@ const operationNames = {
     morphological_black_hat: ["إبراز البنى الداكنة", "Morphological Black-Hat"],
     deskew: ["تصحيح الميل", "Deskew"],
     crop: ["اقتصاص الوثيقة", "Document Crop"],
+    perspective_crop: ["مسح ضوئي يدوي بالزوايا", "Manual Perspective Scan"],
     document_prepare: ["تصحيح الميل والاقتصاص التلقائي", "Deskew + Optional Perspective Crop"],
     rotate_right: ["تدوير لليمين", "Rotate Right · 90° Clockwise"],
     rotate_left: ["تدوير لليسار", "Rotate Left · 90° Counter-clockwise"],
