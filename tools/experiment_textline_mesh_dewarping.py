@@ -22,6 +22,10 @@ from time import perf_counter
 import cv2
 import numpy as np
 
+CURVATURE_REDUCTION_MIN = 0.70
+TEXT_STRUCTURE_F1_MIN = 0.90
+FLAT_STRUCTURE_F1_MIN = 0.98
+
 
 @dataclass
 class Detection:
@@ -220,41 +224,155 @@ def curvature_metric(image: np.ndarray) -> tuple[float, float] | None:
     return detected.rms, detected.amplitude
 
 
+def text_structure_f1(reference: np.ndarray, candidate: np.ndarray, tolerance: int = 2) -> dict:
+    """Measure whether dark text structure is preserved after rectification.
+
+    The metric compares binarized dark-stroke masks with a small spatial
+    tolerance. This is intentionally stricter than visual sharpness: a result
+    cannot pass merely because lines look straighter if character strokes have
+    moved or disappeared.
+    """
+    ref_blur = cv2.GaussianBlur(reference, (3, 3), 0)
+    cand_blur = cv2.GaussianBlur(candidate, (3, 3), 0)
+
+    _, ref = cv2.threshold(
+        ref_blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+    )
+    _, cand = cv2.threshold(
+        cand_blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+    )
+
+    cleanup = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 1))
+    ref = cv2.morphologyEx(ref, cv2.MORPH_OPEN, cleanup)
+    cand = cv2.morphologyEx(cand, cv2.MORPH_OPEN, cleanup)
+
+    ref_mask = ref > 0
+    cand_mask = cand > 0
+    tolerance_kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE,
+        (2 * tolerance + 1, 2 * tolerance + 1),
+    )
+    ref_dilated = cv2.dilate(ref, tolerance_kernel) > 0
+    cand_dilated = cv2.dilate(cand, tolerance_kernel) > 0
+
+    precision = float(
+        np.count_nonzero(cand_mask & ref_dilated)
+        / max(1, np.count_nonzero(cand_mask))
+    )
+    recall = float(
+        np.count_nonzero(ref_mask & cand_dilated)
+        / max(1, np.count_nonzero(ref_mask))
+    )
+    f1 = float(2 * precision * recall / max(1e-9, precision + recall))
+
+    return {"f1": f1, "precision": precision, "recall": recall}
+
+
+def curvature_reduction(before, after) -> float | None:
+    if before is None or after is None:
+        return None
+    before_rms = float(before[0])
+    after_rms = float(after[0])
+    if before_rms <= 1e-9:
+        return 1.0 if after_rms <= before_rms + 1e-9 else -1.0
+    return float((before_rms - after_rms) / before_rms)
+
+
+def evaluate_case(name: str, source: np.ndarray, target: np.ndarray) -> dict:
+    before = curvature_metric(source)
+    result, metadata = dewarp(source)
+    after = curvature_metric(result)
+    structure = text_structure_f1(target, result)
+    reduction = curvature_reduction(before, after)
+
+    reasons = []
+
+    if name == "flat_document":
+        if metadata.get("status") != "already_flat" or metadata.get("applied"):
+            reasons.append("flat_document_was_modified")
+        if structure["f1"] < FLAT_STRUCTURE_F1_MIN:
+            reasons.append("flat_structure_not_preserved")
+    elif name == "sparse_text":
+        if metadata.get("applied") or metadata.get("status") != "insufficient_text":
+            reasons.append("sparse_case_did_not_abstain")
+    else:
+        if reduction is None or reduction < CURVATURE_REDUCTION_MIN:
+            reasons.append("curvature_reduction_below_70_percent")
+        if structure["f1"] < TEXT_STRUCTURE_F1_MIN:
+            reasons.append("text_structure_f1_below_0_90")
+
+    return {
+        "case": name,
+        "pass": not reasons,
+        "reasons": reasons,
+        "status": metadata.get("status"),
+        "applied": bool(metadata.get("applied")),
+        "before_rms": None if before is None else float(before[0]),
+        "after_rms": None if after is None else float(after[0]),
+        "curvature_reduction": reduction,
+        "structure_f1": structure["f1"],
+        "structure_precision": structure["precision"],
+        "structure_recall": structure["recall"],
+        "elapsed_ms": float(metadata.get("elapsed_ms", 0.0)),
+    }
+
+
 def run() -> None:
     base = make_fixture()
     height, width = base.shape
     sparse = make_fixture(lines=2)
 
     fixtures = {
-        "warped_document": warp_vertical(
+        "warped_document": (
+            warp_vertical(
+                base,
+                lambda x, y: 22 * np.sin(2 * np.pi * x / width)
+                + 8 * np.sin(4 * np.pi * x / width),
+            ),
             base,
-            lambda x, y: 22 * np.sin(2 * np.pi * x / width)
-            + 8 * np.sin(4 * np.pi * x / width),
         ),
-        "curved_book_page": warp_vertical(
+        "curved_book_page": (
+            warp_vertical(
+                base,
+                lambda x, y: 28 * ((x - width / 2) / (width / 2)) ** 2 - 7,
+            ),
             base,
-            lambda x, y: 28 * ((x - width / 2) / (width / 2)) ** 2 - 7,
         ),
-        "flat_document": base.copy(),
-        "sparse_text": warp_vertical(
+        "flat_document": (base.copy(), base),
+        "sparse_text": (
+            warp_vertical(
+                sparse,
+                lambda x, y: 20 * np.sin(2 * np.pi * x / width),
+            ),
             sparse,
-            lambda x, y: 20 * np.sin(2 * np.pi * x / width),
         ),
     }
 
-    print("case,status,before_rms,after_rms,before_amp,after_amp,elapsed_ms")
-    for name, image in fixtures.items():
-        before = curvature_metric(image)
-        result, metadata = dewarp(image)
-        after = curvature_metric(result)
+    print(
+        "case,pass,status,before_rms,after_rms,curvature_reduction,"
+        "structure_f1,elapsed_ms,reasons"
+    )
+    failures = []
 
-        before_rms, before_amp = before if before is not None else (None, None)
-        after_rms, after_amp = after if after is not None else (None, None)
+    for name, (source, target) in fixtures.items():
+        evaluation = evaluate_case(name, source, target)
+        if not evaluation["pass"]:
+            failures.append(name)
 
         print(
-            f"{name},{metadata['status']},{before_rms},{after_rms},"
-            f"{before_amp},{after_amp},{metadata['elapsed_ms']:.2f}"
+            f"{name},{evaluation['pass']},{evaluation['status']},"
+            f"{evaluation['before_rms']},{evaluation['after_rms']},"
+            f"{evaluation['curvature_reduction']},"
+            f"{evaluation['structure_f1']:.4f},"
+            f"{evaluation['elapsed_ms']:.2f},"
+            f"{'|'.join(evaluation['reasons']) or 'ok'}"
         )
+
+    print(
+        "FINAL_GATE="
+        + ("PASS" if not failures else "FAIL")
+        + (" failures=" + ",".join(failures) if failures else "")
+    )
 
 
 if __name__ == "__main__":
