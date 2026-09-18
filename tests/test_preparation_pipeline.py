@@ -106,10 +106,10 @@ def test_deskew_only_fallback_works_without_boundary_or_crop():
     assert any(step["step"] == "auto_deskew" and step["status"] == "applied" for step in result["steps"])
 
 
-@pytest.mark.parametrize("name", ["check/c04.jpg", "check/c05.jpg", "check/c06.jpg"])
-def test_preparation_detector_fallback_restores_document_crop(name):
+def test_c04_preparation_fallback_restores_document_crop():
+    image = _load_image("check/c04.jpg")
     result = prepare_document(
-        _load_image(name),
+        image,
         boundary_detector=detect_preparation_boundary,
     )
 
@@ -117,8 +117,43 @@ def test_preparation_detector_fallback_restores_document_crop(name):
     assert result["boundary"]["detected"] is True
     assert result["boundary"]["automatic_crop_eligible"] is True
     assert result["perspective"]["applied"] is True
-    assert result["image"].shape[0] < _load_image(name).shape[0]
-    assert result["image"].shape[1] < _load_image(name).shape[1]
+    assert result["image"].shape[0] < image.shape[0]
+    assert result["image"].shape[1] < image.shape[1]
+
+
+def test_c05_review_boundary_uses_safe_deskew_only():
+    image = _load_image("check/c05.jpg")
+    result = prepare_document(
+        image,
+        boundary_detector=detect_preparation_boundary,
+    )
+    verification = verify_preparation(result)
+
+    assert result["prepared"] is True
+    assert result["boundary"]["detected"] is True
+    assert result["boundary"]["automatic_crop_eligible"] is False
+    assert result["perspective"] is None
+    assert result["deskew"]["applied"] is True
+    assert result["deskew"]["crop_applied"] is False
+    assert verification["verified"] is True
+    assert abs(verification["residual_skew"]["angle"]) <= 0.75
+
+
+def test_c06_review_only_geometry_defers_without_unsafe_crop():
+    image = _load_image("check/c06.jpg")
+    result = prepare_document(
+        image,
+        boundary_detector=detect_preparation_boundary,
+    )
+    verification = verify_preparation(result)
+
+    assert result["prepared"] is False
+    assert result["boundary"]["detected"] is True
+    assert result["boundary"]["status"] == "review_required"
+    assert result["boundary"]["automatic_crop_eligible"] is False
+    assert result["perspective"] is None
+    assert result["deskew"]["applied"] is False
+    assert verification["verified"] is False
 
 
 def test_c08_preparation_and_verification_are_repeatable():
