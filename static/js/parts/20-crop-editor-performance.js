@@ -14,33 +14,14 @@ function currentCropMetadata() {
 }
 
 function cropDimensions() {
-    const activeEntry = Number.isInteger(state.manualActiveIndex) && state.manualActiveIndex >= 0
-        ? state.manualChain[state.manualActiveIndex]
-        : null;
-    const activeMetadata = activeEntry?.result
-        || state.currentResult
-        || state.manualApprovedResult
-        || null;
+    const metadata = currentCropMetadata();
+    const source = elements.manualLivePreview?.naturalWidth && elements.manualLivePreview?.naturalHeight
+        ? elements.manualLivePreview
+        : elements.manualOriginalPreview;
 
-    if (activeMetadata?.width && activeMetadata?.height) {
-        return {
-            width: Number(activeMetadata.width),
-            height: Number(activeMetadata.height)
-        };
-    }
-
-    const preview = elements.manualLivePreview;
-    if (preview?.complete && preview.naturalWidth && preview.naturalHeight) {
-        return {
-            width: Number(preview.naturalWidth),
-            height: Number(preview.naturalHeight)
-        };
-    }
-
-    return {
-        width: Number(state.imageData?.width || 0),
-        height: Number(state.imageData?.height || 0)
-    };
+    const width = Number(metadata?.width || state.imageData?.width || source?.naturalWidth || 0);
+    const height = Number(metadata?.height || state.imageData?.height || source?.naturalHeight || 0);
+    return { width, height };
 }
 
 function pointToCropSource(event, rect, dimensions) {
