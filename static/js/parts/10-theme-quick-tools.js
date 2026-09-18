@@ -109,7 +109,7 @@ function selectOperationCard(operationId) {
         if (typeof syncCropEditorMode === "function") syncCropEditorMode();
         requestAnimationFrame(() => {
             if (typeof refreshCropParameterBounds === "function") {
-                refreshCropParameterBounds({ reset: true });
+                refreshCropParameterBounds({ reset: false });
             } else {
                 syncCropGuide();
             }
