@@ -217,3 +217,237 @@ function bindCropEditorEnhancements() {
 }
 
 document.addEventListener("DOMContentLoaded", bindCropEditorEnhancements);
+
+
+/* ---------- Manual four-corner perspective scanner ---------- */
+let perspectiveCorners = null;
+let perspectiveDragState = null;
+let perspectiveSourceSize = null;
+
+function perspectiveGuideElement() {
+    return document.getElementById("manualPerspectiveGuide");
+}
+
+function defaultPerspectiveCorners(dimensions) {
+    const insetX = Math.max(1, dimensions.width * 0.05);
+    const insetY = Math.max(1, dimensions.height * 0.05);
+    return [
+        { x: insetX, y: insetY },
+        { x: dimensions.width - insetX, y: insetY },
+        { x: dimensions.width - insetX, y: dimensions.height - insetY },
+        { x: insetX, y: dimensions.height - insetY }
+    ];
+}
+
+function isPerspectiveConvex(corners) {
+    if (!Array.isArray(corners) || corners.length !== 4) return false;
+    let sign = 0;
+    for (let i = 0; i < 4; i += 1) {
+        const a = corners[i];
+        const b = corners[(i + 1) % 4];
+        const c = corners[(i + 2) % 4];
+        const cross = ((b.x - a.x) * (c.y - b.y)) - ((b.y - a.y) * (c.x - b.x));
+        if (Math.abs(cross) < 1e-6) return false;
+        const current = Math.sign(cross);
+        if (sign && current !== sign) return false;
+        sign = current;
+    }
+    return true;
+}
+
+function getPerspectiveParameters() {
+    const dimensions = cropDimensions();
+    if (!dimensions.width || !dimensions.height) return {};
+    if (!perspectiveCorners || !perspectiveSourceSize
+        || perspectiveSourceSize.width !== dimensions.width
+        || perspectiveSourceSize.height !== dimensions.height) {
+        perspectiveCorners = defaultPerspectiveCorners(dimensions);
+        perspectiveSourceSize = { ...dimensions };
+    }
+
+    return {
+        x1: Math.round(perspectiveCorners[0].x), y1: Math.round(perspectiveCorners[0].y),
+        x2: Math.round(perspectiveCorners[1].x), y2: Math.round(perspectiveCorners[1].y),
+        x3: Math.round(perspectiveCorners[2].x), y3: Math.round(perspectiveCorners[2].y),
+        x4: Math.round(perspectiveCorners[3].x), y4: Math.round(perspectiveCorners[3].y)
+    };
+}
+
+function markPerspectiveDraft() {
+    if (elements.manualOperation?.value !== "perspective_crop" || !state.imageId || state.isBusy) return;
+    if (!perspectiveCorners || !isPerspectiveConvex(perspectiveCorners)) {
+        state.manualPreviewCandidate = null;
+        if (elements.manualPreviewNote) {
+            elements.manualPreviewNote.textContent = "النقاط الأربع يجب أن تكوّن حدود وثيقة رباعية بدون تقاطع.";
+        }
+        updateManualApprovalUI();
+        return;
+    }
+
+    const parameters = getPerspectiveParameters();
+    state.manualPreviewCandidate = {
+        result: null,
+        operation: { id: "perspective_crop", parameters },
+        data: { draft: true, perspective: true }
+    };
+    if (elements.manualPreviewNote) {
+        elements.manualPreviewNote.textContent = "الحدود جاهزة — حرّك أي زاوية إن احتجت، ثم اعتمد المسح لتصحيح المنظور.";
+    }
+    updateManualApprovalUI();
+}
+
+function syncPerspectiveGuide() {
+    const guide = perspectiveGuideElement();
+    const active = elements.manualOperation?.value === "perspective_crop";
+    const preview = elements.manualLivePreview;
+    const dimensions = cropDimensions();
+
+    if (!guide || !active || !preview || !dimensions.width || !dimensions.height) {
+        guide?.classList.add("hidden");
+        return;
+    }
+
+    if (!perspectiveCorners || !perspectiveSourceSize
+        || perspectiveSourceSize.width !== dimensions.width
+        || perspectiveSourceSize.height !== dimensions.height) {
+        perspectiveCorners = defaultPerspectiveCorners(dimensions);
+        perspectiveSourceSize = { ...dimensions };
+    }
+
+    const wrap = preview.parentElement;
+    const wrapRect = wrap?.getBoundingClientRect();
+    const imageRect = getCropRenderRect(preview, dimensions);
+    if (!wrapRect?.width || !wrapRect?.height || !imageRect?.width || !imageRect?.height) return;
+
+    guide.setAttribute("viewBox", `0 0 ${wrapRect.width} ${wrapRect.height}`);
+
+    const points = perspectiveCorners.map((point) => ({
+        x: (imageRect.left - wrapRect.left) + ((point.x / dimensions.width) * imageRect.width),
+        y: (imageRect.top - wrapRect.top) + ((point.y / dimensions.height) * imageRect.height)
+    }));
+
+    guide.querySelector(".perspective-polygon")?.setAttribute(
+        "points",
+        points.map((point) => `${point.x},${point.y}`).join(" ")
+    );
+
+    guide.querySelectorAll("[data-edge]").forEach((edge, index) => {
+        const a = points[index];
+        const b = points[(index + 1) % 4];
+        edge.setAttribute("x1", a.x);
+        edge.setAttribute("y1", a.y);
+        edge.setAttribute("x2", b.x);
+        edge.setAttribute("y2", b.y);
+    });
+
+    guide.querySelectorAll("[data-perspective-corner]").forEach((handle) => {
+        const index = Number(handle.dataset.perspectiveCorner);
+        const point = points[index];
+        handle.setAttribute("cx", point.x);
+        handle.setAttribute("cy", point.y);
+    });
+
+    guide.classList.remove("hidden");
+}
+
+function initializePerspectiveGuide() {
+    if (elements.manualOperation?.value !== "perspective_crop") {
+        perspectiveGuideElement()?.classList.add("hidden");
+        return;
+    }
+
+    const dimensions = cropDimensions();
+    if (!dimensions.width || !dimensions.height) return;
+
+    if (!perspectiveCorners || !perspectiveSourceSize
+        || perspectiveSourceSize.width !== dimensions.width
+        || perspectiveSourceSize.height !== dimensions.height) {
+        perspectiveCorners = defaultPerspectiveCorners(dimensions);
+        perspectiveSourceSize = { ...dimensions };
+    }
+
+    syncPerspectiveGuide();
+    markPerspectiveDraft();
+}
+
+function perspectivePointFromEvent(event, rect, dimensions) {
+    return {
+        x: clamp(((event.clientX - rect.left) / rect.width) * dimensions.width, 0, dimensions.width - 1),
+        y: clamp(((event.clientY - rect.top) / rect.height) * dimensions.height, 0, dimensions.height - 1)
+    };
+}
+
+function beginPerspectiveDrag(event) {
+    if (elements.manualOperation?.value !== "perspective_crop" || state.isBusy) return;
+    const target = event.target.closest("[data-perspective-corner]");
+    if (!target) return;
+
+    const dimensions = cropDimensions();
+    const rect = getCropRenderRect(elements.manualLivePreview, dimensions);
+    if (!rect?.width || !rect?.height) return;
+
+    perspectiveDragState = {
+        pointerId: event.pointerId,
+        corner: Number(target.dataset.perspectiveCorner),
+        rect,
+        dimensions
+    };
+    target.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+}
+
+function movePerspectiveDrag(event) {
+    const drag = perspectiveDragState;
+    if (!drag || drag.pointerId !== event.pointerId || !perspectiveCorners) return;
+
+    const next = perspectivePointFromEvent(event, drag.rect, drag.dimensions);
+    const candidate = perspectiveCorners.map((point) => ({ ...point }));
+    candidate[drag.corner] = next;
+
+    if (isPerspectiveConvex(candidate)) {
+        perspectiveCorners = candidate;
+        syncPerspectiveGuide();
+        markPerspectiveDraft();
+    }
+    event.preventDefault();
+}
+
+function endPerspectiveDrag(event) {
+    if (!perspectiveDragState || perspectiveDragState.pointerId !== event.pointerId) return;
+    event.target.releasePointerCapture?.(event.pointerId);
+    perspectiveDragState = null;
+    markPerspectiveDraft();
+}
+
+function syncPerspectiveEditorMode() {
+    const active = elements.manualOperation?.value === "perspective_crop";
+    const guide = perspectiveGuideElement();
+    guide?.classList.toggle("hidden", !active);
+    if (active) requestAnimationFrame(initializePerspectiveGuide);
+}
+
+function bindPerspectiveScanner() {
+    const guide = perspectiveGuideElement();
+    if (guide && guide.dataset.bound !== "true") {
+        guide.dataset.bound = "true";
+        guide.addEventListener("pointerdown", beginPerspectiveDrag);
+        guide.addEventListener("pointermove", movePerspectiveDrag);
+        guide.addEventListener("pointerup", endPerspectiveDrag);
+        guide.addEventListener("pointercancel", endPerspectiveDrag);
+    }
+
+    elements.manualOperation?.addEventListener("change", syncPerspectiveEditorMode);
+    elements.manualLivePreview?.addEventListener("load", () => {
+        if (elements.manualOperation?.value === "perspective_crop") {
+            requestAnimationFrame(syncPerspectiveGuide);
+        }
+    });
+
+    window.addEventListener("resize", () => {
+        if (elements.manualOperation?.value === "perspective_crop") {
+            requestAnimationFrame(syncPerspectiveGuide);
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", bindPerspectiveScanner);
