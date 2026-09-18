@@ -123,6 +123,50 @@ function renderManualOperationResult(data, options = {}) {
 
     /* Live preview only updates the image beside the controls. It is not a final result. */
     if (options.live) {
+        if (operationId === "document_dewarp" && data.dewarping) {
+            const info = data.dewarping;
+            const labels = {
+                already_flat: "الوثيقة مستقيمة ولا تحتاج إزالة تعرجات.",
+                insufficient_text: "لا توجد أسطر نص كافية لتطبيق إزالة التعرجات بأمان.",
+                unstable_tracking: "تتبع الأسطر غير مستقر؛ لم تُعدل الوثيقة.",
+                insufficient_improvement: "التحسن المتوقع أقل من 70%؛ لم تُعدل الوثيقة.",
+                verification_failed: "تعذر التحقق من التحسن؛ لم تُعدل الوثيقة."
+            };
+
+            if (data.preview?.data_url) setManualPreviewData(data.preview, operationId);
+
+            if (!info.applied) {
+                state.manualPreviewCandidate = null;
+                if (elements.manualPreviewStatus) {
+                    elements.manualPreviewStatus.innerHTML = '<i class="bi bi-shield-check"></i> لم تُطبّق العملية';
+                }
+                if (elements.manualPreviewNote) {
+                    elements.manualPreviewNote.textContent = labels[info.status] || "لم تستوفِ الوثيقة شروط إزالة التعرجات بأمان.";
+                }
+                updateManualApprovalUI();
+                updateControls();
+                return;
+            }
+
+            const reduction = Number(info.curvature_reduction);
+            const percent = Number.isFinite(reduction) ? Math.round(reduction * 100) : null;
+            state.manualPreviewCandidate = {
+                result: data.preview || null,
+                operation: data.operation || { id: operationId, parameters: {} },
+                data
+            };
+            if (elements.manualPreviewStatus) {
+                elements.manualPreviewStatus.innerHTML = '<i class="bi bi-bezier2"></i> معاينة إزالة التعرجات';
+            }
+            if (elements.manualPreviewNote) {
+                elements.manualPreviewNote.textContent = percent == null
+                    ? "تم إنشاء معاينة Dewarping مؤهلة للمراجعة."
+                    : `خفض التعرج المقدر: ${percent}% · راجع النص بصريًا ثم اعتمد إذا كانت النتيجة سليمة.`;
+            }
+            updateManualApprovalUI();
+            updateControls();
+            return;
+        }
         state.manualPreviewCandidate = {
             result: data.result || data.preview || null,
             operation: data.operation || {
