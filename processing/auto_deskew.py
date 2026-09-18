@@ -188,12 +188,16 @@ def _apply_safe_crop(image, safe_crop):
 
     return cropped, True, "applied: post-deskew framing retained a safe amount of document area"
 
-def apply_auto_deskew(image, skew_result):
+def apply_auto_deskew(image, skew_result, min_confidence=MIN_AUTO_DESKEW_CONFIDENCE):
     _validate_image(image)
 
     angle, confidence = _validate_skew_result(skew_result)
+    min_confidence = float(min_confidence)
 
-    if confidence < MIN_AUTO_DESKEW_CONFIDENCE:
+    if not np.isfinite(min_confidence) or not 0.0 <= min_confidence <= 1.0:
+        raise ValueError("min_confidence must be between 0 and 1.")
+
+    if confidence < min_confidence:
         return {
             "applied": False,
             "image": image.copy(),
