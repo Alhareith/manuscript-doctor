@@ -86,6 +86,18 @@ function selectOperationCard(operationId) {
 
     updateControls();
 
+    if (resolvedOperationId === "perspective_crop") {
+        const sourceUrl = state.manualWorkingResultId
+            ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}?source=${Date.now()}`
+            : manualOriginalUrl();
+        if (sourceUrl && elements.manualLivePreview) elements.manualLivePreview.src = sourceUrl;
+        if (elements.manualPreviewStatus) elements.manualPreviewStatus.innerHTML = '<i class="bi bi-bounding-box-circles"></i> حدد زوايا الوثيقة';
+        if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "ضع النقاط الأربع على زوايا الورقة ثم اضغط «اعتماد العملية».";
+        if (typeof initializePerspectiveGuide === "function") requestAnimationFrame(initializePerspectiveGuide);
+        updateManualApprovalUI();
+        return;
+    }
+
     if (resolvedOperationId === "crop") {
         const sourceUrl = state.manualWorkingResultId
             ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}?source=${Date.now()}`
