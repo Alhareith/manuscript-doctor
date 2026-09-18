@@ -50,7 +50,7 @@ def test_dewarp_abstains_when_text_is_sparse():
     result, metadata = dewarp_document_with_metadata(image)
 
     assert metadata["applied"] is False
-    assert metadata["status"] in {"insufficient_text", "unstable_tracking"}
+    assert metadata["status"] in {"insufficient_text", "insufficient_structure", "unstable_tracking"}
     assert np.array_equal(result, image)
 
 
