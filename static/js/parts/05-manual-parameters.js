@@ -187,16 +187,34 @@ function syncCropGuide() {
 }
 
 function getCropRenderRect(preview, dimensions) {
-    const box = preview?.getBoundingClientRect();
-    if (!box?.width || !box?.height || !dimensions?.width || !dimensions?.height) return box;
+    if (!preview || !dimensions?.width || !dimensions?.height) return null;
+
+    const wrap = preview.parentElement;
+    const wrapRect = wrap?.getBoundingClientRect();
+    if (!wrapRect?.width || !wrapRect?.height) return preview.getBoundingClientRect();
+
     const sourceRatio = dimensions.width / dimensions.height;
-    const boxRatio = box.width / box.height;
-    if (sourceRatio > boxRatio) {
-        const height = box.width / sourceRatio;
-        return { left: box.left, top: box.top + (box.height - height) / 2, width: box.width, height };
+    const wrapRatio = wrapRect.width / wrapRect.height;
+
+    if (sourceRatio > wrapRatio) {
+        const width = wrapRect.width;
+        const height = width / sourceRatio;
+        return {
+            left: wrapRect.left,
+            top: wrapRect.top + ((wrapRect.height - height) / 2),
+            width,
+            height
+        };
     }
-    const width = box.height * sourceRatio;
-    return { left: box.left + (box.width - width) / 2, top: box.top, width, height: box.height };
+
+    const height = wrapRect.height;
+    const width = height * sourceRatio;
+    return {
+        left: wrapRect.left + ((wrapRect.width - width) / 2),
+        top: wrapRect.top,
+        width,
+        height
+    };
 }
 
 function beginCropDrag(event) {
