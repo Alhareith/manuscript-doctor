@@ -1,0 +1,45 @@
+/* Final preview integrity layer: the phone editor must show the complete image. */
+
+.manual-preview-image-wrap {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.manual-preview-image-wrap > img {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 720px) {
+    .manual-preview-stage {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+
+    .manual-preview-card {
+        min-height: 0 !important;
+    }
+
+    .manual-preview-image-wrap {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        aspect-ratio: var(--preview-aspect, 4 / 3);
+        overflow: hidden;
+    }
+
+    .manual-preview-image-wrap > img {
+        max-height: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+    }
+}
