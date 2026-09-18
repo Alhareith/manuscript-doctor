@@ -16,6 +16,8 @@ BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
 SKEW_DETECTION_MAX_DIMENSION = 1280
 PREPARATION_MIN_FRAME_CLEARANCE_RATIO = 0.005
 POST_PERSPECTIVE_DESKEW_MIN_CONFIDENCE = 0.68
+POST_PERSPECTIVE_REFINEMENT_MIN_CONFIDENCE = 0.65
+POST_PERSPECTIVE_REFINEMENT_MAX_ANGLE = 5.0
 
 
 def _validate_image(image):
@@ -304,12 +306,71 @@ def prepare_document(
     )
     crop_applied = bool(perspective_allowed and deskew_result.get("crop_applied"))
     crop_reason = deskew_result.get("crop_reason")
+    refinement = None
 
     if not perspective_allowed:
         crop_reason = (
             "skipped: document is not safely framed for automatic crop; "
             "deskew correction keeps the complete current frame"
         )
+
+    if deskew_result["applied"]:
+        current = deskew_result["final_image"] if crop_applied else deskew_result["image"]
+
+        # A trusted perspective warp can leave a small residual rotational skew.
+        # Permit one conservative refinement only when:
+        # - perspective itself was accepted,
+        # - the first correction was already accepted,
+        # - residual evidence is reasonably strong,
+        # - the residual angle is bounded,
+        # - and the second pass demonstrably reduces the residual.
+        if perspective_allowed:
+            residual_before = _detect_skew_on_proxy(current)
+            residual_angle = abs(float(residual_before.get("angle", 0.0)))
+            residual_confidence = float(residual_before.get("confidence", 0.0))
+
+            if (
+                residual_angle > 0.75
+                and residual_angle <= POST_PERSPECTIVE_REFINEMENT_MAX_ANGLE
+                and residual_confidence >= POST_PERSPECTIVE_REFINEMENT_MIN_CONFIDENCE
+            ):
+                refinement_result = apply_auto_deskew(
+                    current,
+                    residual_before,
+                    min_confidence=POST_PERSPECTIVE_REFINEMENT_MIN_CONFIDENCE,
+                )
+
+                if refinement_result.get("applied"):
+                    # Preserve the whole frame during the refinement pass.
+                    refined_candidate = refinement_result["image"]
+                    residual_after = _detect_skew_on_proxy(refined_candidate)
+                    after_angle = abs(float(residual_after.get("angle", 0.0)))
+                    after_confidence = float(residual_after.get("confidence", 0.0))
+
+                    if (
+                        after_confidence == 0.0
+                        or after_angle + 0.05 < residual_angle
+                    ):
+                        current = refined_candidate
+                        refinement = {
+                            "applied": True,
+                            "angle": refinement_result["angle"],
+                            "confidence": refinement_result["confidence"],
+                            "before": residual_before,
+                            "after": residual_after,
+                            "crop_applied": False,
+                            "reason": "accepted: bounded residual deskew reduced the measured skew",
+                        }
+                    else:
+                        refinement = {
+                            "applied": False,
+                            "angle": refinement_result["angle"],
+                            "confidence": refinement_result["confidence"],
+                            "before": residual_before,
+                            "after": residual_after,
+                            "crop_applied": False,
+                            "reason": "rejected: residual deskew did not improve the measured skew",
+                        }
 
     result["deskew"] = {
         "applied": deskew_result["applied"],
@@ -319,16 +380,23 @@ def prepare_document(
         "safe_crop": deskew_result.get("safe_crop") if perspective_allowed else None,
         "crop_applied": crop_applied,
         "crop_reason": crop_reason,
+        "refinement": refinement,
     }
 
     if deskew_result["applied"]:
-        current = deskew_result["final_image"] if crop_applied else deskew_result["image"]
         result["steps"].append({
             "step": "auto_deskew",
             "status": "applied",
             "angle": deskew_result["angle"],
             "crop_applied": crop_applied,
         })
+        if refinement and refinement.get("applied"):
+            result["steps"].append({
+                "step": "auto_deskew_refinement",
+                "status": "applied",
+                "angle": refinement["angle"],
+                "crop_applied": False,
+            })
     else:
         result["steps"].append({
             "step": "auto_deskew",
