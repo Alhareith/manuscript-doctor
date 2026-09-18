@@ -262,6 +262,13 @@ function refreshCropParameterBounds({ reset = false } = {}) {
     syncCropGuide();
 }
 
+function syncPreviewAspectFromImage(image) {
+    if (!image?.naturalWidth || !image?.naturalHeight) return;
+    const wrap = image.closest(".manual-preview-image-wrap");
+    if (!wrap) return;
+    wrap.style.setProperty("--preview-aspect", `${image.naturalWidth} / ${image.naturalHeight}`);
+}
+
 function bindCropEditorEnhancements() {
     const wrap = document.querySelector(".manual-live-image-wrap");
     if (wrap && wrap.dataset.cropEditorBound !== "true") {
@@ -275,9 +282,13 @@ function bindCropEditorEnhancements() {
 
     elements.manualOperation?.addEventListener("change", syncCropEditorMode);
     elements.manualLivePreview?.addEventListener("load", () => {
+        syncPreviewAspectFromImage(elements.manualLivePreview);
         if (elements.manualOperation?.value === "crop") {
             requestAnimationFrame(() => refreshCropParameterBounds({ reset: false }));
         }
+    });
+    elements.manualOriginalPreview?.addEventListener("load", () => {
+        syncPreviewAspectFromImage(elements.manualOriginalPreview);
     });
 
     if (typeof createLocalManualPreview === "function") {
