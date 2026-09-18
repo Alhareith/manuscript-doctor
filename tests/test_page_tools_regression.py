@@ -17,6 +17,9 @@ REAL_PREPARATION_CASES = [
     "b02.jpg",
     "check/c04.jpg",
     "check/c05.jpg",
+]
+
+SAFE_DEFER_CASES = [
     "check/c06.jpg",
 ]
 
@@ -101,9 +104,11 @@ def test_real_documents_survive_exact_upload_and_preparation(
     assert preview_data["preparation_id"]
     assert preview_data["source_result_id"] is None
     assert preparation["prepared"] is True
+    perspective = preparation.get("perspective") or {}
+    deskew = preparation.get("deskew") or {}
     assert (
-        preparation.get("perspective", {}).get("applied") is True
-        or preparation.get("deskew", {}).get("applied") is True
+        perspective.get("applied") is True
+        or deskew.get("applied") is True
     )
 
     approval = client.post(
@@ -134,6 +139,33 @@ def test_real_documents_survive_exact_upload_and_preparation(
     # Geometric preparation must never create an implausibly huge canvas.
     assert decoded.shape[0] <= max(original.shape[0], original.shape[1]) * 2
     assert decoded.shape[1] <= max(original.shape[0], original.shape[1]) * 2
+
+
+@pytest.mark.parametrize("relative_path", SAFE_DEFER_CASES)
+def test_uncertain_real_document_defers_without_unsafe_automatic_crop(
+    tmp_path,
+    relative_path,
+):
+    client = make_client(tmp_path)
+    path = INPUT_DIR / relative_path
+    image_id, _ = upload_exact(client, path)
+
+    preview = client.post(
+        f"/api/images/{image_id}/preparation/preview",
+        json={"source_result_id": None},
+    )
+
+    assert preview.status_code == 422
+    payload = preview.get_json()
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "PREPARATION_REJECTED"
+
+    preparation = payload["error"]["details"]["preparation"]
+    assert preparation["prepared"] is False
+    assert preparation["boundary"]["status"] == "review_required"
+    assert preparation["boundary"]["automatic_crop_eligible"] is False
+    assert preparation["perspective"] is None
+    assert preparation["deskew"]["applied"] is False
 
 
 def test_full_image_crop_is_not_artificially_limited(tmp_path):
