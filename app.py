@@ -573,6 +573,7 @@ def create_app(test_config=None):
                 )
 
         dewarping = None
+        dewarping = None
         try:
             if operation_id == "document_dewarp":
                 processed, dewarping = dewarp_document_with_metadata(working_image)
@@ -755,6 +756,7 @@ def create_app(test_config=None):
                     500,
                 )
 
+        dewarping = None
         dewarping = None
         try:
             if operation_id == "crop":
