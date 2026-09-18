@@ -23,6 +23,9 @@ function renderParameterFields(operationId) {
         if (operationId === "super_resolution") {
             note.textContent = "يكبر الوثيقة 2× أو 3× ثم يحسن التباين المحلي والحواف الموجودة فقط. لا يعيد حرفًا أو تفصيلًا غير موجود في الصورة الأصلية.";
         }
+        if (operationId === "document_dewarp") {
+            note.textContent = "يفحص انحناء أسطر النص أولًا. يطبق Mesh Dewarping فقط إذا تجاوز التحسن المقدر 70%؛ وإذا كانت الصفحة مستقيمة أو كانت أسطر النص غير كافية يمتنع عن التعديل.";
+        }
 
         elements.manualParameters.appendChild(note);
         syncCropGuide();
