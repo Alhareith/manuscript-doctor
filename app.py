@@ -396,24 +396,20 @@ def create_app(test_config=None):
             return error_response("NO_FILE", "لم يتم إرسال ملف صورة.", 400)
 
         filename = uploaded_file.filename or ""
-
         if not filename.strip():
             return error_response("EMPTY_FILENAME", "اسم الملف فارغ.", 400)
 
         extension = get_extension(filename)
-
         if extension not in ALLOWED_EXTENSIONS:
             return error_response("UNSUPPORTED_FILE_TYPE", "نوع الملف غير مدعوم.", 400)
 
         raw_data = uploaded_file.read()
-
         if not raw_data:
             return error_response(
                 "UNREADABLE_IMAGE", "ملف الصورة فارغ أو غير قابل للقراءة.", 400
             )
 
         image = decode_image(raw_data)
-
         if image is None:
             return error_response(
                 "UNREADABLE_IMAGE", "تعذر قراءة الملف كصورة صالحة.", 400
@@ -422,31 +418,51 @@ def create_app(test_config=None):
         if image.dtype != np.uint8:
             return error_response(
                 "UNSUPPORTED_IMAGE_DEPTH",
-                ("عمق الصورة غير مدعوم. " "استخدم صورة JPG أو PNG " "بعمق 8-bit."),
+                "عمق الصورة غير مدعوم. استخدم صورة JPG أو PNG بعمق 8-bit.",
                 400,
             )
 
         height, width = image.shape[:2]
-
         pixel_count = int(height) * int(width)
-
         if pixel_count > app.config["MAX_IMAGE_PIXELS"]:
             return error_response(
                 "IMAGE_DIMENSIONS_TOO_LARGE", "أبعاد الصورة أكبر من الحد المسموح.", 400
             )
 
+        image_id = uuid4().hex
+        output_path = upload_folder / f"{image_id}.{extension}"
+
+        try:
+            output_path.write_bytes(raw_data)
+        except OSError:
+            return error_response("INTERNAL_ERROR", "تعذر حفظ الصورة.", 500)
+
+        image_payload = {
+            "image_id": image_id,
+            "original_name": display_filename(filename),
+            "format": extension,
+            **image_dimensions(image),
+        }
+
+        # The browser uses this mode so upload/storage finishes quickly in one
+        # short request. Examination is then performed by a dedicated request.
+        if request.args.get("defer_analysis") == "1":
+            return success_response(
+                data={"image": image_payload, "analysis_deferred": True},
+                message="تم رفع الصورة، والفحص جاهز للبدء.",
+                status=201,
+            )
+
+        # Backward-compatible path retained for tests/API clients that expect
+        # upload + examination in one response.
         analysis_started = perf_counter()
-        analysis_mode = "bounded_proxy"
         try:
             analysis = analyze_image(image)
+            analysis_mode = "bounded_proxy"
         except Exception as primary_error:
             app.logger.exception("Primary examination failed; retrying with smaller proxy.")
             try:
-                fallback_image = resize_for_preview(
-                    image,
-                    max_width=900,
-                    max_height=900,
-                )
+                fallback_image = resize_for_preview(image, max_width=900, max_height=900)
                 analysis = analyze_image(fallback_image)
                 analysis["dimensions"] = image_dimensions(image)
                 analysis_mode = "fallback_proxy"
@@ -454,7 +470,7 @@ def create_app(test_config=None):
                 app.logger.exception("Fallback examination failed.")
                 return error_response(
                     "PROCESSING_FAILED",
-                    "تعذر فحص الصورة حتى بعد إعادة المحاولة بنسخة مخففة. جرّب صورة JPG/PNG أخرى أو أبعادًا أصغر.",
+                    "تعذر فحص الصورة حتى بعد إعادة المحاولة بنسخة مخففة.",
                     500,
                     details={"stage": "analysis", "primary": type(primary_error).__name__},
                 )
@@ -472,42 +488,92 @@ def create_app(test_config=None):
                 },
             }
 
-        analysis_elapsed_ms = round((perf_counter() - analysis_started) * 1000.0, 1)
+        return success_response(
+            data={
+                "image": image_payload,
+                "analysis": {
+                    "dimensions": analysis["dimensions"],
+                    "metrics": analysis["metrics"],
+                    "mode": analysis_mode,
+                    "elapsed_ms": round((perf_counter() - analysis_started) * 1000.0, 1),
+                },
+                "diagnoses": analysis["diagnoses"],
+                "preservation_profile": analysis["preservation_profile"],
+                "recommendations": recommendation_result["recommendations"],
+                "excluded_from_automatic": recommendation_result["excluded_from_automatic"],
+                "recommendation_summary": recommendation_result["summary"],
+            },
+            message="تم رفع الصورة وتحليلها بنجاح.",
+            status=201,
+        )
 
-        image_id = uuid4().hex
+    @app.post("/api/images/<image_id>/analysis")
+    def analyze_uploaded_image(image_id):
+        if not is_valid_resource_id(image_id):
+            return error_response("INVALID_IMAGE_ID", "معرف الصورة غير صالح.", 400)
 
-        output_path = upload_folder / f"{image_id}.{extension}"
+        path = resolve_upload_file(upload_folder, image_id)
+        if path is None:
+            return error_response("IMAGE_NOT_FOUND", "الصورة غير موجودة.", 404)
+
+        image = read_stored_image(path)
+        if image is None:
+            return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
+
+        analysis_started = perf_counter()
+        analysis_mode = "bounded_proxy"
 
         try:
-            output_path.write_bytes(raw_data)
+            analysis = analyze_image(image)
+        except Exception as primary_error:
+            app.logger.exception("Primary examination failed; retrying with smaller proxy.")
+            try:
+                fallback_image = resize_for_preview(image, max_width=900, max_height=900)
+                analysis = analyze_image(fallback_image)
+                analysis["dimensions"] = image_dimensions(image)
+                analysis_mode = "fallback_proxy"
+            except Exception:
+                app.logger.exception("Fallback examination failed.")
+                return error_response(
+                    "PROCESSING_FAILED",
+                    "تعذر فحص الصورة حتى بعد إعادة المحاولة بنسخة مخففة.",
+                    500,
+                    details={"stage": "analysis", "primary": type(primary_error).__name__},
+                )
 
-        except OSError:
-            return error_response("INTERNAL_ERROR", "تعذر حفظ الصورة.", 500)
+        try:
+            recommendation_result = recommend_treatment(analysis)
+        except Exception:
+            app.logger.exception("Recommendation generation failed after successful analysis.")
+            recommendation_result = {
+                "recommendations": [],
+                "excluded_from_automatic": [],
+                "summary": {
+                    "needs_treatment": False,
+                    "message": "اكتمل الفحص، لكن تعذر إنشاء التوصيات التلقائية. ما زالت الأدوات اليدوية متاحة.",
+                },
+            }
 
         return success_response(
             data={
                 "image": {
                     "image_id": image_id,
-                    "original_name": (display_filename(filename)),
-                    "format": extension,
                     **image_dimensions(image),
                 },
                 "analysis": {
-                    "dimensions": (analysis["dimensions"]),
-                    "metrics": (analysis["metrics"]),
+                    "dimensions": analysis["dimensions"],
+                    "metrics": analysis["metrics"],
                     "mode": analysis_mode,
-                    "elapsed_ms": analysis_elapsed_ms,
+                    "elapsed_ms": round((perf_counter() - analysis_started) * 1000.0, 1),
                 },
-                "diagnoses": (analysis["diagnoses"]),
-                "preservation_profile": (analysis["preservation_profile"]),
-                "recommendations": (recommendation_result["recommendations"]),
-                "excluded_from_automatic": (
-                    recommendation_result["excluded_from_automatic"]
-                ),
-                "recommendation_summary": (recommendation_result["summary"]),
+                "diagnoses": analysis["diagnoses"],
+                "preservation_profile": analysis["preservation_profile"],
+                "recommendations": recommendation_result["recommendations"],
+                "excluded_from_automatic": recommendation_result["excluded_from_automatic"],
+                "recommendation_summary": recommendation_result["summary"],
             },
-            message=("تم رفع الصورة وتحليلها بنجاح."),
-            status=201,
+            message="تم فحص الوثيقة بنجاح.",
+            status=200,
         )
 
     @app.get("/api/images/<image_id>")
