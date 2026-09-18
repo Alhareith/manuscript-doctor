@@ -723,7 +723,7 @@ def create_app(test_config=None):
         }
 
         try:
-            preservation = verify_preservation(original, processed)
+            preservation = verify_preservation(working_image, processed)
 
         except Exception:
             verification = {
@@ -1325,25 +1325,52 @@ def create_app(test_config=None):
                 409,
             )
 
-        source_path = resolve_upload_file(upload_folder, image_id)
-        original_image = read_stored_image(source_path) if source_path is not None else None
+        source_result_id = manifest.get("source_result_id")
+        if source_result_id is not None and not is_valid_resource_id(source_result_id):
+            return error_response(
+                "INVALID_SOURCE_RESULT_ID",
+                "معرف النتيجة المصدرية المخزن غير صالح.",
+                400,
+            )
 
-        if original_image is None:
+        if source_result_id:
+            source_path = resolve_result_file(result_folder, source_result_id)
+            source_manifest = read_manual_manifest(result_folder, source_result_id)
+
+            if source_path is None or source_manifest is None:
+                return error_response(
+                    "SOURCE_RESULT_NOT_FOUND",
+                    "النتيجة المصدرية لم تعد متاحة لاعتماد التجهيز.",
+                    404,
+                )
+
+            if source_manifest.get("source_image_id") != image_id:
+                return error_response(
+                    "SOURCE_RESULT_MISMATCH",
+                    "النتيجة المصدرية لا تخص هذه الوثيقة.",
+                    400,
+                )
+        else:
+            source_path = resolve_upload_file(upload_folder, image_id)
+
+        working_image = read_stored_image(source_path) if source_path is not None else None
+
+        if working_image is None:
             return error_response(
                 "UNREADABLE_IMAGE",
-                "تعذر قراءة الصورة الأصلية عند اعتماد التجهيز.",
+                "تعذر قراءة مصدر التجهيز عند الاعتماد.",
                 500,
             )
 
         try:
             final_preparation = prepare_document(
-                original_image,
+                working_image,
                 boundary_detector=detect_preparation_boundary,
             )
             if not final_preparation.get("prepared"):
                 return error_response(
                     "PREPARATION_REJECTED",
-                    "تعذر إعادة تجهيز الصورة الأصلية بدقتها الكاملة.",
+                    "تعذر إعادة تجهيز مصدر الوثيقة بالدقة الكاملة.",
                     422,
                 )
 
@@ -1360,7 +1387,9 @@ def create_app(test_config=None):
                 source_image_id=image_id,
                 origin="preparation",
                 status="approved",
-                parent_result_id=None,
+                parent_result_id=source_result_id,
+                operation_id="document_prepare",
+                parameters={},
                 method_used=final_method,
                 extra={
                     "preparation_id": preparation_id,
@@ -1388,13 +1417,15 @@ def create_app(test_config=None):
         return success_response(
             data={
                 "preparation_id": preparation_id,
+                "source_result_id": source_result_id,
                 "result": build_result_metadata(
                     result_id,
                     prepared_image,
                     image_id,
                     origin="preparation",
                     status="approved",
-                    parent_result_id=None,
+                    parent_result_id=source_result_id,
+                    operation_id="document_prepare",
                     method_used=final_method,
                 ),
                 "preparation": final_metadata,
