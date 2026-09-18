@@ -770,7 +770,7 @@ def test_error_response_contract(
 
 def test_deferred_upload_then_analysis(app_and_client):
     _, client, _, _ = app_and_client
-    image = make_document_image()
+    image = make_document()
     ok, encoded = cv2.imencode(".png", image)
     assert ok
 
