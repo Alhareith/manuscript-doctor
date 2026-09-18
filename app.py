@@ -1,5 +1,6 @@
 from pathlib import Path
 from uuid import UUID, uuid4
+from time import perf_counter
 
 import cv2
 import numpy as np
@@ -434,15 +435,44 @@ def create_app(test_config=None):
                 "IMAGE_DIMENSIONS_TOO_LARGE", "أبعاد الصورة أكبر من الحد المسموح.", 400
             )
 
+        analysis_started = perf_counter()
+        analysis_mode = "bounded_proxy"
         try:
             analysis = analyze_image(image)
+        except Exception as primary_error:
+            app.logger.exception("Primary examination failed; retrying with smaller proxy.")
+            try:
+                fallback_image = resize_for_preview(
+                    image,
+                    max_width=900,
+                    max_height=900,
+                )
+                analysis = analyze_image(fallback_image)
+                analysis["dimensions"] = image_dimensions(image)
+                analysis_mode = "fallback_proxy"
+            except Exception:
+                app.logger.exception("Fallback examination failed.")
+                return error_response(
+                    "PROCESSING_FAILED",
+                    "تعذر فحص الصورة حتى بعد إعادة المحاولة بنسخة مخففة. جرّب صورة JPG/PNG أخرى أو أبعادًا أصغر.",
+                    500,
+                    details={"stage": "analysis", "primary": type(primary_error).__name__},
+                )
 
+        try:
             recommendation_result = recommend_treatment(analysis)
-
         except Exception:
-            return error_response(
-                "PROCESSING_FAILED", ("تعذر تحليل الصورة " "وإنشاء التوصيات."), 500
-            )
+            app.logger.exception("Recommendation generation failed after successful analysis.")
+            recommendation_result = {
+                "recommendations": [],
+                "excluded_from_automatic": [],
+                "summary": {
+                    "needs_treatment": False,
+                    "message": "اكتمل الفحص، لكن تعذر إنشاء التوصيات التلقائية. ما زالت الأدوات اليدوية متاحة.",
+                },
+            }
+
+        analysis_elapsed_ms = round((perf_counter() - analysis_started) * 1000.0, 1)
 
         image_id = uuid4().hex
 
@@ -465,6 +495,8 @@ def create_app(test_config=None):
                 "analysis": {
                     "dimensions": (analysis["dimensions"]),
                     "metrics": (analysis["metrics"]),
+                    "mode": analysis_mode,
+                    "elapsed_ms": analysis_elapsed_ms,
                 },
                 "diagnoses": (analysis["diagnoses"]),
                 "preservation_profile": (analysis["preservation_profile"]),
