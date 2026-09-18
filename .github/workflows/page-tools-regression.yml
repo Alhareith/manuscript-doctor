@@ -33,6 +33,10 @@ jobs:
           python -m py_compile app.py
           python -m compileall -q processing
 
+      - name: Report real-image preparation diagnostics
+        run: |
+          python tools/page_tools_diagnostics.py
+
       - name: Run page preparation regression tests
         run: |
           python -m pytest -q \
