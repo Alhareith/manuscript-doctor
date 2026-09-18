@@ -17,6 +17,7 @@ from .ops.course_ops import contrast_stretch, gaussian_blur, laplacian_sharpen, 
 from .ops.document import background_suppress, faded_text_enhance, weak_structure_suppress
 from .ops.geometry import crop, deskew, flip_horizontal, flip_vertical, rotate_left, rotate_right
 from .ops.super_resolution import super_resolution
+from .ops.dewarp import dewarp_document
 from .ops.registry import OPERATIONS, apply_operation, get_operation, list_operations
 
 
@@ -120,5 +121,5 @@ __all__ = [
     "erosion", "dilation", "morphological_gradient", "gaussian_blur",
     "laplacian_sharpen", "sobel_edges", "contrast_stretch", "log_transform",
     "deskew", "crop", "rotate_right", "rotate_left", "flip_vertical", "flip_horizontal",
-    "super_resolution",
+    "super_resolution", "dewarp_document",
 ]
