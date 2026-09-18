@@ -89,3 +89,57 @@
         transition: none !important;
     }
 }
+
+
+/* Manual perspective scanner */
+.manual-perspective-guide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.manual-perspective-guide .perspective-polygon {
+    fill: rgba(212, 175, 55, .12);
+    stroke: rgba(212, 175, 55, .95);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+}
+
+.manual-perspective-guide .perspective-edge {
+    stroke: rgba(255, 255, 255, .92);
+    stroke-width: 1;
+    stroke-dasharray: 7 5;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+}
+
+.manual-perspective-guide .perspective-handle {
+    fill: #ffffff;
+    stroke: #cda434;
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+    pointer-events: all;
+    cursor: grab;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .35));
+    touch-action: none;
+}
+
+.manual-perspective-guide .perspective-handle:active {
+    cursor: grabbing;
+}
+
+.manual-live-image-wrap:has(.manual-perspective-guide:not(.hidden)) {
+    touch-action: none;
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+    .manual-perspective-guide .perspective-handle {
+        r: 13;
+        stroke-width: 3.5;
+    }
+}
