@@ -105,8 +105,15 @@ function selectOperationCard(operationId) {
             : manualOriginalUrl();
         if (sourceUrl && elements.manualLivePreview) elements.manualLivePreview.src = sourceUrl;
         if (elements.manualPreviewStatus) elements.manualPreviewStatus.innerHTML = '<i class="bi bi-crop"></i> حدد منطقة القص';
-        if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "حرّك إطار القص على الصورة، ثم اضغط «اعتماد العملية» لتطبيقه.";
-        requestAnimationFrame(syncCropGuide);
+        if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "حرّك إطار القص على كامل الصورة، ثم اضغط «اعتماد العملية» لتطبيقه.";
+        if (typeof syncCropEditorMode === "function") syncCropEditorMode();
+        requestAnimationFrame(() => {
+            if (typeof refreshCropParameterBounds === "function") {
+                refreshCropParameterBounds({ reset: true });
+            } else {
+                syncCropGuide();
+            }
+        });
         updateManualApprovalUI();
         return;
     }
