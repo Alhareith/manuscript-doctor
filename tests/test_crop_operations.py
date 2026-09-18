@@ -116,3 +116,49 @@ def test_manual_crop_is_exact_on_large_source_image():
     assert result.shape == (1800, 2400, 3)
     assert np.array_equal(result[0, 0], image[600, 800])
     assert np.array_equal(result[-1, -1], image[2399, 3199])
+
+
+def test_perspective_crop_rectifies_manual_four_corner_scan():
+    image = np.full((300, 420, 3), 35, dtype=np.uint8)
+    source = np.full((180, 260, 3), 235, dtype=np.uint8)
+    cv2.rectangle(source, (18, 18), (242, 162), (25, 25, 25), 3)
+    cv2.putText(source, "DOC", (75, 105), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (30, 30, 30), 3)
+
+    src = np.float32([[0, 0], [259, 0], [259, 179], [0, 179]])
+    dst = np.float32([[65, 42], [350, 65], [330, 250], [45, 230]])
+    warped = cv2.warpPerspective(
+        source,
+        cv2.getPerspectiveTransform(src, dst),
+        (420, 300),
+        borderValue=(35, 35, 35),
+    )
+
+    result = apply_operation(
+        "perspective_crop",
+        warped,
+        {
+            "x1": 65, "y1": 42,
+            "x2": 350, "y2": 65,
+            "x3": 330, "y3": 250,
+            "x4": 45, "y4": 230,
+        },
+    )
+
+    assert result.shape[0] >= 180
+    assert result.shape[1] >= 260
+    assert float(np.mean(result)) > float(np.mean(warped))
+
+
+def test_perspective_crop_rejects_crossed_corners():
+    image = make_image()
+    with pytest.raises(ValueError):
+        apply_operation(
+            "perspective_crop",
+            image,
+            {
+                "x1": 10, "y1": 10,
+                "x2": 160, "y2": 100,
+                "x3": 160, "y3": 10,
+                "x4": 10, "y4": 100,
+            },
+        )
