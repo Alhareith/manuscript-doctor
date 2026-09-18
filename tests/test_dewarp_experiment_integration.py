@@ -98,3 +98,58 @@ def test_dewarp_preview_api_returns_decision_metadata(tmp_path):
     assert isinstance(data["dewarping"], dict)
     assert "applied" in data["dewarping"]
     assert data["preview"]["data_url"].startswith("data:image/")
+
+
+def _irregular_form_page(width=1000, height=760):
+    image = np.full((height, width), 245, dtype=np.uint8)
+    rows = [55, 95, 145, 215, 280, 300, 370, 455, 545, 640, 705]
+    for y in rows:
+        cv2.line(image, (45, y), (width - 45, y), 70, 2)
+    for x in [45, 220, 470, 700, width - 45]:
+        cv2.line(image, (x, 55), (x, 705), 90, 1)
+    for y in [82, 128, 190, 260, 340, 420, 505, 600, 685]:
+        cv2.putText(
+            image,
+            "FIELD VALUE",
+            (75, y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            55,
+            1,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            image,
+            "DOCUMENT",
+            (560, y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            55,
+            1,
+            cv2.LINE_AA,
+        )
+    return image
+
+
+def test_dewarp_handles_irregular_form_structure():
+    source = _irregular_form_page()
+    h, w = source.shape
+    yy, xx = np.indices((h, w), dtype=np.float32)
+    delta = (
+        22.0 * np.sin(2.0 * np.pi * xx / w)
+        + 6.0 * np.sin(4.0 * np.pi * xx / w)
+    ).astype(np.float32)
+    warped = cv2.remap(
+        source,
+        xx,
+        yy - delta,
+        cv2.INTER_CUBIC,
+        borderMode=cv2.BORDER_REPLICATE,
+    )
+
+    result, metadata = dewarp_document_with_metadata(warped)
+
+    assert metadata["applied"] is True
+    assert metadata["curvature_reduction"] >= 0.70
+    assert metadata["method"] in {"text_lines", "edge_profile"}
+    assert result.shape == warped.shape
