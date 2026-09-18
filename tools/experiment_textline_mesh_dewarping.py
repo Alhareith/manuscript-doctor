@@ -56,10 +56,38 @@ def _find_peaks(signal: np.ndarray, min_distance: int, threshold: float) -> np.n
     return np.array(sorted(accepted), dtype=np.int32)
 
 
-def detect_text_lines(gray: np.ndarray, strips: int = 31) -> Detection:
+def _strip_profile(ink: np.ndarray, center: int, half_width: int) -> np.ndarray:
+    height, width = ink.shape[:2]
+    left = max(0, int(center - half_width))
+    right = min(width, int(center + half_width + 1))
+    profile = ink[:, left:right].mean(axis=1).astype(np.float32)
+    return cv2.GaussianBlur(
+        profile.reshape(-1, 1),
+        (1, 0),
+        sigmaX=0,
+        sigmaY=1.4,
+    ).ravel()
+
+
+def detect_text_lines(gray: np.ndarray, strips: int = 41) -> Detection:
+    """Track text baselines continuously from the page centre to both sides.
+
+    The previous prototype searched for every line independently in every
+    vertical strip. That allowed two tracks to lock onto the same physical
+    line, or for one track to jump to its neighbour. This version seeds lines
+    once in the centre strip and then follows each seed outward with a bounded
+    velocity model. Track ordering and minimum separation are enforced at
+    every strip, so crossing and duplicate tracks are rejected instead of
+    being used to build a destructive mesh.
+    """
     height, width = gray.shape[:2]
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-    _, ink = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    _, ink = cv2.threshold(
+        blurred,
+        0,
+        255,
+        cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
+    )
     ink = cv2.morphologyEx(
         ink,
         cv2.MORPH_CLOSE,
@@ -67,56 +95,153 @@ def detect_text_lines(gray: np.ndarray, strips: int = 31) -> Detection:
     )
 
     projection = ink.mean(axis=1).astype(np.float32)
-    projection = cv2.GaussianBlur(projection.reshape(-1, 1), (1, 0), sigmaX=0, sigmaY=2.5).ravel()
+    projection = cv2.GaussianBlur(
+        projection.reshape(-1, 1),
+        (1, 0),
+        sigmaX=0,
+        sigmaY=2.5,
+    ).ravel()
     threshold = max(2.0, float(np.percentile(projection, 72) * 0.75))
-    peaks = _find_peaks(projection, max(18, height // 50), threshold)
-    peaks = peaks[(peaks > 25) & (peaks < height - 25)]
+    global_peaks = _find_peaks(
+        projection,
+        max(18, height // 50),
+        threshold,
+    )
+    global_peaks = global_peaks[
+        (global_peaks > 25) & (global_peaks < height - 25)
+    ]
 
-    if len(peaks) < 3:
-        return Detection("insufficient_text", int(len(peaks)))
+    # Sparse pages must abstain. Four or fewer global text bands are not
+    # enough evidence to estimate a trustworthy page-wide deformation field.
+    if len(global_peaks) < 5:
+        return Detection("insufficient_text", int(len(global_peaks)))
 
-    spacing = float(np.median(np.diff(peaks))) if len(peaks) > 1 else height / 20.0
-    search = max(10, int(min(55, spacing * 0.8)))
-    centers = np.linspace(0, width - 1, strips).astype(np.int32)
-    half = max(8, width // (strips * 2))
-    tracks = np.full((len(peaks), strips), np.nan, dtype=np.float32)
+    global_spacing = np.diff(global_peaks).astype(np.float32)
+    median_spacing = float(np.median(global_spacing))
+    if (
+        median_spacing < 12.0
+        or float(np.max(global_spacing)) > median_spacing * 2.5
+    ):
+        return Detection("insufficient_text", int(len(global_peaks)))
 
-    for strip_index, center in enumerate(centers):
-        left = max(0, int(center - half))
-        right = min(width, int(center + half + 1))
-        local = ink[:, left:right].mean(axis=1).astype(np.float32)
-        local = cv2.GaussianBlur(local.reshape(-1, 1), (1, 0), sigmaX=0, sigmaY=1.5).ravel()
-        support = max(1.5, float(np.percentile(local, 65) * 0.65))
+    centers = np.linspace(
+        int(round(width * 0.05)),
+        int(round(width * 0.95)),
+        strips,
+    ).astype(np.int32)
+    strip_step = max(1, int(centers[1] - centers[0]))
+    half_width = max(6, int(round(strip_step * 0.55)))
+    profiles = np.vstack([
+        _strip_profile(ink, int(center), half_width)
+        for center in centers
+    ])
 
-        for line_index, peak in enumerate(peaks):
-            low = max(0, int(peak - search))
-            high = min(height, int(peak + search + 1))
-            offset = int(np.argmax(local[low:high]))
-            y = low + offset
-            if local[y] >= support:
-                tracks[line_index, strip_index] = y
+    middle = strips // 2
+    center_profile = profiles[middle]
+    center_threshold = max(
+        2.0,
+        float(np.percentile(center_profile, 70) * 0.55),
+    )
+    seeds = _find_peaks(
+        center_profile,
+        max(12, int(round(median_spacing * 0.55))),
+        center_threshold,
+    )
+    seeds = seeds[(seeds > 25) & (seeds < height - 25)]
 
-    coverage = np.mean(np.isfinite(tracks), axis=1)
-    tracks = tracks[coverage >= 0.60]
-    if len(tracks) < 3:
-        return Detection("insufficient_text", int(len(tracks)))
+    if len(seeds) < 5:
+        return Detection("insufficient_text", int(len(seeds)))
 
-    smoothed = []
-    x = np.arange(strips)
-    for row in tracks:
-        valid = np.isfinite(row)
-        values = np.interp(x, np.flatnonzero(valid), row[valid]).astype(np.float32)
-        values = cv2.GaussianBlur(values.reshape(1, -1), (0, 0), sigmaX=1.15).ravel()
-        smoothed.append(values)
+    seed_spacing = np.diff(seeds).astype(np.float32)
+    tracked_spacing = float(np.median(seed_spacing))
+    if (
+        tracked_spacing < 12.0
+        or float(np.min(seed_spacing)) < tracked_spacing * 0.55
+        or float(np.max(seed_spacing)) > tracked_spacing * 1.8
+    ):
+        return Detection("insufficient_text", int(len(seeds)))
 
-    tracks = np.vstack(smoothed)
-    targets = np.median(tracks, axis=1)
-    residual = tracks - targets[:, None]
+    tracks = np.full((len(seeds), strips), np.nan, dtype=np.float32)
+    tracks[:, middle] = seeds.astype(np.float32)
+
+    max_step = max(4, min(20, int(round(tracked_spacing * 0.38))))
+    minimum_separation = tracked_spacing * 0.50
+
+    for direction in (-1, 1):
+        strip_index = middle
+        velocity = np.zeros(len(seeds), dtype=np.float32)
+
+        while 0 <= strip_index + direction < strips:
+            next_index = strip_index + direction
+            current = tracks[:, strip_index].astype(np.float32)
+            prediction = current + velocity
+            next_positions = np.empty_like(current)
+
+            for line_index, predicted_y in enumerate(prediction):
+                low = max(0, int(np.floor(predicted_y - max_step)))
+                high = min(
+                    height,
+                    int(np.ceil(predicted_y + max_step + 1)),
+                )
+                if high <= low:
+                    return Detection("unstable_tracking", int(len(seeds)))
+
+                rows = np.arange(low, high, dtype=np.float32)
+                response = profiles[next_index, low:high]
+                # The response term follows the text evidence; the distance
+                # penalty keeps the line on a continuous path instead of
+                # jumping to a stronger neighbouring baseline.
+                score = response - (np.abs(rows - predicted_y) * 0.35)
+                next_positions[line_index] = rows[int(np.argmax(score))]
+
+            separation = np.diff(next_positions)
+            if np.any(separation < minimum_separation):
+                return Detection("unstable_tracking", int(len(seeds)))
+
+            tracks[:, next_index] = next_positions
+            step = np.clip(
+                next_positions - current,
+                -max_step,
+                max_step,
+            )
+            velocity = (step * 0.65) + (velocity * 0.15)
+            strip_index = next_index
+
+    smoothed = np.vstack([
+        cv2.GaussianBlur(
+            row.reshape(1, -1),
+            (0, 0),
+            sigmaX=0.8,
+        ).ravel()
+        for row in tracks
+    ]).astype(np.float32)
+
+    targets = np.median(smoothed, axis=1)
+    residual = smoothed - targets[:, None]
     common = np.median(residual, axis=0)
-    amplitude = float(np.percentile(common, 95) - np.percentile(common, 5))
+
+    # Stable lines should agree on the same page deformation. If individual
+    # tracks disagree strongly, the mesh is not trustworthy and we abstain.
+    disagreement = float(
+        np.median(np.abs(residual - common[None, :]))
+    )
+    if disagreement > max(2.0, tracked_spacing * 0.12):
+        return Detection("unstable_tracking", int(len(seeds)))
+
+    amplitude = float(
+        np.percentile(common, 95) - np.percentile(common, 5)
+    )
     rms = float(np.sqrt(np.mean(common * common)))
 
-    return Detection("ok", len(tracks), amplitude, rms, centers, tracks, targets)
+    return Detection(
+        "ok",
+        len(smoothed),
+        amplitude,
+        rms,
+        centers,
+        smoothed,
+        targets,
+    )
 
 
 def dewarp(gray: np.ndarray) -> tuple[np.ndarray, dict]:
