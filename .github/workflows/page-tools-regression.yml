@@ -1,0 +1,37 @@
+name: Page Tools Regression
+
+on:
+  push:
+    branches:
+      - experiment/textline-mesh-dewarping
+  workflow_dispatch:
+
+jobs:
+  page-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Compile Python
+        run: |
+          python -m py_compile app.py
+          python -m compileall -q processing
+
+      - name: Run page preparation regression tests
+        run: |
+          pytest -q             tests/test_page_tools_regression.py             tests/test_crop_operations.py             tests/test_orientation_operations.py             tests/test_orientation_api.py             tests/test_preparation_pipeline.py             tests/test_preparation_verification.py             tests/test_dewarp_experiment_integration.py
