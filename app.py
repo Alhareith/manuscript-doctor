@@ -18,6 +18,7 @@ from processing.document_boundary import (
 )
 from processing.preparation_pipeline import prepare_document
 from processing.preparation_verification import verify_preparation
+from processing.ops.dewarp import dewarp_document_with_metadata
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -571,8 +572,29 @@ def create_app(test_config=None):
                     500,
                 )
 
+        dewarping = None
         try:
-            processed = apply_operation(operation_id, working_image, parameters)
+            if operation_id == "document_dewarp":
+                processed, dewarping = dewarp_document_with_metadata(working_image)
+                if not dewarping.get("applied"):
+                    status_messages = {
+                        "already_flat": "الوثيقة تبدو مستقيمة ولا تحتاج إزالة تعرجات.",
+                        "insufficient_text": "لا توجد أسطر نص كافية لتطبيق إزالة التعرجات بأمان.",
+                        "unstable_tracking": "تتبع الأسطر غير مستقر؛ تم الامتناع عن تعديل الوثيقة.",
+                        "insufficient_improvement": "التحسن المتوقع أقل من معيار 70%؛ تم الامتناع عن التعديل.",
+                        "verification_failed": "تعذر التحقق من التحسن بعد التصحيح؛ لم تُعدل الوثيقة.",
+                    }
+                    return error_response(
+                        "DEWARP_NOT_APPLICABLE",
+                        status_messages.get(
+                            dewarping.get("status"),
+                            "لم تستوفِ الوثيقة شروط إزالة التعرجات بأمان.",
+                        ),
+                        409,
+                        details=dewarping,
+                    )
+            else:
+                processed = apply_operation(operation_id, working_image, parameters)
 
 
         except (ValueError, TypeError) as error:
@@ -625,6 +647,7 @@ def create_app(test_config=None):
                 "source_result_id": source_result_id,
                 "preservation": (preservation),
                 "verification": (verification),
+                "dewarping": dewarping,
             },
             message=("تم تنفيذ العملية وإنشاء النتيجة."),
             status=201,
@@ -732,10 +755,18 @@ def create_app(test_config=None):
                     500,
                 )
 
+        dewarping = None
         try:
             if operation_id == "crop":
                 processed = apply_operation(operation_id, working_image, parameters)
                 processed = resize_for_preview(processed)
+            elif operation_id == "document_dewarp":
+                preview_source = resize_for_preview(
+                    working_image,
+                    max_width=1200,
+                    max_height=1200,
+                )
+                processed, dewarping = dewarp_document_with_metadata(preview_source)
             else:
                 preview_source = resize_for_preview(working_image)
                 processed = apply_operation(operation_id, preview_source, parameters)
