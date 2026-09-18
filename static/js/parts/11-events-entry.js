@@ -24,6 +24,11 @@ function bindEvents() {
         });
         updateControls();
         clearTimeout(manualPreviewTimer);
+        if (elements.manualOperation.value === "perspective_crop") {
+            if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "ضع النقاط الأربع على زوايا الورقة ثم اضغط «اعتماد العملية».";
+            if (typeof initializePerspectiveGuide === "function") requestAnimationFrame(initializePerspectiveGuide);
+            return;
+        }
         if (elements.manualOperation.value === "crop") {
             if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "حرّك إطار القص على الصورة، ثم اضغط «اعتماد العملية» لتطبيقه.";
             syncCropGuide();
