@@ -1144,22 +1144,57 @@ def create_app(test_config=None):
         if not is_valid_resource_id(image_id):
             return error_response("INVALID_IMAGE_ID", "معرف الصورة غير صالح.", 400)
 
+        payload = request.get_json(silent=True) or {}
+        source_result_id = payload.get("source_result_id")
+
+        if source_result_id is not None:
+            if not isinstance(source_result_id, str) or not is_valid_resource_id(source_result_id):
+                return error_response(
+                    "INVALID_SOURCE_RESULT_ID",
+                    "معرف النتيجة المصدرية غير صالح.",
+                    400,
+                )
+
         upload_path = resolve_upload_file(upload_folder, image_id)
         if upload_path is None:
             return error_response("IMAGE_NOT_FOUND", "الصورة غير موجودة.", 404)
 
-        image = read_stored_image(upload_path)
-        if image is None:
+        working_image = read_stored_image(upload_path)
+        if working_image is None:
             return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
 
+        if source_result_id:
+            source_result_path = resolve_result_file(result_folder, source_result_id)
+            source_manifest = read_manual_manifest(result_folder, source_result_id)
+
+            if source_result_path is None or source_manifest is None:
+                return error_response(
+                    "SOURCE_RESULT_NOT_FOUND",
+                    "النتيجة المعتمدة المصدرية غير موجودة أو غير صالحة للسلسلة اليدوية.",
+                    404,
+                )
+
+            if source_manifest.get("source_image_id") != image_id:
+                return error_response(
+                    "SOURCE_RESULT_MISMATCH",
+                    "لا يمكن تجهيز نتيجة مرتبطة بوثيقة أخرى.",
+                    400,
+                )
+
+            working_image = read_stored_image(source_result_path)
+            if working_image is None:
+                return error_response(
+                    "UNREADABLE_SOURCE_RESULT",
+                    "تعذر قراءة النتيجة المصدرية المعتمدة.",
+                    500,
+                )
+
         try:
-            preview_source = resize_for_preview(
-                image,
-                max_width=PREPARATION_PREVIEW_MAX_DIMENSION,
-                max_height=PREPARATION_PREVIEW_MAX_DIMENSION,
-            )
+            # prepare_document already bounds boundary and skew detection internally.
+            # Run geometry against the exact working source, then only downscale the
+            # rendered preview. This keeps preview and approval in one coordinate space.
             preparation = prepare_document(
-                preview_source,
+                working_image,
                 boundary_detector=detect_preparation_boundary,
             )
         except (ValueError, RuntimeError) as error:
@@ -1170,6 +1205,7 @@ def create_app(test_config=None):
                 details=str(error),
             )
         except Exception:
+            app.logger.exception("Preparation preview failed.")
             return error_response(
                 "PREPARATION_FAILED",
                 "حدث خطأ أثناء تنفيذ Preparation.",
@@ -1191,20 +1227,28 @@ def create_app(test_config=None):
                 details={
                     "preparation": preparation_metadata,
                     "image_id": image_id,
+                    "source_result_id": source_result_id,
                 },
             )
 
         preparation_metadata["source_image_id"] = image_id
+        preparation_metadata["source_result_id"] = source_result_id
         preparation_metadata["method_used"] = boundary.get("method_used") or (
             "deskew-only" if deskew_metadata.get("applied") else None
         )
 
         try:
-            preparation_id, _ = save_preparation_preview(
+            preview_image = resize_for_preview(
                 preparation["image"],
+                max_width=PREPARATION_PREVIEW_MAX_DIMENSION,
+                max_height=PREPARATION_PREVIEW_MAX_DIMENSION,
+            )
+            preparation_id, _ = save_preparation_preview(
+                preview_image,
                 preparation_preview_folder,
                 {
                     "source_image_id": image_id,
+                    "source_result_id": source_result_id,
                     "method_used": preparation_metadata.get("method_used"),
                     "preparation": preparation_metadata,
                 },
@@ -1220,13 +1264,14 @@ def create_app(test_config=None):
             data={
                 "preparation_id": preparation_id,
                 "image_id": image_id,
+                "source_result_id": source_result_id,
                 "status": preparation_status,
                 "method_used": preparation_metadata.get("method_used"),
                 "preparation": preparation_metadata,
                 "preview": {
                     "id": preparation_id,
                     "url": f"/api/preparation/{preparation_id}",
-                    **image_dimensions(preparation["image"]),
+                    **image_dimensions(preview_image),
                 },
             },
             message="تم إنشاء معاينة Preparation.",
