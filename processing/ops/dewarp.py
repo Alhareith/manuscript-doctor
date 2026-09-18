@@ -162,9 +162,195 @@ def detect_text_line_curvature(gray, strips=41):
     }
 
 
+
+def _profile_shift(reference, candidate, max_step):
+    """Estimate the local vertical offset between neighboring horizontal-edge profiles."""
+    length = len(reference)
+    low = max(5, int(round(length * 0.05)))
+    high = min(length - 5, int(round(length * 0.95)))
+    best_score = -2.0
+    best_shift = 0
+
+    for shift in range(-max_step, max_step + 1):
+        if shift >= 0:
+            ref = reference[low : high - shift if shift else high]
+            cur = candidate[low + shift : high]
+        else:
+            amount = -shift
+            ref = reference[low + amount : high]
+            cur = candidate[low : high - amount]
+
+        if len(ref) < 30:
+            continue
+
+        ref = ref.astype(np.float32) - float(np.mean(ref))
+        cur = cur.astype(np.float32) - float(np.mean(cur))
+        denominator = float(np.linalg.norm(ref) * np.linalg.norm(cur))
+        score = float(np.dot(ref, cur) / denominator) if denominator > 1e-6 else -1.0
+
+        if score > best_score:
+            best_score = score
+            best_shift = shift
+
+    return best_score, best_shift
+
+
+def detect_horizontal_structure_curvature(gray, strips=41):
+    """
+    Conservative fallback for forms/tables where full-width text-line peaks are unreliable.
+    It tracks horizontal edge-energy continuity across neighboring vertical strips.
+    """
+    h, w = gray.shape[:2]
+    if h < 80 or w < 120:
+        return {"status": "insufficient_structure", "line_count": 0, "mode": "edge_profile"}
+
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    gradient_y = np.abs(cv2.Sobel(blurred, cv2.CV_32F, 0, 1, ksize=3))
+    gradient_x = np.abs(cv2.Sobel(blurred, cv2.CV_32F, 1, 0, ksize=3))
+
+    row_energy = gradient_y.mean(axis=1).astype(np.float32)
+    row_energy = cv2.GaussianBlur(
+        row_energy.reshape(-1, 1),
+        (1, 0),
+        sigmaX=0,
+        sigmaY=1.2,
+    ).ravel()
+    threshold = max(1.0, float(np.percentile(row_energy, 70) * 0.70))
+    peaks = _find_peaks(row_energy, max(8, h // 60), threshold)
+    peaks = peaks[(peaks > 10) & (peaks < h - 10)]
+
+    horizontal_evidence = float(
+        np.mean(gradient_y) / max(float(np.mean(gradient_x)), 1e-6)
+    )
+    if len(peaks) < 5 or horizontal_evidence < 0.65:
+        return {
+            "status": "insufficient_structure",
+            "line_count": int(len(peaks)),
+            "horizontal_evidence": horizontal_evidence,
+            "mode": "edge_profile",
+        }
+
+    centers = np.linspace(
+        int(round(w * 0.04)),
+        int(round(w * 0.96)),
+        strips,
+    ).astype(np.int32)
+    step = max(1, int(centers[1] - centers[0]))
+    half_width = max(5, int(round(step * 1.4)))
+
+    profiles = []
+    for center in centers:
+        left = max(0, int(center - half_width))
+        right = min(w, int(center + half_width + 1))
+        profile = gradient_y[:, left:right].mean(axis=1).astype(np.float32)
+        profile = cv2.GaussianBlur(
+            profile.reshape(-1, 1),
+            (1, 0),
+            sigmaX=0,
+            sigmaY=1.2,
+        ).ravel()
+        profiles.append(profile)
+    profiles = np.vstack(profiles)
+
+    middle = strips // 2
+    shifts = np.zeros(strips, dtype=np.float32)
+    confidence = np.zeros(strips, dtype=np.float32)
+    confidence[middle] = 1.0
+    max_step = max(3, min(14, int(round(h * 0.018))))
+
+    for direction in (-1, 1):
+        strip_index = middle
+        while 0 <= strip_index + direction < strips:
+            next_index = strip_index + direction
+            score, shift = _profile_shift(
+                profiles[strip_index],
+                profiles[next_index],
+                max_step,
+            )
+            shifts[next_index] = shifts[strip_index] + float(shift)
+            confidence[next_index] = float(score)
+            strip_index = next_index
+
+    valid_confidence = np.delete(confidence, middle)
+    median_confidence = float(np.median(valid_confidence))
+    confident_ratio = float(np.mean(valid_confidence >= 0.25))
+    if median_confidence < 0.42 or confident_ratio < 0.70:
+        return {
+            "status": "unstable_tracking",
+            "line_count": int(len(peaks)),
+            "confidence": median_confidence,
+            "mode": "edge_profile",
+        }
+
+    smooth = cv2.GaussianBlur(
+        shifts.reshape(1, -1),
+        (0, 0),
+        sigmaX=1.35,
+    ).ravel()
+    smooth -= float(np.median(smooth))
+
+    # Remove affine slope: deskew/perspective belong to their own geometry tools.
+    axis = np.linspace(-1.0, 1.0, strips).astype(np.float32)
+    slope, intercept = np.polyfit(axis, smooth, 1)
+    curvature = smooth - ((slope * axis) + intercept)
+    curvature = cv2.GaussianBlur(
+        curvature.reshape(1, -1),
+        (0, 0),
+        sigmaX=1.0,
+    ).ravel().astype(np.float32)
+
+    max_displacement = max(6.0, h * 0.08)
+    if float(np.max(np.abs(curvature))) > max_displacement:
+        return {
+            "status": "unstable_tracking",
+            "line_count": int(len(peaks)),
+            "confidence": median_confidence,
+            "mode": "edge_profile",
+        }
+
+    amplitude = float(np.percentile(curvature, 95) - np.percentile(curvature, 5))
+    rms = float(np.sqrt(np.mean(curvature * curvature)))
+    return {
+        "status": "ok",
+        "line_count": int(len(peaks)),
+        "amplitude": amplitude,
+        "rms": rms,
+        "centers": centers,
+        "column_displacement": curvature,
+        "confidence": median_confidence,
+        "horizontal_evidence": horizontal_evidence,
+        "mode": "edge_profile",
+    }
+
+
+def detect_document_curvature(gray):
+    primary = detect_text_line_curvature(gray)
+    if primary.get("status") == "ok":
+        primary = dict(primary)
+        primary["mode"] = "text_lines"
+        return primary
+
+    fallback = detect_horizontal_structure_curvature(gray)
+    if fallback.get("status") == "ok":
+        return fallback
+
+    # Preserve the more informative safety status.
+    if primary.get("status") == "unstable_tracking":
+        return primary
+    return fallback if fallback.get("line_count", 0) else primary
+
 def _build_dense_displacement(detection, height, width):
-    line_displacement = detection["tracks"] - detection["targets"][:, None]
     full_x = np.arange(width)
+
+    if detection.get("mode") == "edge_profile":
+        column = np.interp(
+            full_x,
+            detection["centers"],
+            detection["column_displacement"],
+        ).astype(np.float32)
+        return np.tile(column, (height, 1))
+
+    line_displacement = detection["tracks"] - detection["targets"][:, None]
     expanded = np.vstack([
         np.interp(full_x, detection["centers"], row)
         for row in line_displacement
@@ -199,14 +385,16 @@ def dewarp_document_with_metadata(image):
     _validate_image(image)
     source_proxy, scale = _proxy(image)
     gray = _to_gray(source_proxy)
-    detection = detect_text_line_curvature(gray)
+    detection = detect_document_curvature(gray)
 
-    if detection["status"] != "ok":
+    if detection.get("status") != "ok":
         return image.copy(), {
             "applied": False,
-            "status": detection["status"],
+            "status": detection.get("status", "insufficient_text"),
             "line_count": detection.get("line_count", 0),
             "curvature_reduction": None,
+            "method": detection.get("mode"),
+            "confidence": detection.get("confidence"),
         }
 
     if detection["amplitude"] < 2.5 and detection["rms"] < 1.2:
@@ -217,12 +405,52 @@ def dewarp_document_with_metadata(image):
             "before_rms": detection["rms"],
             "after_rms": detection["rms"],
             "curvature_reduction": 0.0,
+            "method": detection.get("mode"),
+            "confidence": detection.get("confidence"),
         }
 
     proxy_h, proxy_w = gray.shape[:2]
     dense_proxy = _build_dense_displacement(detection, proxy_h, proxy_w)
     corrected_proxy = _apply_dense(gray, dense_proxy)
-    after = detect_text_line_curvature(corrected_proxy)
+    after = (
+        detect_horizontal_structure_curvature(corrected_proxy)
+        if detection.get("mode") == "edge_profile"
+        else detect_text_line_curvature(corrected_proxy)
+    )
+
+    # Form/table fallback is allowed up to three conservative residual passes.
+    # Because its displacement is column-wise, the maps compose additively.
+    passes = 1
+    if detection.get("mode") == "edge_profile":
+        cumulative = dense_proxy.copy()
+        while after.get("status") == "ok" and passes < 3:
+            reduction = float(
+                (detection["rms"] - after["rms"]) / max(detection["rms"], 1e-6)
+            )
+            if reduction >= CURVATURE_REDUCTION_MIN:
+                break
+
+            residual_dense = _build_dense_displacement(after, proxy_h, proxy_w)
+            max_residual = float(np.max(np.abs(residual_dense)))
+            if max_residual < 0.20:
+                break
+
+            cumulative += residual_dense
+            max_total = max(6.0, proxy_h * 0.10)
+            if float(np.max(np.abs(cumulative))) > max_total:
+                return image.copy(), {
+                    "applied": False,
+                    "status": "unstable_tracking",
+                    "line_count": detection["line_count"],
+                    "curvature_reduction": None,
+                    "method": "edge_profile",
+                    "confidence": detection.get("confidence"),
+                }
+
+            dense_proxy = cumulative
+            corrected_proxy = _apply_dense(gray, dense_proxy)
+            after = detect_horizontal_structure_curvature(corrected_proxy)
+            passes += 1
 
     if after.get("status") != "ok":
         return image.copy(), {
@@ -231,6 +459,9 @@ def dewarp_document_with_metadata(image):
             "line_count": detection["line_count"],
             "before_rms": detection["rms"],
             "curvature_reduction": None,
+            "method": detection.get("mode"),
+            "confidence": detection.get("confidence"),
+            "passes": passes,
         }
 
     reduction = float(
@@ -244,6 +475,9 @@ def dewarp_document_with_metadata(image):
             "before_rms": detection["rms"],
             "after_rms": after["rms"],
             "curvature_reduction": reduction,
+            "method": detection.get("mode"),
+            "confidence": detection.get("confidence"),
+            "passes": passes,
         }
 
     h, w = image.shape[:2]
@@ -261,8 +495,10 @@ def dewarp_document_with_metadata(image):
         "before_rms": detection["rms"],
         "after_rms": after["rms"],
         "curvature_reduction": reduction,
+        "method": detection.get("mode"),
+        "confidence": detection.get("confidence"),
+        "passes": passes,
     }
-
 
 def dewarp_document(image):
     result, _ = dewarp_document_with_metadata(image)
