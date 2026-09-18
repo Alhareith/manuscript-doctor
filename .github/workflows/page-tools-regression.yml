@@ -33,6 +33,17 @@ jobs:
           python -m py_compile app.py
           python -m compileall -q processing
 
+      - name: Check page tools JavaScript syntax
+        run: |
+          node --check static/js/parts/02-upload-api.js
+          node --check static/js/parts/04-examination.js
+          node --check static/js/parts/05-manual-parameters.js
+          node --check static/js/parts/06-manual-preview.js
+          node --check static/js/parts/07-manual-execution.js
+          node --check static/js/parts/10-theme-quick-tools.js
+          node --check static/js/parts/20-crop-editor-performance.js
+          node --check static/js/workers/instant-examination-worker.js
+
       - name: Report real-image preparation diagnostics
         run: |
           python tools/page_tools_diagnostics.py
