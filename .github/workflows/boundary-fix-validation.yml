@@ -22,4 +22,4 @@ jobs:
           node --check static/js/parts/06-manual-preview.js
           node --check static/js/parts/07-manual-execution.js
           node --check static/js/parts/10-theme-quick-tools.js
-      - run: pytest -q
+      - run: python -m pytest -q
