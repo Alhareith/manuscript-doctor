@@ -169,18 +169,18 @@ def test_regression_cluttered_background_document():
     _assert_valid_detected_boundary(image, result)
 
 
-def test_preparation_selector_exposes_only_guided_and_region():
+def test_preparation_selector_exposes_hybrid_candidates():
     image = make_document_scene()
 
     result = detect_preparation_boundary(image)
 
-    assert set(result["candidates"]) == {"guided", "region"}
+    assert set(result["candidates"]) == {"guided", "region", "bright"}
     assert result["allowed_methods"] == ["guided", "region"]
     assert result["method_used"] in {None, "guided", "region"}
     assert result["status"] in {"accept_automatic", "review_required", "reject"}
 
     if result["method_used"] is not None:
-        assert result["method_used"] in {"guided", "region"}
+        assert result["method_used"] in {"guided", "region", "bright"}
         assert len(result["corners"]) == 4
         assert 0.18 <= result["area_ratio"] <= 0.98
 
@@ -203,3 +203,90 @@ def test_preparation_selector_rejects_small_image_safely():
     assert result["detected"] is False
     assert result["method_used"] is None
     assert set(result["candidates"]) == {"guided", "region"}
+
+
+
+@pytest.mark.parametrize("angle", [-18, -12, -8, -4, 0, 4, 8, 12, 18])
+def test_preparation_boundary_remains_reviewable_across_rotation_angles(angle):
+    base = np.full((720, 980, 3), (72, 108, 138), dtype=np.uint8)
+    corners = np.array(
+        [[175, 85], [805, 105], [835, 640], [135, 615]],
+        dtype=np.int32,
+    )
+    cv2.fillConvexPoly(base, corners, (232, 231, 226))
+    for y in range(175, 565, 42):
+        cv2.line(base, (225, y), (735, y + 12), (90, 90, 90), 3)
+
+    matrix = cv2.getRotationMatrix2D((490, 360), angle, 1.0)
+    rotated = cv2.warpAffine(
+        base,
+        matrix,
+        (980, 720),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=(72, 108, 138),
+    )
+
+    result = detect_preparation_boundary(rotated)
+
+    assert result["status"] in {"accept_automatic", "review_required"}
+    assert result["detected"] is True
+    assert len(result["corners"]) == 4
+
+
+@pytest.mark.parametrize(
+    "background,paper",
+    [
+        ((35, 45, 55), (230, 230, 226)),
+        ((188, 194, 198), (225, 226, 224)),
+    ],
+)
+def test_hybrid_boundary_handles_dark_and_light_backgrounds(background, paper):
+    image = np.full((720, 980, 3), background, dtype=np.uint8)
+    corners = np.array(
+        [[120, 90], [850, 125], [820, 650], [100, 620]],
+        dtype=np.int32,
+    )
+    cv2.fillConvexPoly(image, corners, paper)
+    for y in range(175, 575, 44):
+        cv2.line(image, (205, y), (745, y + 8), (85, 85, 85), 2)
+
+    result = detect_preparation_boundary(image)
+
+    assert result["status"] in {"accept_automatic", "review_required"}
+    assert result["detected"] is True
+
+
+def test_hybrid_boundary_returns_reviewable_near_frame_page():
+    image = np.full((720, 980, 3), (68, 102, 128), dtype=np.uint8)
+    corners = np.array(
+        [[16, 28], [935, 42], [965, 685], [22, 700]],
+        dtype=np.int32,
+    )
+    cv2.fillConvexPoly(image, corners, (232, 232, 228))
+    for y in range(145, 630, 40):
+        cv2.line(image, (95, y), (865, y + 8), (92, 92, 92), 2)
+
+    result = detect_preparation_boundary(image)
+
+    assert result["status"] in {"accept_automatic", "review_required"}
+    assert len(result["corners"]) == 4
+
+
+def test_hybrid_boundary_does_not_false_positive_on_textured_no_page_scene():
+    rng = np.random.default_rng(7)
+    image = np.full((720, 980, 3), (118, 126, 132), dtype=np.uint8)
+    noise = rng.normal(0, 9, image.shape[:2]).astype(np.int16)
+    for channel in range(3):
+        image[:, :, channel] = np.clip(
+            image[:, :, channel].astype(np.int16) + noise,
+            0,
+            255,
+        ).astype(np.uint8)
+    for x in range(25, 980, 55):
+        cv2.line(image, (x, 0), (x + 20, 719), (105, 110, 115), 2)
+
+    result = detect_preparation_boundary(image)
+
+    assert result["status"] == "reject"
+    assert result["detected"] is False
