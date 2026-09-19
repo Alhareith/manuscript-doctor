@@ -221,29 +221,28 @@ def _brightness_masks(bgr):
         (72, 82),
     ):
         luminance_threshold = float(np.percentile(luminance, luminance_percentile))
-        for saturation_percentile in (saturation_percentile,):
-            saturation_limit = max(
-                55.0, float(np.percentile(saturation, saturation_percentile))
-            )
-            mask = np.where(
-                (luminance >= luminance_threshold)
-                & (saturation <= saturation_limit),
-                255,
-                0,
-            ).astype(np.uint8)
-            mask = cv2.morphologyEx(
-                mask, cv2.MORPH_CLOSE, close_kernel, iterations=2
-            )
-            mask = cv2.morphologyEx(
-                mask,
-                cv2.MORPH_OPEN,
-                np.ones((5, 5), dtype=np.uint8),
-                iterations=1,
-            )
-            yield (
-                f"brightness_{luminance_percentile}_{saturation_percentile}",
-                mask,
-            )
+        saturation_limit = max(
+            55.0, float(np.percentile(saturation, saturation_percentile))
+        )
+        mask = np.where(
+            (luminance >= luminance_threshold)
+            & (saturation <= saturation_limit),
+            255,
+            0,
+        ).astype(np.uint8)
+        mask = cv2.morphologyEx(
+            mask, cv2.MORPH_CLOSE, close_kernel, iterations=2
+        )
+        mask = cv2.morphologyEx(
+            mask,
+            cv2.MORPH_OPEN,
+            np.ones((5, 5), dtype=np.uint8),
+            iterations=1,
+        )
+        yield (
+            f"brightness_{luminance_percentile}_{saturation_percentile}",
+            mask,
+        )
 
 
 def _grabcut_mask(bgr):
@@ -276,7 +275,7 @@ def _grabcut_mask(bgr):
             None,
             background_model,
             foreground_model,
-            2,
+            1,
             cv2.GC_INIT_WITH_MASK,
         )
     except cv2.error:
@@ -325,19 +324,32 @@ def detect_bright_document_boundary(image):
         candidates.extend(_collect_mask_candidates(mask, gray, edges, source))
 
     candidates.sort(key=lambda item: item["confidence"], reverse=True)
+    brightness_best = candidates[0] if candidates else None
 
-    if (
-        not candidates
-        or candidates[0]["confidence"] < 0.64
+    needs_grabcut = (
+        brightness_best is None
+        or brightness_best["confidence"] < 0.64
         or (
-            candidates[0]["frame_contact_count"] > 0
-            and candidates[0]["confidence"] < 0.69
+            brightness_best["frame_contact_count"] > 0
+            and brightness_best["confidence"] < 0.69
         )
-    ):
+    )
+    if needs_grabcut:
         grabcut = _grabcut_mask(bgr)
         if grabcut is not None:
-            candidates.extend(_collect_mask_candidates(grabcut, gray, edges, "grabcut"))
-            candidates.sort(key=lambda item: item["confidence"], reverse=True)
+            grab_candidates = _collect_mask_candidates(grabcut, gray, edges, "grabcut")
+            grab_candidates.sort(key=lambda item: item["confidence"], reverse=True)
+            grab_best = grab_candidates[0] if grab_candidates else None
+            if (
+                brightness_best is None
+                or brightness_best["confidence"] < 0.55
+                or (
+                    grab_best is not None
+                    and grab_best["confidence"] >= brightness_best["confidence"] + 0.04
+                )
+            ):
+                candidates.extend(grab_candidates)
+                candidates.sort(key=lambda item: item["confidence"], reverse=True)
 
     if not candidates:
         return {
