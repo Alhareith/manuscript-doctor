@@ -317,6 +317,17 @@ def detect_bright_document_boundary(image):
         }
 
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    if float(np.std(gray)) < 3.0:
+        return {
+            "detected": False,
+            "status": "reject",
+            "method_used": "bright",
+            "corners": [],
+            "confidence": 0.0,
+            "area_ratio": 0.0,
+            "reason": "rejected: image lacks enough visual structure for a document boundary",
+        }
+
     edges = _build_edges(gray)
     candidates = []
 
