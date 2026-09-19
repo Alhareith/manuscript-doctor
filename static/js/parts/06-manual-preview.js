@@ -139,7 +139,12 @@ function showPrimaryResult(result, source = "result") {
         state.manualActiveIndex = 0;
         state.manualPreviewCandidate = null;
         if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = manualOriginalUrl() || `${url}?base=${Date.now()}`;
-        if (elements.manualLivePreview) elements.manualLivePreview.src = `${url}?base=${Date.now()}`;
+        if (elements.manualLivePreview) {
+            setManualPreviewSource(`${url}?base=${Date.now()}`, {
+                pending: false,
+                requestId: manualPreviewSequence
+            });
+        }
         if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "المعالجة الذكية هي الصورة الحالية — يمكنك متابعة تجهيز الوثيقة يدويًا.";
         updateManualApprovalUI();
     }
@@ -208,7 +213,7 @@ function renderManualOperationResult(data, options = {}) {
     document.querySelector(".manual-editor")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function renderPreparationPreview(data) {
+function renderPreparationPreview(data, requestId = manualPreviewSequence) {
     const preparationId = data?.preparation_id;
     const preview = data?.preview;
 
@@ -233,7 +238,7 @@ function renderPreparationPreview(data) {
 
     if (elements.manualLivePreview) {
         const previewUrl = `${preview.url}?preview=${Date.now()}`;
-        setManualPreviewSource(previewUrl, { pending: true, requestId: manualPreviewSequence });
+        setManualPreviewSource(previewUrl, { pending: true, requestId });
     }
 
     if (elements.manualPreviewNote) {
