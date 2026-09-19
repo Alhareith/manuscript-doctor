@@ -377,6 +377,8 @@ def detect_bright_document_boundary(image):
         "edge_support": round(best["edge_support"], 4),
         "contrast_score": round(best["contrast_score"], 4),
         "angle_score": round(best["angle_score"], 4),
+        "balance_score": round(best["balance_score"], 4),
+        "fill_score": round(best["fill_score"], 4),
         "frame_contact_count": int(best["frame_contact_count"]),
         "candidate_source": best["source"],
         "reason": reason,
