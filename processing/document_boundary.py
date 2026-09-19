@@ -1351,10 +1351,10 @@ def detect_preparation_boundary(image):
     guided = _preparation_candidate_payload(image, "guided", guided_candidate)
 
     region = _not_run_preparation_candidate(
-        "region", "skipped: Guided produced a strong automatic candidate"
+        "region", "skipped: Guided/Bright produced a strong candidate"
     )
     bright = _not_run_preparation_candidate(
-        "bright", "skipped: bright fallback was not required"
+        "bright", "skipped: Guided was already strong"
     )
 
     guided_strong = (
@@ -1364,24 +1364,18 @@ def detect_preparation_boundary(image):
     )
 
     if not guided_strong:
+        bright_candidate = detect_bright_document_boundary(image)
+        bright = _preparation_candidate_payload(image, "bright", bright_candidate)
+
+    bright_strong = (
+        bright["status"] == "accept_automatic"
+        and bright.get("stability_score", 0.0) >= 0.42
+    )
+
+    if not guided_strong and not bright_strong:
         region_candidates = _extract_region_document_candidates(image, gray)
         region_candidate = region_candidates[0] if region_candidates else None
         region = _preparation_candidate_payload(image, "region", region_candidate)
-
-    primary_usable = [
-        item for item in (guided, region)
-        if item["status"] in {"accept_automatic", "review_required"}
-    ]
-    primary_best = max(primary_usable, key=lambda item: item["confidence"], default=None)
-
-    if (
-        primary_best is None
-        or primary_best["status"] != "accept_automatic"
-        or primary_best["confidence"] < 0.74
-        or primary_best.get("edge_support", 0.0) < 0.30
-    ):
-        bright_candidate = detect_bright_document_boundary(image)
-        bright = _preparation_candidate_payload(image, "bright", bright_candidate)
 
     candidates = {
         "guided": guided,
