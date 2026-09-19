@@ -1239,15 +1239,13 @@ def _preparation_candidate_payload(image, method, candidate):
         1.0,
     ))
 
-    low_contrast_geometry_profile = (
+    bright_profile_accepted = (
         method == "bright"
         and candidate.get("status") == "accept_automatic"
         and float(candidate.get("confidence", 0.0)) >= 0.58
-        and float(candidate.get("angle_score", 0.0)) >= 0.80
-        and float(candidate.get("balance_score", 0.0)) >= 0.70
-        and float(candidate.get("fill_score", 0.0)) >= 0.82
-        and frame_contacts == 0
-        and stability_score >= 0.55
+        and geometry["angle_score"] >= 0.50
+        and stability_score >= 0.42
+        and frame_contacts <= 2
     )
 
     automatic_ok = (
@@ -1258,7 +1256,7 @@ def _preparation_candidate_payload(image, method, candidate):
             and stability_score >= 0.42
             and frame_contacts <= 2
         )
-        or low_contrast_geometry_profile
+        or bright_profile_accepted
     )
     review_ok = (
         confidence >= PREPARATION_REVIEW_MIN_CONFIDENCE
@@ -1270,8 +1268,8 @@ def _preparation_candidate_payload(image, method, candidate):
     if automatic_ok:
         status = "accept_automatic"
         reason = (
-            f"accepted: {method} passed low-contrast geometry/stability profile"
-            if low_contrast_geometry_profile
+            f"accepted: {method} passed detector-specific geometry/stability profile"
+            if bright_profile_accepted
             else f"accepted: {method} passed unified geometry, edge, contrast and stability scoring"
         )
     elif review_ok:
