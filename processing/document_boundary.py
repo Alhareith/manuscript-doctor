@@ -1239,13 +1239,27 @@ def _preparation_candidate_payload(image, method, candidate):
         1.0,
     ))
 
+    low_contrast_bright_profile = (
+        method == "bright"
+        and candidate.get("status") == "accept_automatic"
+        and candidate.get("candidate_source") == "grabcut"
+        and float(candidate.get("confidence", 0.0)) >= 0.58
+        and float(candidate.get("angle_score", 0.0)) >= 0.82
+        and float(candidate.get("balance_score", 0.0)) >= 0.75
+        and float(candidate.get("fill_score", 0.0)) >= 0.90
+        and 0.22 <= area_ratio <= 0.82
+        and frame_contacts == 0
+    )
     bright_profile_accepted = (
         method == "bright"
         and candidate.get("status") == "accept_automatic"
         and float(candidate.get("confidence", 0.0)) >= 0.58
         and geometry["angle_score"] >= 0.50
-        and stability_score >= 0.42
         and frame_contacts <= 2
+        and (
+            stability_score >= 0.42
+            or low_contrast_bright_profile
+        )
     )
 
     automatic_ok = (
