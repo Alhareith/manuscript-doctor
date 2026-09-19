@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 
 from processing.auto_deskew import apply_auto_deskew
-from processing.bright_document_fallback import detect_bright_document_boundary
 from processing.document_boundary import (
     detect_document_boundary,
     detect_preparation_boundary,
@@ -11,8 +10,8 @@ from processing.document_rectification import rectify_document
 from processing.skew_detector import detect_skew
 
 
-BOUNDARY_DETECTION_MAX_DIMENSION = 640
-BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
+BOUNDARY_DETECTION_MAX_DIMENSION = 720
+BOUNDARY_FALLBACK_MAX_DIMENSIONS = (560, 420)
 SKEW_DETECTION_MAX_DIMENSION = 1280
 PREPARATION_MIN_FRAME_CLEARANCE_RATIO = 0.005
 
@@ -118,37 +117,6 @@ def _detect_skew_on_proxy(image, max_dimension=SKEW_DETECTION_MAX_DIMENSION):
     return skew
 
 
-def _prefer_bright_fallback(primary, fallback, width, height):
-    """Use the bright-paper detector only as a rescue path.
-
-    A primary Guided/Region candidate that is already safe for automatic
-    perspective remains authoritative. This protects previously-correct cases
-    from being replaced by a visually plausible but worse fallback polygon.
-    """
-    if not fallback.get("detected"):
-        return False
-
-    primary_safe, _, _ = _boundary_is_safe_for_automatic_perspective(
-        primary, width, height
-    )
-    if primary_safe:
-        return False
-
-    if not primary or not primary.get("detected"):
-        return True
-
-    primary_status = primary.get("status")
-    if primary_status is not None and primary_status != "accept_automatic":
-        return True
-
-    # At this point the primary may only be unsafe because it reaches the image
-    # frame. A fully-visible fallback is preferable to that candidate.
-    fallback_safe, _, _ = _boundary_is_safe_for_automatic_perspective(
-        fallback, width, height
-    )
-    return bool(fallback_safe)
-
-
 def prepare_document(
     image,
     boundary_detector=detect_document_boundary,
@@ -179,28 +147,8 @@ def prepare_document(
         if boundary.get("detected") or boundary.get("status") != "reject":
             break
 
-    # Keep the established Guided/Region detector as the primary path. For
-    # preparation only, use the bright-paper detector strictly as a rescue path.
-    if boundary_detector is detect_preparation_boundary:
-        fallback_proxy, fallback_scale = _make_boundary_proxy(
-            image, BOUNDARY_DETECTION_MAX_DIMENSION
-        )
-        fallback_candidate = detect_bright_document_boundary(fallback_proxy)
-        fallback_boundary = _restore_boundary_coordinates(
-            fallback_candidate,
-            fallback_scale,
-            image.shape[1],
-            image.shape[0],
-        )
-        if _prefer_bright_fallback(
-            boundary,
-            fallback_boundary,
-            image.shape[1],
-            image.shape[0],
-        ):
-            fallback_boundary["fallback_used"] = "bright_paper_region"
-            boundary = fallback_boundary
-
+    # detect_preparation_boundary already evaluates Guided, Region and Bright
+    # candidates on one score; do not run a second hidden fallback here.
     perspective_allowed, frame_clearance, perspective_reason = (
         _boundary_is_safe_for_automatic_perspective(
             boundary,
