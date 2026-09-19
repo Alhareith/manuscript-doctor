@@ -238,7 +238,12 @@ async function approveManualOperation() {
 
             const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}?approved=${Date.now()}`;
             if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = approvedUrl;
-            if (elements.manualLivePreview) elements.manualLivePreview.src = approvedUrl;
+            if (elements.manualLivePreview) {
+                setManualPreviewSource(approvedUrl, {
+                    pending: false,
+                    requestId: manualPreviewSequence
+                });
+            }
             if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "Preparation · النتيجة المعتمدة أصبحت الصورة الحالية";
 
             updateManualApprovalUI();
@@ -289,12 +294,6 @@ async function approveManualOperation() {
         state.manualActiveIndex = state.manualChain.length - 1;
         state.manualPreviewCandidate = null;
         setBusy(false);
-
-        setManualPreviewResult(
-            data.result,
-            operationId,
-            data.preservation?.assessment?.status || data.verification?.status
-        );
         const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}?approved=${Date.now()}`;
 
         if (elements.manualOriginalPreview) {
@@ -302,7 +301,10 @@ async function approveManualOperation() {
         }
 
         if (elements.manualLivePreview) {
-            elements.manualLivePreview.src = approvedUrl;
+            setManualPreviewSource(approvedUrl, {
+                pending: false,
+                requestId: manualPreviewSequence
+            });
         }
 
         if (elements.manualPreviewNote) {
