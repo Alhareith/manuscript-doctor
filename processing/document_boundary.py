@@ -1180,7 +1180,8 @@ def _preparation_candidate_payload(image, method, candidate):
         "frame_contact_count": 0,
     }
 
-    if candidate is None or not candidate.get("corners"):
+    candidate_corners = None if candidate is None else candidate.get("corners")
+    if candidate_corners is None or np.asarray(candidate_corners).size != 8:
         return {
             **empty,
             "reason": f"rejected: {method} did not produce a valid quadrilateral",
@@ -1189,7 +1190,7 @@ def _preparation_candidate_payload(image, method, candidate):
     height, width = image.shape[:2]
     image_area = float(width * height)
     corners = _order_corners(
-        np.asarray(candidate["corners"], dtype=np.float32).reshape(4, 2)
+        np.asarray(candidate_corners, dtype=np.float32).reshape(4, 2)
     )
 
     if not _corners_inside_image(corners, width, height):
