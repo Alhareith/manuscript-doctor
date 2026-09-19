@@ -237,7 +237,9 @@ function renderPreparationPreview(data) {
     }
 
     if (elements.manualPreviewNote) {
-        const method = data.method_used === "region" ? "Region" : "Guided";
+        const method = data.method_used === "bright"
+            ? "Bright/Region"
+            : (data.method_used === "region" ? "Region" : "Guided");
         const status = data.status || "review_required";
         elements.manualPreviewNote.textContent = `Preparation · ${method} · ${statusLabel(status)}`;
     }
