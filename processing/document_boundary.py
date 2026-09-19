@@ -1248,19 +1248,39 @@ def _preparation_candidate_payload(image, method, candidate):
         and float(candidate.get("angle_score", 0.0)) >= 0.82
         and float(candidate.get("balance_score", 0.0)) >= 0.75
         and float(candidate.get("fill_score", 0.0)) >= 0.90
+        and (
+            float(candidate.get("contrast_score", 0.0)) >= 0.025
+            or float(candidate.get("edge_support", 0.0)) >= 0.05
+        )
         and 0.22 <= area_ratio <= 0.82
         and frame_contacts == 0
+    )
+    bright_has_boundary_evidence = (
+        contrast_score >= 0.08
+        or edge_support >= 0.08
+        or low_contrast_bright_profile
     )
     bright_profile_accepted = (
         method == "bright"
         and candidate.get("status") == "accept_automatic"
         and float(candidate.get("confidence", 0.0)) >= 0.58
         and geometry["angle_score"] >= 0.50
+        and bright_has_boundary_evidence
         and frame_contacts <= 2
         and (
             stability_score >= 0.42
+            or contrast_score >= 0.20
             or low_contrast_bright_profile
         )
+    )
+    established_primary_profile = (
+        method in {"guided", "region"}
+        and geometry["angle_score"] >= 0.90
+        and stability_score >= 0.50
+        and edge_support >= 0.07
+        and contrast_score >= 0.07
+        and 0.25 <= area_ratio <= 0.80
+        and frame_contacts <= 2
     )
 
     automatic_ok = (
@@ -1272,6 +1292,7 @@ def _preparation_candidate_payload(image, method, candidate):
             and frame_contacts <= 2
         )
         or bright_profile_accepted
+        or established_primary_profile
     )
     review_ok = (
         confidence >= PREPARATION_REVIEW_MIN_CONFIDENCE
@@ -1285,7 +1306,11 @@ def _preparation_candidate_payload(image, method, candidate):
         reason = (
             f"accepted: {method} passed detector-specific geometry/stability profile"
             if bright_profile_accepted
-            else f"accepted: {method} passed unified geometry, edge, contrast and stability scoring"
+            else (
+                f"accepted: {method} preserved an established strong geometry profile"
+                if established_primary_profile
+                else f"accepted: {method} passed unified geometry, edge, contrast and stability scoring"
+            )
         )
     elif review_ok:
         status = "review_required"
