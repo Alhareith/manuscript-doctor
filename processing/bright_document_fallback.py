@@ -5,6 +5,7 @@ import numpy as np
 MIN_AREA_RATIO = 0.16
 MAX_AREA_RATIO = 0.90
 MIN_SCORE = 0.66
+REVIEW_SCORE = 0.44
 MIN_CLEARANCE_RATIO = 0.005
 
 
@@ -228,31 +229,45 @@ def detect_bright_document_boundary(image):
     ranked = safe_candidates if safe_candidates else candidates
     ranked.sort(key=lambda item: item["confidence"], reverse=True)
 
-    if (
-        not ranked
-        or ranked[0]["confidence"] < MIN_SCORE
-        or ranked[0]["clearance"] < MIN_CLEARANCE_RATIO
-    ):
+    if not ranked:
         return {
             "detected": False,
             "status": "reject",
+            "method_used": "bright",
             "corners": [],
-            "confidence": round(ranked[0]["confidence"], 4) if ranked else 0.0,
-            "area_ratio": round(ranked[0]["area_ratio"], 4) if ranked else 0.0,
-            "reason": "rejected: bright-paper fallback did not find a safe document boundary",
+            "confidence": 0.0,
+            "area_ratio": 0.0,
+            "reason": "rejected: bright-paper detector found no document-like quadrilateral",
         }
 
     best = ranked[0]
+    safe = best["clearance"] >= MIN_CLEARANCE_RATIO
+    confidence = float(best["confidence"])
+
+    if safe and confidence >= MIN_SCORE:
+        status = "accept_automatic"
+        detected = True
+        reason = "accepted: bright-paper detector found a fully visible document"
+    elif safe and confidence >= REVIEW_SCORE:
+        status = "review_required"
+        detected = True
+        reason = "review required: bright-paper detector found a usable medium-confidence document"
+    else:
+        status = "reject"
+        detected = False
+        reason = "rejected: bright-paper detector did not find a safe reviewable document boundary"
+
     return {
-        "detected": True,
-        "status": "accept_automatic",
-        "method_used": "region",
+        "detected": detected,
+        "status": status,
+        "method_used": "bright",
         "corners": [
             [int(round(x)), int(round(y))] for x, y in best["corners"]
         ],
-        "confidence": round(best["confidence"], 4),
-        "final_score": round(best["confidence"], 4),
+        "confidence": round(confidence, 4),
+        "final_score": round(confidence, 4),
         "area_ratio": round(best["area_ratio"], 4),
+        "clearance": round(best["clearance"], 6),
         "edge_support": 0.0,
-        "reason": "accepted: bright-paper region fallback found a fully visible document",
+        "reason": reason,
     }
