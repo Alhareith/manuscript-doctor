@@ -14,9 +14,54 @@ function scheduleManualPreview(delay = 120) {
     manualPreviewTimer = setTimeout(() => applyManualOperation({ live: true }), delay);
 }
 
-function setManualPreviewResult(result, operationId, decisionStatus = null) {
+function refreshManualPreviewDependents() {
+    updateManualApprovalUI();
+    updateControls();
+    if (typeof syncCropGuide === "function") syncCropGuide();
+    if (typeof syncPerspectiveGuide === "function") syncPerspectiveGuide();
+    renderManualChangeChart();
+}
+
+function setManualPreviewSource(url, options = {}) {
+    if (!url || !elements.manualLivePreview) return Promise.resolve(false);
+
+    const pending = options.pending !== false;
+    const requestId = Number.isInteger(options.requestId) ? options.requestId : manualPreviewSequence;
+    const loadId = ++manualPreviewLoadSequence;
+    const source = { url, requestId, loadId, kind: pending ? "pending" : "approved" };
+
+    if (pending) state.manualPreviewSource = source;
+    else {
+        state.manualApprovedSource = source;
+        state.manualPreviewSource = null;
+    }
+
+    return new Promise((resolve) => {
+        const preview = elements.manualLivePreview;
+        const finish = (loaded) => {
+            const active = pending ? state.manualPreviewSource : state.manualApprovedSource;
+            if (!active || active.loadId !== loadId || active.url !== url) {
+                resolve(false);
+                return;
+            }
+            if (pending && requestId !== manualPreviewSequence) {
+                resolve(false);
+                return;
+            }
+            refreshManualPreviewDependents();
+            resolve(loaded);
+        };
+
+        preview.addEventListener("load", () => finish(true), { once: true });
+        preview.addEventListener("error", () => finish(false), { once: true });
+        preview.src = url;
+    });
+}
+
+function setManualPreviewResult(result, operationId, decisionStatus = null, requestId = manualPreviewSequence) {
     if (!result?.id || !elements.manualLivePreview) return;
-    elements.manualLivePreview.src = `/api/results/${encodeURIComponent(result.id)}?preview=${Date.now()}`;
+    const url = `/api/results/${encodeURIComponent(result.id)}?preview=${Date.now()}`;
+    setManualPreviewSource(url, { pending: true, requestId });
     if (elements.manualPreviewNote) {
         const decisionText = decisionStatus ? ` · ${statusLabel(decisionStatus)}` : "";
         elements.manualPreviewNote.textContent = `${operationLabel(operationId)}${decisionText}`;
@@ -25,10 +70,9 @@ function setManualPreviewResult(result, operationId, decisionStatus = null) {
 
 }
 
-function setManualPreviewData(preview, operationId) {
+function setManualPreviewData(preview, operationId, requestId = manualPreviewSequence) {
     if (!preview?.data_url || !elements.manualLivePreview) return;
-
-    elements.manualLivePreview.src = preview.data_url;
+    setManualPreviewSource(preview.data_url, { pending: true, requestId });
     if (elements.manualPreviewNote) {
         elements.manualPreviewNote.textContent = `${operationLabel(operationId)} · معاينة لحظية`;
     }
@@ -188,7 +232,8 @@ function renderPreparationPreview(data) {
     };
 
     if (elements.manualLivePreview) {
-        elements.manualLivePreview.src = `${preview.url}?preview=${Date.now()}`;
+        const previewUrl = `${preview.url}?preview=${Date.now()}`;
+        setManualPreviewSource(previewUrl, { pending: true, requestId: manualPreviewSequence });
     }
 
     if (elements.manualPreviewNote) {
@@ -285,11 +330,15 @@ const LOCAL_PREVIEW_OPERATIONS = new Set([
 ]);
 
 function currentManualSourceUrl() {
-    const displayed = elements.manualLivePreview?.currentSrc || elements.manualLivePreview?.src;
-    if (displayed) return displayed;
+    if (state.manualPreviewSource?.url) return state.manualPreviewSource.url;
+
     const activeEntry = state.manualActiveIndex >= 0 ? state.manualChain[state.manualActiveIndex] : null;
     if (activeEntry?.previewDataUrl) return activeEntry.previewDataUrl;
-    if (activeEntry?.result?.id) return `/api/results/${encodeURIComponent(activeEntry.result.id)}?source=${Date.now()}`;
+    if (activeEntry?.result?.id) {
+        return `/api/results/${encodeURIComponent(activeEntry.result.id)}?source=${Date.now()}`;
+    }
+
+    if (state.manualApprovedSource?.url) return state.manualApprovedSource.url;
     return manualOriginalUrl();
 }
 
@@ -390,12 +439,11 @@ function setOptimisticManualApprovalPreview(candidate) {
     const dataUrl = candidate?.data?.preview?.data_url;
     if (!dataUrl) return;
     const activeEntry = state.manualActiveIndex >= 0 ? state.manualChain[state.manualActiveIndex] : null;
-    const displayedBefore = elements.manualLivePreview?.currentSrc || elements.manualLivePreview?.src;
-    const beforeUrl = displayedBefore
+    const beforeUrl = state.manualPreviewSource?.url
         || activeEntry?.previewDataUrl
         || (activeEntry?.result?.id ? `/api/results/${encodeURIComponent(activeEntry.result.id)}?before=${Date.now()}` : manualOriginalUrl());
     if (elements.manualOriginalPreview && beforeUrl) elements.manualOriginalPreview.src = beforeUrl;
-    if (elements.manualLivePreview) elements.manualLivePreview.src = dataUrl;
+    setManualPreviewSource(dataUrl, { pending: true, requestId: manualPreviewSequence });
     if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationLabel(candidate.operation?.id || "manual_operation")} · تم تطبيق المعاينة فورياً، جارٍ حفظها.`;
     renderManualChangeChart();
 }
