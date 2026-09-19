@@ -58,15 +58,17 @@ def _border_contrast(gray, corners):
     return float(np.clip(abs(inner_mean - outer_mean) / 45.0, 0.0, 1.0))
 
 
-def _edge_support(gray, corners):
-    height, width = gray.shape[:2]
+def _build_edges(gray):
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     median_value = float(np.median(blurred))
     lower = int(max(18, 0.55 * median_value))
     upper = int(min(255, max(lower + 25, 1.45 * median_value)))
     edges = cv2.Canny(blurred, lower, upper)
-    edges = cv2.dilate(edges, np.ones((3, 3), dtype=np.uint8), iterations=1)
+    return cv2.dilate(edges, np.ones((3, 3), dtype=np.uint8), iterations=1)
 
+
+def _edge_support(edges, corners):
+    height, width = edges.shape[:2]
     thickness = max(2, int(round(min(height, width) * 0.006)))
     values = []
     corners = _order(corners)
@@ -99,7 +101,7 @@ def _frame_contacts(corners, width, height, margin_ratio=0.025):
     ]))
 
 
-def _candidate_from_contour(contour, gray, width, height, image_area, source):
+def _candidate_from_contour(contour, gray, edges, width, height, image_area, source):
     contour_area = float(cv2.contourArea(contour))
     if contour_area < image_area * 0.12:
         return None
@@ -148,7 +150,7 @@ def _candidate_from_contour(contour, gray, width, height, image_area, source):
         )
     )
     fill_score = float(np.clip(contour_area / max(polygon_area, 1.0), 0.0, 1.0))
-    edge_support = _edge_support(gray, corners)
+    edge_support = _edge_support(edges, corners)
     contrast_score = _border_contrast(gray, corners)
     contacts = _frame_contacts(corners, width, height)
     frame_score = {0: 1.0, 1: 0.88, 2: 0.62}.get(contacts, 0.12)
@@ -183,7 +185,7 @@ def _candidate_from_contour(contour, gray, width, height, image_area, source):
     }
 
 
-def _collect_mask_candidates(mask, gray, source):
+def _collect_mask_candidates(mask, gray, edges, source):
     height, width = gray.shape[:2]
     image_area = float(height * width)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -191,7 +193,7 @@ def _collect_mask_candidates(mask, gray, source):
     candidates = []
     for contour in sorted(contours, key=cv2.contourArea, reverse=True)[:5]:
         candidate = _candidate_from_contour(
-            contour, gray, width, height, image_area, source
+            contour, gray, edges, width, height, image_area, source
         )
         if candidate is not None:
             candidates.append(candidate)
@@ -212,9 +214,14 @@ def _brightness_masks(bgr):
         cv2.MORPH_ELLIPSE, (kernel_size, kernel_size)
     )
 
-    for luminance_percentile in (52, 62, 72):
+    for luminance_percentile, saturation_percentile in (
+        (55, 70),
+        (60, 82),
+        (65, 70),
+        (72, 82),
+    ):
         luminance_threshold = float(np.percentile(luminance, luminance_percentile))
-        for saturation_percentile in (65, 82):
+        for saturation_percentile in (saturation_percentile,):
             saturation_limit = max(
                 55.0, float(np.percentile(saturation, saturation_percentile))
             )
@@ -269,7 +276,7 @@ def _grabcut_mask(bgr):
             None,
             background_model,
             foreground_model,
-            4,
+            2,
             cv2.GC_INIT_WITH_MASK,
         )
     except cv2.error:
@@ -311,17 +318,25 @@ def detect_bright_document_boundary(image):
         }
 
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    edges = _build_edges(gray)
     candidates = []
 
     for source, mask in _brightness_masks(bgr):
-        candidates.extend(_collect_mask_candidates(mask, gray, source))
+        candidates.extend(_collect_mask_candidates(mask, gray, edges, source))
 
     candidates.sort(key=lambda item: item["confidence"], reverse=True)
 
-    if not candidates or candidates[0]["confidence"] < 0.70:
+    if (
+        not candidates
+        or candidates[0]["confidence"] < 0.64
+        or (
+            candidates[0]["frame_contact_count"] > 0
+            and candidates[0]["confidence"] < 0.69
+        )
+    ):
         grabcut = _grabcut_mask(bgr)
         if grabcut is not None:
-            candidates.extend(_collect_mask_candidates(grabcut, gray, "grabcut"))
+            candidates.extend(_collect_mask_candidates(grabcut, gray, edges, "grabcut"))
             candidates.sort(key=lambda item: item["confidence"], reverse=True)
 
     if not candidates:
@@ -346,14 +361,43 @@ def detect_bright_document_boundary(image):
         and best["frame_contact_count"] == 0
         and best["source"] == "grabcut"
     )
+    near_frame_geometry_rescue = (
+        confidence >= 0.62
+        and best["angle_score"] >= 0.84
+        and best["balance_score"] >= 0.72
+        and best["fill_score"] >= 0.88
+        and best["edge_support"] >= 0.14
+        and best["contrast_score"] >= 0.14
+        and best["frame_contact_count"] <= 2
+    )
+    clean_geometry_rescue = (
+        confidence >= 0.64
+        and best["angle_score"] >= 0.80
+        and best["balance_score"] >= 0.72
+        and best["fill_score"] >= 0.86
+        and best["frame_contact_count"] == 0
+    )
 
-    if confidence >= MIN_SCORE or low_contrast_geometry_rescue:
+    if (
+        confidence >= MIN_SCORE
+        or low_contrast_geometry_rescue
+        or near_frame_geometry_rescue
+        or clean_geometry_rescue
+    ):
         status = "accept_automatic"
         detected = True
         reason = (
             "accepted: low-contrast page passed geometry/region rescue"
             if low_contrast_geometry_rescue and confidence < MIN_SCORE
-            else "accepted: bright-document candidate passed hybrid scoring"
+            else (
+                "accepted: near-frame page passed geometry/edge rescue"
+                if near_frame_geometry_rescue and confidence < MIN_SCORE
+                else (
+                    "accepted: clean page passed geometry rescue"
+                    if clean_geometry_rescue and confidence < MIN_SCORE
+                    else "accepted: bright-document candidate passed hybrid scoring"
+                )
+            )
         )
     elif confidence >= REVIEW_SCORE:
         status = "review_required"
