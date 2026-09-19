@@ -346,6 +346,7 @@ def detect_bright_document_boundary(image):
         )
     )
     if needs_grabcut:
+        cv2.setRNGSeed(0)
         grabcut = _grabcut_mask(bgr)
         if grabcut is not None:
             grab_candidates = _collect_mask_candidates(grabcut, gray, edges, "grabcut")
@@ -386,6 +387,7 @@ def detect_bright_document_boundary(image):
     low_contrast_geometry_rescue = (
         confidence >= 0.58
         and best["contrast_score"] < 0.12
+        and (best["contrast_score"] >= 0.025 or best["edge_support"] >= 0.05)
         and best["angle_score"] >= 0.80
         and best["balance_score"] >= 0.70
         and best["fill_score"] >= 0.82
@@ -406,6 +408,7 @@ def detect_bright_document_boundary(image):
         and best["angle_score"] >= 0.80
         and best["balance_score"] >= 0.72
         and best["fill_score"] >= 0.86
+        and (best["contrast_score"] >= 0.05 or best["edge_support"] >= 0.08)
         and best["frame_contact_count"] == 0
     )
 
