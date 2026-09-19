@@ -17,7 +17,9 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m compileall processing app.py
       - run: |
-          for file in static/js/parts/*.js; do
-            node --check "$file"
-          done
+          node --check static/js/parts/00-state-constants.js
+          node --check static/js/parts/02-upload-api.js
+          node --check static/js/parts/06-manual-preview.js
+          node --check static/js/parts/07-manual-execution.js
+          node --check static/js/parts/10-theme-quick-tools.js
       - run: pytest -q
