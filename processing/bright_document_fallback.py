@@ -2,11 +2,11 @@ import cv2
 import numpy as np
 
 
-MIN_AREA_RATIO = 0.16
-MAX_AREA_RATIO = 0.90
-MIN_SCORE = 0.66
+MIN_AREA_RATIO = 0.14
+MAX_AREA_RATIO = 0.94
+MIN_SCORE = 0.68
 REVIEW_SCORE = 0.44
-MIN_CLEARANCE_RATIO = 0.005
+MIN_CLEARANCE_RATIO = 0.0
 
 
 def _order(points):
@@ -25,7 +25,7 @@ def _order(points):
 
 
 def _angles(corners):
-    angles = []
+    values = []
     for index in range(4):
         previous = corners[(index - 1) % 4] - corners[index]
         following = corners[(index + 1) % 4] - corners[index]
@@ -33,21 +33,8 @@ def _angles(corners):
         if denominator <= 1e-6:
             return None
         cosine = np.clip(float(np.dot(previous, following) / denominator), -1.0, 1.0)
-        angles.append(float(np.degrees(np.arccos(cosine))))
-    return np.asarray(angles, dtype=np.float32)
-
-
-def _clearance(corners, width, height):
-    corners = np.asarray(corners, dtype=np.float32).reshape(4, 2)
-    return max(
-        0.0,
-        min(
-            float(np.min(corners[:, 0])) / max(width - 1, 1),
-            float(width - 1 - np.max(corners[:, 0])) / max(width - 1, 1),
-            float(np.min(corners[:, 1])) / max(height - 1, 1),
-            float(height - 1 - np.max(corners[:, 1])) / max(height - 1, 1),
-        ),
-    )
+        values.append(float(np.degrees(np.arccos(cosine))))
+    return np.asarray(values, dtype=np.float32)
 
 
 def _border_contrast(gray, corners):
@@ -56,28 +43,247 @@ def _border_contrast(gray, corners):
     mask = np.zeros((height, width), dtype=np.uint8)
     cv2.fillConvexPoly(mask, polygon, 255)
 
-    band = max(5, int(round(min(height, width) * 0.012)))
+    band = max(5, int(round(min(height, width) * 0.014)))
     if band % 2 == 0:
         band += 1
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (band, band))
     inner = cv2.subtract(mask, cv2.erode(mask, kernel))
     outer = cv2.subtract(cv2.dilate(mask, kernel), mask)
 
-    if cv2.countNonZero(inner) < 100 or cv2.countNonZero(outer) < 100:
+    if cv2.countNonZero(inner) < 80 or cv2.countNonZero(outer) < 80:
         return 0.0
 
     inner_mean = cv2.mean(gray, mask=inner)[0]
     outer_mean = cv2.mean(gray, mask=outer)[0]
-    return float(np.clip(abs(inner_mean - outer_mean) / 55.0, 0.0, 1.0))
+    return float(np.clip(abs(inner_mean - outer_mean) / 45.0, 0.0, 1.0))
+
+
+def _edge_support(gray, corners):
+    height, width = gray.shape[:2]
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    median_value = float(np.median(blurred))
+    lower = int(max(18, 0.55 * median_value))
+    upper = int(min(255, max(lower + 25, 1.45 * median_value)))
+    edges = cv2.Canny(blurred, lower, upper)
+    edges = cv2.dilate(edges, np.ones((3, 3), dtype=np.uint8), iterations=1)
+
+    thickness = max(2, int(round(min(height, width) * 0.006)))
+    values = []
+    corners = _order(corners)
+
+    for index in range(4):
+        mask = np.zeros((height, width), dtype=np.uint8)
+        a = tuple(np.round(corners[index]).astype(np.int32))
+        b = tuple(np.round(corners[(index + 1) % 4]).astype(np.int32))
+        cv2.line(mask, a, b, 255, thickness=thickness, lineType=cv2.LINE_AA)
+        total = cv2.countNonZero(mask)
+        if total <= 0:
+            values.append(0.0)
+            continue
+        overlap = cv2.bitwise_and(edges, mask)
+        values.append(float(cv2.countNonZero(overlap)) / float(total))
+
+    if not values:
+        return 0.0
+    return float(np.mean(values))
+
+
+def _frame_contacts(corners, width, height, margin_ratio=0.025):
+    margin_x = width * margin_ratio
+    margin_y = height * margin_ratio
+    return int(sum([
+        np.min(corners[:, 0]) <= margin_x,
+        np.max(corners[:, 0]) >= width - 1 - margin_x,
+        np.min(corners[:, 1]) <= margin_y,
+        np.max(corners[:, 1]) >= height - 1 - margin_y,
+    ]))
+
+
+def _candidate_from_contour(contour, gray, width, height, image_area, source):
+    contour_area = float(cv2.contourArea(contour))
+    if contour_area < image_area * 0.12:
+        return None
+
+    hull = cv2.convexHull(contour)
+    perimeter = float(cv2.arcLength(hull, True))
+    if perimeter <= 0:
+        return None
+
+    quadrilateral = None
+    for epsilon_ratio in (0.012, 0.018, 0.025, 0.035, 0.05, 0.07, 0.10):
+        approximation = cv2.approxPolyDP(hull, epsilon_ratio * perimeter, True)
+        if len(approximation) == 4 and cv2.isContourConvex(approximation):
+            quadrilateral = approximation.reshape(4, 2)
+            break
+
+    if quadrilateral is None:
+        return None
+
+    corners = _order(quadrilateral)
+    polygon_area = abs(float(cv2.contourArea(corners)))
+    area_ratio = polygon_area / max(float(image_area), 1.0)
+    if area_ratio < MIN_AREA_RATIO or area_ratio > MAX_AREA_RATIO:
+        return None
+
+    angles = _angles(corners)
+    if angles is None or np.min(angles) < 25.0 or np.max(angles) > 155.0:
+        return None
+
+    sides = np.asarray(
+        [
+            np.linalg.norm(corners[(index + 1) % 4] - corners[index])
+            for index in range(4)
+        ],
+        dtype=np.float32,
+    )
+    if np.min(sides) < np.hypot(width, height) * 0.08:
+        return None
+
+    angle_error = float(np.mean(np.abs(angles - 90.0)))
+    angle_score = float(np.clip(1.0 - angle_error / 60.0, 0.0, 1.0))
+    balance_score = float(
+        np.sqrt(
+            (min(sides[0], sides[2]) / max(sides[0], sides[2]))
+            * (min(sides[1], sides[3]) / max(sides[1], sides[3]))
+        )
+    )
+    fill_score = float(np.clip(contour_area / max(polygon_area, 1.0), 0.0, 1.0))
+    edge_support = _edge_support(gray, corners)
+    contrast_score = _border_contrast(gray, corners)
+    contacts = _frame_contacts(corners, width, height)
+    frame_score = {0: 1.0, 1: 0.88, 2: 0.62}.get(contacts, 0.12)
+
+    low_area_score = float(np.clip((area_ratio - MIN_AREA_RATIO) / 0.16, 0.0, 1.0))
+    high_area_score = float(np.clip((MAX_AREA_RATIO - area_ratio) / 0.10, 0.0, 1.0))
+    area_score = min(low_area_score, high_area_score)
+
+    score = float(np.clip(
+        0.24 * angle_score
+        + 0.12 * balance_score
+        + 0.20 * edge_support
+        + 0.15 * contrast_score
+        + 0.10 * fill_score
+        + 0.09 * area_score
+        + 0.10 * frame_score,
+        0.0,
+        1.0,
+    ))
+
+    return {
+        "corners": corners,
+        "confidence": score,
+        "area_ratio": float(area_ratio),
+        "edge_support": float(edge_support),
+        "contrast_score": float(contrast_score),
+        "angle_score": float(angle_score),
+        "balance_score": float(balance_score),
+        "fill_score": float(fill_score),
+        "frame_contact_count": contacts,
+        "source": source,
+    }
+
+
+def _collect_mask_candidates(mask, gray, source):
+    height, width = gray.shape[:2]
+    image_area = float(height * width)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    candidates = []
+    for contour in sorted(contours, key=cv2.contourArea, reverse=True)[:5]:
+        candidate = _candidate_from_contour(
+            contour, gray, width, height, image_area, source
+        )
+        if candidate is not None:
+            candidates.append(candidate)
+    return candidates
+
+
+def _brightness_masks(bgr):
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    luminance = lab[:, :, 0]
+    saturation = hsv[:, :, 1]
+    height, width = luminance.shape[:2]
+
+    kernel_size = max(5, int(round(min(height, width) * 0.014)))
+    if kernel_size % 2 == 0:
+        kernel_size += 1
+    close_kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE, (kernel_size, kernel_size)
+    )
+
+    for luminance_percentile in (52, 62, 72):
+        luminance_threshold = float(np.percentile(luminance, luminance_percentile))
+        for saturation_percentile in (65, 82):
+            saturation_limit = max(
+                55.0, float(np.percentile(saturation, saturation_percentile))
+            )
+            mask = np.where(
+                (luminance >= luminance_threshold)
+                & (saturation <= saturation_limit),
+                255,
+                0,
+            ).astype(np.uint8)
+            mask = cv2.morphologyEx(
+                mask, cv2.MORPH_CLOSE, close_kernel, iterations=2
+            )
+            mask = cv2.morphologyEx(
+                mask,
+                cv2.MORPH_OPEN,
+                np.ones((5, 5), dtype=np.uint8),
+                iterations=1,
+            )
+            yield (
+                f"brightness_{luminance_percentile}_{saturation_percentile}",
+                mask,
+            )
+
+
+def _grabcut_mask(bgr):
+    height, width = bgr.shape[:2]
+    mask = np.full((height, width), cv2.GC_PR_BGD, dtype=np.uint8)
+
+    border_x = max(4, int(round(width * 0.025)))
+    border_y = max(4, int(round(height * 0.025)))
+    mask[:border_y, :] = cv2.GC_BGD
+    mask[-border_y:, :] = cv2.GC_BGD
+    mask[:, :border_x] = cv2.GC_BGD
+    mask[:, -border_x:] = cv2.GC_BGD
+
+    mask[
+        int(height * 0.08):int(height * 0.92),
+        int(width * 0.08):int(width * 0.92),
+    ] = cv2.GC_PR_FGD
+    mask[
+        int(height * 0.20):int(height * 0.80),
+        int(width * 0.18):int(width * 0.82),
+    ] = cv2.GC_FGD
+
+    background_model = np.zeros((1, 65), dtype=np.float64)
+    foreground_model = np.zeros((1, 65), dtype=np.float64)
+
+    try:
+        cv2.grabCut(
+            bgr,
+            mask,
+            None,
+            background_model,
+            foreground_model,
+            4,
+            cv2.GC_INIT_WITH_MASK,
+        )
+    except cv2.error:
+        return None
+
+    return np.where(
+        (mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD),
+        255,
+        0,
+    ).astype(np.uint8)
 
 
 def detect_bright_document_boundary(image):
-    """Conservative fallback for bright paper on a contrasting background.
-
-    This detector is intentionally supplementary. It is used only by the
-    preparation pipeline to recover cases where the primary Guided/Region
-    detector returns a frame-like region instead of the actual sheet.
-    """
+    """Hybrid bright/region detector used as an official weak-primary fallback."""
     if image is None or not isinstance(image, np.ndarray) or image.size == 0:
         raise ValueError("Image must be a valid NumPy array.")
 
@@ -88,148 +294,12 @@ def detect_bright_document_boundary(image):
     elif image.ndim == 3 and image.shape[2] == 4:
         bgr = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
     elif image.ndim == 3 and image.shape[2] == 3:
-        bgr = image
+        bgr = image.copy()
     else:
         raise ValueError("Unsupported image format.")
 
     height, width = bgr.shape[:2]
-    image_area = float(height * width)
     if min(height, width) < 80:
-        return {
-            "detected": False,
-            "status": "reject",
-            "corners": [],
-            "confidence": 0.0,
-            "area_ratio": 0.0,
-            "reason": "rejected: image is too small for bright-paper fallback",
-        }
-
-    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
-    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-    luminance = lab[:, :, 0]
-    saturation = hsv[:, :, 1]
-    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-
-    saturation_limit = min(185, max(90, int(np.percentile(saturation, 70))))
-    luminance_thresholds = sorted(
-        set(
-            max(150, min(235, int(np.percentile(luminance, percentile))))
-            for percentile in (68, 75, 82, 88)
-        )
-    )
-
-    candidates = []
-
-    for threshold in luminance_thresholds:
-        mask = np.where(
-            (luminance >= threshold) & (saturation <= saturation_limit),
-            255,
-            0,
-        ).astype(np.uint8)
-
-        kernel_size = max(5, int(round(min(height, width) * 0.014)))
-        if kernel_size % 2 == 0:
-            kernel_size += 1
-        close_kernel = cv2.getStructuringElement(
-            cv2.MORPH_ELLIPSE, (kernel_size, kernel_size)
-        )
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel, iterations=2)
-        mask = cv2.morphologyEx(
-            mask,
-            cv2.MORPH_OPEN,
-            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)),
-            iterations=1,
-        )
-
-        contours, _ = cv2.findContours(
-            mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-
-        for contour in sorted(contours, key=cv2.contourArea, reverse=True)[:5]:
-            contour_area = float(cv2.contourArea(contour))
-            if contour_area < image_area * 0.14:
-                continue
-
-            hull = cv2.convexHull(contour)
-            perimeter = float(cv2.arcLength(hull, True))
-            if perimeter <= 0:
-                continue
-
-            quadrilateral = None
-            for epsilon_ratio in (0.012, 0.018, 0.025, 0.035, 0.05, 0.07):
-                approximation = cv2.approxPolyDP(
-                    hull, epsilon_ratio * perimeter, True
-                )
-                if len(approximation) == 4 and cv2.isContourConvex(approximation):
-                    quadrilateral = approximation.reshape(4, 2)
-                    break
-
-            if quadrilateral is None:
-                continue
-
-            corners = _order(quadrilateral)
-            polygon_area = abs(float(cv2.contourArea(corners)))
-            area_ratio = polygon_area / image_area
-            if area_ratio < MIN_AREA_RATIO or area_ratio > MAX_AREA_RATIO:
-                continue
-
-            angles = _angles(corners)
-            if angles is None or np.min(angles) < 35.0 or np.max(angles) > 145.0:
-                continue
-
-            sides = np.asarray(
-                [
-                    np.linalg.norm(corners[(index + 1) % 4] - corners[index])
-                    for index in range(4)
-                ],
-                dtype=np.float32,
-            )
-            if np.min(sides) < np.hypot(width, height) * 0.08:
-                continue
-
-            angle_error = float(np.mean(np.abs(angles - 90.0)))
-            geometry_score = float(
-                np.clip(1.0 - angle_error / 60.0, 0.0, 1.0)
-            )
-            balance_score = float(
-                np.sqrt(
-                    (min(sides[0], sides[2]) / max(sides[0], sides[2]))
-                    * (min(sides[1], sides[3]) / max(sides[1], sides[3]))
-                )
-            )
-            fill_score = float(
-                np.clip(contour_area / max(polygon_area, 1.0), 0.0, 1.0)
-            )
-            contrast_score = _border_contrast(gray, corners)
-            clearance = _clearance(corners, width, height)
-            clearance_score = float(np.clip(clearance / 0.08, 0.0, 1.0))
-
-            score = (
-                0.33 * geometry_score
-                + 0.20 * balance_score
-                + 0.20 * fill_score
-                + 0.22 * contrast_score
-                + 0.05 * clearance_score
-            )
-
-            candidates.append(
-                {
-                    "corners": corners,
-                    "confidence": float(score),
-                    "area_ratio": float(area_ratio),
-                    "clearance": float(clearance),
-                }
-            )
-
-    safe_candidates = [
-        candidate
-        for candidate in candidates
-        if candidate["clearance"] >= MIN_CLEARANCE_RATIO
-    ]
-    ranked = safe_candidates if safe_candidates else candidates
-    ranked.sort(key=lambda item: item["confidence"], reverse=True)
-
-    if not ranked:
         return {
             "detected": False,
             "status": "reject",
@@ -237,25 +307,62 @@ def detect_bright_document_boundary(image):
             "corners": [],
             "confidence": 0.0,
             "area_ratio": 0.0,
-            "reason": "rejected: bright-paper detector found no document-like quadrilateral",
+            "reason": "rejected: image is too small for bright-document detection",
         }
 
-    best = ranked[0]
-    safe = best["clearance"] >= MIN_CLEARANCE_RATIO
-    confidence = float(best["confidence"])
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    candidates = []
 
-    if safe and confidence >= MIN_SCORE:
+    for source, mask in _brightness_masks(bgr):
+        candidates.extend(_collect_mask_candidates(mask, gray, source))
+
+    candidates.sort(key=lambda item: item["confidence"], reverse=True)
+
+    if not candidates or candidates[0]["confidence"] < 0.70:
+        grabcut = _grabcut_mask(bgr)
+        if grabcut is not None:
+            candidates.extend(_collect_mask_candidates(grabcut, gray, "grabcut"))
+            candidates.sort(key=lambda item: item["confidence"], reverse=True)
+
+    if not candidates:
+        return {
+            "detected": False,
+            "status": "reject",
+            "method_used": "bright",
+            "corners": [],
+            "confidence": 0.0,
+            "area_ratio": 0.0,
+            "reason": "rejected: bright-document detector found no document-like quadrilateral",
+        }
+
+    best = candidates[0]
+    confidence = float(best["confidence"])
+    low_contrast_geometry_rescue = (
+        confidence >= 0.58
+        and best["contrast_score"] < 0.12
+        and best["angle_score"] >= 0.80
+        and best["balance_score"] >= 0.70
+        and best["fill_score"] >= 0.82
+        and best["frame_contact_count"] == 0
+        and best["source"] == "grabcut"
+    )
+
+    if confidence >= MIN_SCORE or low_contrast_geometry_rescue:
         status = "accept_automatic"
         detected = True
-        reason = "accepted: bright-paper detector found a fully visible document"
-    elif safe and confidence >= REVIEW_SCORE:
+        reason = (
+            "accepted: low-contrast page passed geometry/region rescue"
+            if low_contrast_geometry_rescue and confidence < MIN_SCORE
+            else "accepted: bright-document candidate passed hybrid scoring"
+        )
+    elif confidence >= REVIEW_SCORE:
         status = "review_required"
         detected = True
-        reason = "review required: bright-paper detector found a usable medium-confidence document"
+        reason = "review required: bright-document candidate is usable but not safe for automatic crop"
     else:
         status = "reject"
         detected = False
-        reason = "rejected: bright-paper detector did not find a safe reviewable document boundary"
+        reason = "rejected: bright-document candidate failed the review-quality floor"
 
     return {
         "detected": detected,
@@ -267,7 +374,10 @@ def detect_bright_document_boundary(image):
         "confidence": round(confidence, 4),
         "final_score": round(confidence, 4),
         "area_ratio": round(best["area_ratio"], 4),
-        "clearance": round(best["clearance"], 6),
-        "edge_support": 0.0,
+        "edge_support": round(best["edge_support"], 4),
+        "contrast_score": round(best["contrast_score"], 4),
+        "angle_score": round(best["angle_score"], 4),
+        "frame_contact_count": int(best["frame_contact_count"]),
+        "candidate_source": best["source"],
         "reason": reason,
     }
