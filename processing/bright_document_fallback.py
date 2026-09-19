@@ -340,13 +340,21 @@ def detect_bright_document_boundary(image):
             grab_candidates = _collect_mask_candidates(grabcut, gray, edges, "grabcut")
             grab_candidates.sort(key=lambda item: item["confidence"], reverse=True)
             grab_best = grab_candidates[0] if grab_candidates else None
+            grab_is_geometrically_better = (
+                grab_best is not None
+                and brightness_best is not None
+                and grab_best["frame_contact_count"] < brightness_best["frame_contact_count"]
+                and grab_best["angle_score"] >= brightness_best["angle_score"] + 0.10
+                and grab_best["confidence"] >= brightness_best["confidence"] - 0.01
+            )
             if (
                 brightness_best is None
                 or brightness_best["confidence"] < 0.55
                 or (
                     grab_best is not None
-                    and grab_best["confidence"] >= brightness_best["confidence"] + 0.04
+                    and grab_best["confidence"] >= brightness_best["confidence"] + 0.03
                 )
+                or grab_is_geometrically_better
             ):
                 candidates.extend(grab_candidates)
                 candidates.sort(key=lambda item: item["confidence"], reverse=True)
