@@ -175,8 +175,8 @@ def test_preparation_selector_exposes_hybrid_candidates():
     result = detect_preparation_boundary(image)
 
     assert set(result["candidates"]) == {"guided", "region", "bright"}
-    assert result["allowed_methods"] == ["guided", "region"]
-    assert result["method_used"] in {None, "guided", "region"}
+    assert result["allowed_methods"] == ["guided", "region", "bright"]
+    assert result["method_used"] in {None, "guided", "region", "bright"}
     assert result["status"] in {"accept_automatic", "review_required", "reject"}
 
     if result["method_used"] is not None:
@@ -202,7 +202,7 @@ def test_preparation_selector_rejects_small_image_safely():
     assert result["status"] == "reject"
     assert result["detected"] is False
     assert result["method_used"] is None
-    assert set(result["candidates"]) == {"guided", "region"}
+    assert set(result["candidates"]) == {"guided", "region", "bright"}
 
 
 
