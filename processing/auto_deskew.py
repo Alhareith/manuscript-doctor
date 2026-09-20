@@ -101,73 +101,105 @@ def _rotate_without_clipping(image, angle):
 
     return rotated, matrix
 
-def _calculate_safe_crop(image_shape, transform, rotated_shape):
+def _largest_axis_aligned_rect(width, height, angle_degrees):
+    """Return the largest axis-aligned rectangle inside a rotated rectangle.
+
+    This is an O(1) geometric calculation. It replaces the previous row-by-row
+    mask scan while preserving the conservative retention check.
+    """
+    width = float(width)
+    height = float(height)
+
+    if width <= 0 or height <= 0:
+        return None
+
+    angle = abs(float(angle_degrees)) % 180.0
+    if angle > 90.0:
+        angle = 180.0 - angle
+
+    radians = np.deg2rad(angle)
+    sine = abs(float(np.sin(radians)))
+    cosine = abs(float(np.cos(radians)))
+
+    if sine < 1e-9:
+        return width, height
+
+    width_is_longer = width >= height
+    side_long = max(width, height)
+    side_short = min(width, height)
+
+    if (
+        side_short <= 2.0 * sine * cosine * side_long
+        or abs(sine - cosine) < 1e-9
+    ):
+        half_short = 0.5 * side_short
+        if width_is_longer:
+            rect_width = half_short / max(sine, 1e-9)
+            rect_height = half_short / max(cosine, 1e-9)
+        else:
+            rect_width = half_short / max(cosine, 1e-9)
+            rect_height = half_short / max(sine, 1e-9)
+    else:
+        cos_2a = (cosine * cosine) - (sine * sine)
+        if abs(cos_2a) < 1e-9:
+            return None
+
+        rect_width = (
+            (width * cosine) - (height * sine)
+        ) / cos_2a
+        rect_height = (
+            (height * cosine) - (width * sine)
+        ) / cos_2a
+
+    rect_width = float(max(1.0, min(rect_width, width / max(cosine, 1e-9))))
+    rect_height = float(max(1.0, min(rect_height, height / max(cosine, 1e-9))))
+
+    if not np.isfinite(rect_width) or not np.isfinite(rect_height):
+        return None
+
+    return rect_width, rect_height
+
+
+def _calculate_safe_crop(image_shape, transform, rotated_shape, angle=None):
     source_height, source_width = image_shape[:2]
     rotated_height, rotated_width = rotated_shape[:2]
 
-    source_corners = np.array([
-        [0.0, 0.0],
-        [source_width - 1.0, 0.0],
-        [source_width - 1.0, source_height - 1.0],
-        [0.0, source_height - 1.0],
-    ], dtype=np.float32).reshape(-1, 1, 2)
+    if angle is None:
+        rotation_cos = float(transform[0, 0])
+        rotation_sin = float(transform[0, 1])
+        angle = np.degrees(np.arctan2(rotation_sin, rotation_cos))
 
-    transformed_corners = cv2.transform(source_corners, transform).reshape(4, 2)
-
-    mask = np.zeros((rotated_height, rotated_width), dtype=np.uint8)
-    cv2.fillConvexPoly(mask, np.round(transformed_corners).astype(np.int32), 255)
-
-    valid_area = int(cv2.countNonZero(mask))
-
-    if valid_area <= 0:
+    rectangle = _largest_axis_aligned_rect(
+        source_width,
+        source_height,
+        angle,
+    )
+    if rectangle is None:
         return None
 
-    distance = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+    crop_width, crop_height = rectangle
+    crop_width = int(max(1, min(round(crop_width), rotated_width)))
+    crop_height = int(max(1, min(round(crop_height), rotated_height)))
 
-    best = None
-    step = max(1, int(round(min(rotated_height, rotated_width) * 0.002)))
+    left = int(round((rotated_width - crop_width) / 2.0))
+    top = int(round((rotated_height - crop_height) / 2.0))
 
-    for top in range(0, rotated_height // 2, step):
-        if not np.any(mask[top, :]):
-            continue
+    left = int(np.clip(left, 0, max(rotated_width - crop_width, 0)))
+    top = int(np.clip(top, 0, max(rotated_height - crop_height, 0)))
 
-        bottom = rotated_height - 1 - top
+    valid_area = float(max(source_width * source_height, 1))
+    crop_area = int(crop_width * crop_height)
+    retention_ratio = float(crop_area / valid_area)
 
-        if bottom <= top:
-            break
-
-        row_top = np.where(mask[top, :] > 0)[0]
-        row_bottom = np.where(mask[bottom, :] > 0)[0]
-
-        if row_top.size == 0 or row_bottom.size == 0:
-            continue
-
-        left = int(max(row_top[0], row_bottom[0]))
-        right = int(min(row_top[-1], row_bottom[-1]))
-
-        if right <= left:
-            continue
-
-        rectangle_mask = mask[top:bottom + 1, left:right + 1]
-
-        if rectangle_mask.size == 0 or np.any(rectangle_mask == 0):
-            continue
-
-        crop_area = int((right - left + 1) * (bottom - top + 1))
-        retention_ratio = float(crop_area / valid_area)
-
-        if best is None or crop_area > best["area"]:
-            best = {
-                "x": left,
-                "y": top,
-                "width": right - left + 1,
-                "height": bottom - top + 1,
-                "area": crop_area,
-                "retention_ratio": retention_ratio,
-            }
-
-    return best
-
+    return {
+        "x": left,
+        "y": top,
+        "width": crop_width,
+        "height": crop_height,
+        "area": crop_area,
+        "retention_ratio": retention_ratio,
+        "method": "direct_geometry",
+    }
 
 def _apply_safe_crop(image, safe_crop):
     if safe_crop is None:
@@ -224,7 +256,7 @@ def apply_auto_deskew(image, skew_result):
         }
 
     corrected, transform = _rotate_without_clipping(image, angle)
-    safe_crop = _calculate_safe_crop(image.shape, transform, corrected.shape)
+    safe_crop = _calculate_safe_crop(image.shape, transform, corrected.shape, angle=angle)
     final_image, crop_applied, crop_reason = _apply_safe_crop(corrected, safe_crop)
 
     return {

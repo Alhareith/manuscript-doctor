@@ -1,0 +1,25 @@
+name: boundary-fix-validation
+
+on:
+  push:
+    branches:
+      - fix/hybrid-boundary-preview-source
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: python -m compileall processing app.py
+      - run: |
+          node --check static/js/parts/00-state-constants.js
+          node --check static/js/parts/02-upload-api.js
+          node --check static/js/parts/06-manual-preview.js
+          node --check static/js/parts/07-manual-execution.js
+          node --check static/js/parts/10-theme-quick-tools.js
+      - run: python -m pytest -q tests/test_auto_deskew.py tests/test_preparation_pipeline.py tests/test_preparation_crop_regressions.py

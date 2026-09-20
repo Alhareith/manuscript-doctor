@@ -83,9 +83,9 @@ async function applyManualOperation(options = {}) {
         if (requestId !== manualPreviewSequence) return;
 
         if (preparationRoute) {
-            renderPreparationPreview(data);
+            renderPreparationPreview(data, requestId);
         } else {
-            renderManualOperationResult(data, { live });
+            renderManualOperationResult(data, { live, requestId });
         }
     } catch (error) {
         if (error?.name === "AbortError") return;
@@ -109,6 +109,7 @@ function syncManualChainSelection(options = {}) {
     const index = Number.isInteger(state.manualActiveIndex) ? state.manualActiveIndex : -1;
     const entry = index >= 0 ? state.manualChain[index] : null;
     state.manualPreviewCandidate = null;
+    state.manualPreviewSource = null;
 
     if (entry?.result?.id) {
         state.resultId = entry.result.id;
@@ -126,7 +127,7 @@ function syncManualChainSelection(options = {}) {
                 : `/api/results/${encodeURIComponent(previousEntry.result.id)}?before=${Date.now()}`)
             : manualOriginalUrl();
         if (elements.manualOriginalPreview && beforeUrl) elements.manualOriginalPreview.src = beforeUrl;
-        if (elements.manualLivePreview) elements.manualLivePreview.src = afterUrl;
+        if (elements.manualLivePreview) setManualPreviewSource(afterUrl, { pending: false, requestId: manualPreviewSequence });
         if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationLabel(entry.operation?.id || "manual_operation")} · الخطوة النشطة في السلسلة.`;
         showSection("downloadSection");
     } else {
@@ -137,6 +138,7 @@ function syncManualChainSelection(options = {}) {
         state.manualApprovedResult = null;
         const url = manualOriginalUrl();
         if (elements.manualOriginalPreview && url) elements.manualOriginalPreview.src = url;
+        state.manualApprovedSource = null;
         if (elements.manualLivePreview && url) elements.manualLivePreview.src = url;
         if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "تم الرجوع إلى الأصل — اختر عملية لمتابعة المعالجة.";
         hideSection("downloadSection");
@@ -236,7 +238,12 @@ async function approveManualOperation() {
 
             const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}?approved=${Date.now()}`;
             if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = approvedUrl;
-            if (elements.manualLivePreview) elements.manualLivePreview.src = approvedUrl;
+            if (elements.manualLivePreview) {
+                setManualPreviewSource(approvedUrl, {
+                    pending: false,
+                    requestId: manualPreviewSequence
+                });
+            }
             if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "Preparation · النتيجة المعتمدة أصبحت الصورة الحالية";
 
             updateManualApprovalUI();
@@ -287,12 +294,6 @@ async function approveManualOperation() {
         state.manualActiveIndex = state.manualChain.length - 1;
         state.manualPreviewCandidate = null;
         setBusy(false);
-
-        setManualPreviewResult(
-            data.result,
-            operationId,
-            data.preservation?.assessment?.status || data.verification?.status
-        );
         const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}?approved=${Date.now()}`;
 
         if (elements.manualOriginalPreview) {
@@ -300,7 +301,10 @@ async function approveManualOperation() {
         }
 
         if (elements.manualLivePreview) {
-            elements.manualLivePreview.src = approvedUrl;
+            setManualPreviewSource(approvedUrl, {
+                pending: false,
+                requestId: manualPreviewSequence
+            });
         }
 
         if (elements.manualPreviewNote) {
