@@ -1156,25 +1156,29 @@ def create_app(test_config=None):
             )
 
         preview_preparation_metadata = manifest.get("preparation")
-        if not isinstance(preview_preparation_metadata, dict):
-            return error_response(
-                "PREPARATION_PLAN_MISSING",
-                "تعذر العثور على خطة تجهيز المعاينة.",
-                409,
-            )
-
-        precomputed_boundary = preview_preparation_metadata.get("boundary")
-        precomputed_skew = preview_preparation_metadata.get("skew")
-        plan_source_dimensions = preview_preparation_metadata.get("plan_source_dimensions")
+        can_reuse_preview_plan = (
+            isinstance(preview_preparation_metadata, dict)
+            and isinstance(preview_preparation_metadata.get("boundary"), dict)
+            and isinstance(preview_preparation_metadata.get("skew"), dict)
+            and isinstance(preview_preparation_metadata.get("plan_source_dimensions"), dict)
+        )
 
         try:
-            final_preparation = prepare_document(
-                original_image,
-                boundary_detector=detect_preparation_boundary,
-                precomputed_boundary=precomputed_boundary,
-                precomputed_skew=precomputed_skew,
-                plan_source_dimensions=plan_source_dimensions,
-            )
+            if can_reuse_preview_plan:
+                final_preparation = prepare_document(
+                    original_image,
+                    boundary_detector=detect_preparation_boundary,
+                    precomputed_boundary=preview_preparation_metadata["boundary"],
+                    precomputed_skew=preview_preparation_metadata["skew"],
+                    plan_source_dimensions=preview_preparation_metadata["plan_source_dimensions"],
+                )
+            else:
+                # Backward compatibility for preview manifests created before
+                # reusable preparation plans were introduced.
+                final_preparation = prepare_document(
+                    original_image,
+                    boundary_detector=detect_preparation_boundary,
+                )
             if not final_preparation.get("prepared"):
                 return error_response(
                     "PREPARATION_REJECTED",
