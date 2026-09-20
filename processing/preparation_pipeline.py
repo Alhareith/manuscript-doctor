@@ -70,6 +70,45 @@ def _restore_boundary_coordinates(boundary, scale, width, height):
     return restored
 
 
+def _scale_precomputed_boundary(boundary, source_dimensions, width, height):
+    if not isinstance(boundary, dict):
+        raise ValueError("precomputed boundary must be a dictionary.")
+
+    corners = boundary.get("corners")
+    if not corners:
+        return dict(boundary)
+
+    if not isinstance(source_dimensions, dict):
+        raise ValueError("plan source dimensions are required for precomputed boundary reuse.")
+
+    source_width = int(source_dimensions.get("width", 0))
+    source_height = int(source_dimensions.get("height", 0))
+    if source_width <= 0 or source_height <= 0:
+        raise ValueError("plan source dimensions are invalid.")
+
+    points = np.asarray(corners, dtype=np.float32).reshape(4, 2)
+    scale_x = width / float(source_width)
+    scale_y = height / float(source_height)
+
+    scaled = points.copy()
+    scaled[:, 0] *= scale_x
+    scaled[:, 1] *= scale_y
+    scaled[:, 0] = np.clip(scaled[:, 0], 0, width - 1)
+    scaled[:, 1] = np.clip(scaled[:, 1], 0, height - 1)
+
+    restored = dict(boundary)
+    restored["corners"] = [
+        [int(round(x)), int(round(y))]
+        for x, y in scaled
+    ]
+    restored["reused_from_preview"] = True
+    restored["plan_source_dimensions"] = {
+        "width": source_width,
+        "height": source_height,
+    }
+    return restored
+
+
 def _boundary_frame_clearance_ratio(boundary, width, height):
     corners = boundary.get("corners") if isinstance(boundary, dict) else None
     if not corners:
@@ -121,31 +160,42 @@ def prepare_document(
     image,
     boundary_detector=detect_document_boundary,
     boundary_max_dimension=BOUNDARY_DETECTION_MAX_DIMENSION,
+    precomputed_boundary=None,
+    precomputed_skew=None,
+    plan_source_dimensions=None,
 ):
     _validate_image(image)
 
     original = image.copy()
-    boundary_dimensions = [boundary_max_dimension]
-    if boundary_detector is detect_preparation_boundary:
-        boundary_dimensions.extend(
-            dimension
-            for dimension in BOUNDARY_FALLBACK_MAX_DIMENSIONS
-            if dimension < boundary_max_dimension
-        )
-
-    boundary = None
-    boundary_scale = 1.0
-    for dimension in boundary_dimensions:
-        proxy, boundary_scale = _make_boundary_proxy(image, dimension)
-        candidate = boundary_detector(proxy)
-        boundary = _restore_boundary_coordinates(
-            candidate,
-            boundary_scale,
+    if precomputed_boundary is not None:
+        boundary = _scale_precomputed_boundary(
+            precomputed_boundary,
+            plan_source_dimensions,
             image.shape[1],
             image.shape[0],
         )
-        if boundary.get("detected") or boundary.get("status") != "reject":
-            break
+    else:
+        boundary_dimensions = [boundary_max_dimension]
+        if boundary_detector is detect_preparation_boundary:
+            boundary_dimensions.extend(
+                dimension
+                for dimension in BOUNDARY_FALLBACK_MAX_DIMENSIONS
+                if dimension < boundary_max_dimension
+            )
+
+        boundary = None
+        boundary_scale = 1.0
+        for dimension in boundary_dimensions:
+            proxy, boundary_scale = _make_boundary_proxy(image, dimension)
+            candidate = boundary_detector(proxy)
+            boundary = _restore_boundary_coordinates(
+                candidate,
+                boundary_scale,
+                image.shape[1],
+                image.shape[0],
+            )
+            if boundary.get("detected") or boundary.get("status") != "reject":
+                break
 
     # detect_preparation_boundary already evaluates Guided, Region and Bright
     # candidates on one score; do not run a second hidden fallback here.
@@ -226,7 +276,19 @@ def prepare_document(
 
         current = rectified["image"]
 
-    skew = _detect_skew_on_proxy(current)
+    if precomputed_skew is not None:
+        if not isinstance(precomputed_skew, dict):
+            raise ValueError("precomputed skew must be a dictionary.")
+        skew = dict(precomputed_skew)
+        skew["reused_from_preview"] = True
+        skew.setdefault("detection_scale", 1.0)
+        skew.setdefault(
+            "detection_dimensions",
+            {"width": int(current.shape[1]), "height": int(current.shape[0])},
+        )
+    else:
+        skew = _detect_skew_on_proxy(current)
+
     result["skew"] = skew
 
     result["steps"].append({
