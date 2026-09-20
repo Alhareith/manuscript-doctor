@@ -1059,6 +1059,10 @@ def create_app(test_config=None):
         preparation_metadata["method_used"] = boundary.get("method_used") or (
             "deskew-only" if deskew_metadata.get("applied") else None
         )
+        preparation_metadata["plan_source_dimensions"] = {
+            "width": int(preview_source.shape[1]),
+            "height": int(preview_source.shape[0]),
+        }
 
         try:
             preparation_id, _ = save_preparation_preview(
@@ -1151,10 +1155,25 @@ def create_app(test_config=None):
                 500,
             )
 
+        preview_preparation_metadata = manifest.get("preparation")
+        if not isinstance(preview_preparation_metadata, dict):
+            return error_response(
+                "PREPARATION_PLAN_MISSING",
+                "تعذر العثور على خطة تجهيز المعاينة.",
+                409,
+            )
+
+        precomputed_boundary = preview_preparation_metadata.get("boundary")
+        precomputed_skew = preview_preparation_metadata.get("skew")
+        plan_source_dimensions = preview_preparation_metadata.get("plan_source_dimensions")
+
         try:
             final_preparation = prepare_document(
                 original_image,
                 boundary_detector=detect_preparation_boundary,
+                precomputed_boundary=precomputed_boundary,
+                precomputed_skew=precomputed_skew,
+                plan_source_dimensions=plan_source_dimensions,
             )
             if not final_preparation.get("prepared"):
                 return error_response(
