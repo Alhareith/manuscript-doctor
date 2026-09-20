@@ -22,36 +22,4 @@ jobs:
           node --check static/js/parts/06-manual-preview.js
           node --check static/js/parts/07-manual-execution.js
           node --check static/js/parts/10-theme-quick-tools.js
-      - name: Boundary diagnostics
-        run: |
-          python - <<'PY'
-          import cv2
-          import numpy as np
-          from processing.document_boundary import detect_preparation_boundary
-
-          def compact(name, image):
-              result = detect_preparation_boundary(image)
-              print("\n==", name, "==")
-              print({k: result.get(k) for k in ("status","method_used","confidence","area_ratio","edge_support","reason","corners")})
-              for method, candidate in result.get("candidates", {}).items():
-                  print(method, {k: candidate.get(k) for k in ("status","confidence","area_ratio","edge_support","contrast_score","angle_score","stability_score","frame_contact_count","source_confidence","reason")})
-
-          compact("c05", cv2.imread("evaluation/input/check/c05.jpg"))
-
-          light = np.full((720, 980, 3), (188,194,198), dtype=np.uint8)
-          corners = np.array([[120,90],[850,125],[820,650],[100,620]], dtype=np.int32)
-          cv2.fillConvexPoly(light, corners, (225,226,224))
-          for y in range(175,575,44):
-              cv2.line(light, (205,y), (745,y+8), (85,85,85), 2)
-          compact("light", light)
-
-          rng = np.random.default_rng(7)
-          no_page = np.full((720,980,3), (118,126,132), dtype=np.uint8)
-          noise = rng.normal(0,9,no_page.shape[:2]).astype(np.int16)
-          for channel in range(3):
-              no_page[:,:,channel] = np.clip(no_page[:,:,channel].astype(np.int16)+noise,0,255).astype(np.uint8)
-          for x in range(25,980,55):
-              cv2.line(no_page,(x,0),(x+20,719),(105,110,115),2)
-          compact("no_page", no_page)
-          PY
-      - run: echo diagnostics-complete
+      - run: python -m pytest -q tests/test_auto_deskew.py tests/test_preparation_pipeline.py tests/test_preparation_crop_regressions.py
