@@ -141,3 +141,16 @@
         max-height: none !important;
     }
 }
+
+
+/* Keep both before/after images fully visible inside their cards.
+   Earlier auto-sized image rules could exceed the fixed preview row and be clipped. */
+.manual-preview-image-wrap img,
+.manual-editor.clinic-crop-focus .manual-preview-image-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+}
