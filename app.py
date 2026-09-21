@@ -783,7 +783,7 @@ def create_app(test_config=None):
                     )
                 processed = apply_operation(operation_id, preview_source, parameters)
 
-            preferred_preview_format = request.headers.get("X-Preview-Format", "jpeg")
+            preferred_preview_format = request.headers.get("X-Preview-Format", "png")
             preview = build_preview_payload(processed, preferred_preview_format)
         except (ValueError, TypeError) as error:
             return error_response(
