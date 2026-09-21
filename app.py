@@ -649,6 +649,7 @@ def create_app(test_config=None):
 
         operation_id = payload.get("operation_id")
         parameters = payload.get("parameters", {})
+        source_result_id = payload.get("source_result_id")
 
         if not isinstance(operation_id, str):
             return error_response("INVALID_OPERATION", "معرف العملية غير صالح.", 400)
@@ -668,23 +669,16 @@ def create_app(test_config=None):
                 400,
             )
 
-        source_result_id = payload.get("source_result_id")
+        source_path = path
 
         if source_result_id is not None:
             if not isinstance(source_result_id, str) or not is_valid_resource_id(source_result_id):
                 return error_response(
-                   "INVALID_SOURCE_RESULT_ID",
+                    "INVALID_SOURCE_RESULT_ID",
                     "معرف النتيجة المصدرية غير صالح.",
                     400,
                 )
 
-        original = read_stored_image(path)
-        if original is None:
-            return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
-
-        working_image = original
-
-        if source_result_id:
             source_result_path = resolve_result_file(result_folder, source_result_id)
             source_manifest = read_manual_manifest(result_folder, source_result_id)
 
@@ -698,7 +692,7 @@ def create_app(test_config=None):
             source_kind = source_manifest.get("kind")
             source_origin = source_manifest.get("origin")
             source_status = source_manifest.get("status")
-            
+
             is_approved_manual_source = source_kind == "manual_approved"
             is_approved_unified_source = (
                 source_origin in {"manual", "preparation"}
@@ -722,25 +716,30 @@ def create_app(test_config=None):
                     400,
                 )
 
-
-
-            working_image = read_stored_image(source_result_path)
-            if working_image is None:
-                return error_response(
-                    "UNREADABLE_SOURCE_RESULT",
-                    "تعذر قراءة النتيجة اليدوية المعتمدة.",
-                    500,
-                )
+            source_path = source_result_path
 
         try:
             if operation_id == "crop":
+                working_image = read_stored_image(source_path)
+                if working_image is None:
+                    return error_response(
+                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
+                        "تعذر قراءة مصدر المعاينة.",
+                        500,
+                    )
                 processed = apply_operation(operation_id, working_image, parameters)
                 processed = resize_for_preview(processed)
             else:
-                preview_source = resize_for_preview(working_image)
+                preview_source = _cached_preview_source(source_path)
+                if preview_source is None:
+                    return error_response(
+                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
+                        "تعذر قراءة مصدر المعاينة.",
+                        500,
+                    )
                 processed = apply_operation(operation_id, preview_source, parameters)
 
-            preferred_preview_format = request.headers.get("X-Preview-Format", "png")
+            preferred_preview_format = request.headers.get("X-Preview-Format", "jpeg")
             preview = build_preview_payload(processed, preferred_preview_format)
         except (ValueError, TypeError) as error:
             return error_response(
@@ -767,6 +766,7 @@ def create_app(test_config=None):
             message="تم تحديث المعاينة.",
             status=200,
         )
+
     @app.post("/api/images/<image_id>/pipeline")
     def run_pipeline(image_id):
         if not is_valid_resource_id(image_id):
