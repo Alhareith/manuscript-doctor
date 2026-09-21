@@ -104,6 +104,50 @@ PREVIEW_MAX_WIDTH = 720
 PREVIEW_MAX_HEIGHT = 960
 PREPARATION_PREVIEW_MAX_DIMENSION = 1400
 
+_PREVIEW_SOURCE_CACHE = {}
+_PREVIEW_SOURCE_CACHE_ORDER = []
+_PREVIEW_SOURCE_CACHE_LIMIT = 8
+
+
+def _preview_cache_key(path):
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+
+    return (str(path.resolve()), int(stat.st_mtime_ns), int(stat.st_size))
+
+
+def _cached_preview_source(path):
+    key = _preview_cache_key(path)
+    if key is None:
+        return None
+
+    cached = _PREVIEW_SOURCE_CACHE.get(key)
+    if cached is not None:
+        return cached.copy()
+
+    image = read_stored_image(path)
+    if image is None:
+        return None
+
+    preview = resize_for_preview(image)
+    _PREVIEW_SOURCE_CACHE[key] = preview
+
+    try:
+        _PREVIEW_SOURCE_CACHE_ORDER.remove(key)
+    except ValueError:
+        pass
+
+    _PREVIEW_SOURCE_CACHE_ORDER.append(key)
+
+    while len(_PREVIEW_SOURCE_CACHE_ORDER) > _PREVIEW_SOURCE_CACHE_LIMIT:
+        oldest = _PREVIEW_SOURCE_CACHE_ORDER.pop(0)
+        _PREVIEW_SOURCE_CACHE.pop(oldest, None)
+
+    return preview.copy()
+
+
 
 def resize_for_preview(image, max_width=PREVIEW_MAX_WIDTH, max_height=PREVIEW_MAX_HEIGHT):
     """Return a proportional, bounded preview image without changing the source image."""
