@@ -12,8 +12,6 @@ from processing.skew_detector import detect_skew
 
 BOUNDARY_DETECTION_MAX_DIMENSION = 640
 BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
-SKEW_DETECTION_MAX_DIMENSION = 1280
-PREPARATION_MIN_FRAME_CLEARANCE_RATIO = 0.005
 
 
 def _validate_image(image):
@@ -70,146 +68,35 @@ def _restore_boundary_coordinates(boundary, scale, width, height):
     return restored
 
 
-def _scale_precomputed_boundary(boundary, source_dimensions, width, height):
-    if not isinstance(boundary, dict):
-        raise ValueError("precomputed boundary must be a dictionary.")
-
-    corners = boundary.get("corners")
-    if not corners:
-        return dict(boundary)
-
-    if not isinstance(source_dimensions, dict):
-        raise ValueError("plan source dimensions are required for precomputed boundary reuse.")
-
-    source_width = int(source_dimensions.get("width", 0))
-    source_height = int(source_dimensions.get("height", 0))
-    if source_width <= 0 or source_height <= 0:
-        raise ValueError("plan source dimensions are invalid.")
-
-    points = np.asarray(corners, dtype=np.float32).reshape(4, 2)
-    scale_x = width / float(source_width)
-    scale_y = height / float(source_height)
-
-    scaled = points.copy()
-    scaled[:, 0] *= scale_x
-    scaled[:, 1] *= scale_y
-    scaled[:, 0] = np.clip(scaled[:, 0], 0, width - 1)
-    scaled[:, 1] = np.clip(scaled[:, 1], 0, height - 1)
-
-    restored = dict(boundary)
-    restored["corners"] = [
-        [int(round(x)), int(round(y))]
-        for x, y in scaled
-    ]
-    restored["reused_from_preview"] = True
-    restored["plan_source_dimensions"] = {
-        "width": source_width,
-        "height": source_height,
-    }
-    return restored
-
-
-def _boundary_frame_clearance_ratio(boundary, width, height):
-    corners = boundary.get("corners") if isinstance(boundary, dict) else None
-    if not corners:
-        return 0.0
-
-    points = np.asarray(corners, dtype=np.float32).reshape(-1, 2)
-    if points.shape != (4, 2):
-        return 0.0
-
-    left = float(np.min(points[:, 0])) / max(float(width - 1), 1.0)
-    right = float(width - 1 - np.max(points[:, 0])) / max(float(width - 1), 1.0)
-    top = float(np.min(points[:, 1])) / max(float(height - 1), 1.0)
-    bottom = float(height - 1 - np.max(points[:, 1])) / max(float(height - 1), 1.0)
-
-    return float(max(0.0, min(left, right, top, bottom)))
-
-
-def _boundary_is_safe_for_automatic_perspective(boundary, width, height):
-    if not isinstance(boundary, dict) or not boundary.get("detected"):
-        return False, 0.0, "no reliable boundary was detected"
-
-    status = boundary.get("status")
-    if status is not None and status != "accept_automatic":
-        return False, _boundary_frame_clearance_ratio(boundary, width, height), (
-            f"boundary status is {status}; automatic perspective crop requires accept_automatic"
-        )
-
-    clearance = _boundary_frame_clearance_ratio(boundary, width, height)
-    if clearance < PREPARATION_MIN_FRAME_CLEARANCE_RATIO:
-        return False, clearance, (
-            "document boundary reaches the image frame; the page may be partially clipped"
-        )
-
-    return True, clearance, "boundary has visible background clearance on all four sides"
-
-
-def _detect_skew_on_proxy(image, max_dimension=SKEW_DETECTION_MAX_DIMENSION):
-    proxy, scale = _make_boundary_proxy(image, max_dimension)
-    skew = dict(detect_skew(proxy))
-    skew["detection_scale"] = round(float(scale), 6)
-    skew["detection_dimensions"] = {
-        "width": int(proxy.shape[1]),
-        "height": int(proxy.shape[0]),
-    }
-    return skew
-
-
 def prepare_document(
     image,
     boundary_detector=detect_document_boundary,
     boundary_max_dimension=BOUNDARY_DETECTION_MAX_DIMENSION,
-    precomputed_boundary=None,
-    precomputed_skew=None,
-    plan_source_dimensions=None,
 ):
     _validate_image(image)
 
     original = image.copy()
-    if precomputed_boundary is not None:
-        boundary = _scale_precomputed_boundary(
-            precomputed_boundary,
-            plan_source_dimensions,
+    boundary_dimensions = [boundary_max_dimension]
+    if boundary_detector is detect_preparation_boundary:
+        boundary_dimensions.extend(
+            dimension
+            for dimension in BOUNDARY_FALLBACK_MAX_DIMENSIONS
+            if dimension < boundary_max_dimension
+        )
+
+    boundary = None
+    boundary_scale = 1.0
+    for dimension in boundary_dimensions:
+        proxy, boundary_scale = _make_boundary_proxy(image, dimension)
+        candidate = boundary_detector(proxy)
+        boundary = _restore_boundary_coordinates(
+            candidate,
+            boundary_scale,
             image.shape[1],
             image.shape[0],
         )
-    else:
-        boundary_dimensions = [boundary_max_dimension]
-        if boundary_detector is detect_preparation_boundary:
-            boundary_dimensions.extend(
-                dimension
-                for dimension in BOUNDARY_FALLBACK_MAX_DIMENSIONS
-                if dimension < boundary_max_dimension
-            )
-
-        boundary = None
-        boundary_scale = 1.0
-        for dimension in boundary_dimensions:
-            proxy, boundary_scale = _make_boundary_proxy(image, dimension)
-            candidate = boundary_detector(proxy)
-            boundary = _restore_boundary_coordinates(
-                candidate,
-                boundary_scale,
-                image.shape[1],
-                image.shape[0],
-            )
-            if boundary.get("detected") or boundary.get("status") != "reject":
-                break
-
-    # detect_preparation_boundary already evaluates Guided, Region and Bright
-    # candidates on one score; do not run a second hidden fallback here.
-    perspective_allowed, frame_clearance, perspective_reason = (
-        _boundary_is_safe_for_automatic_perspective(
-            boundary,
-            image.shape[1],
-            image.shape[0],
-        )
-    )
-    boundary = dict(boundary)
-    boundary["frame_clearance_ratio"] = round(float(frame_clearance), 6)
-    boundary["automatic_crop_eligible"] = bool(perspective_allowed)
-    boundary["automatic_crop_reason"] = perspective_reason
+        if boundary.get("detected") or boundary.get("status") != "reject":
+            break
 
     result = {
         "prepared": False,
@@ -229,25 +116,19 @@ def prepare_document(
         "reason": "",
     }
 
-    boundary_found = bool(boundary.get("detected"))
+    boundary_detected = bool(boundary.get("detected"))
     current = original.copy()
 
-    if not perspective_allowed:
+    if not boundary_detected:
         result["steps"].append({
             "step": "boundary",
-            "status": "review_required" if boundary_found else "rejected",
-            "reason": perspective_reason,
-            "confidence": boundary.get("confidence", 0.0),
-            "area_ratio": boundary.get("area_ratio", 0.0),
-            "frame_clearance_ratio": round(float(frame_clearance), 6),
+            "status": "rejected",
+            "reason": boundary.get("reason", "boundary was not reliable enough"),
         })
         result["steps"].append({
             "step": "perspective",
             "status": "skipped",
-            "reason": (
-                "skipped: automatic perspective crop requires a fully visible document "
-                "with visible background on all four sides"
-            ),
+            "reason": "skipped: no reliable boundary; deskew-only fallback will use the original frame",
         })
     else:
         result["steps"].append({
@@ -255,7 +136,6 @@ def prepare_document(
             "status": "accepted",
             "confidence": boundary["confidence"],
             "area_ratio": boundary["area_ratio"],
-            "frame_clearance_ratio": round(float(frame_clearance), 6),
         })
 
         rectified = rectify_document(image, boundary["corners"])
@@ -276,19 +156,7 @@ def prepare_document(
 
         current = rectified["image"]
 
-    if precomputed_skew is not None:
-        if not isinstance(precomputed_skew, dict):
-            raise ValueError("precomputed skew must be a dictionary.")
-        skew = dict(precomputed_skew)
-        skew["reused_from_preview"] = True
-        skew.setdefault("detection_scale", 1.0)
-        skew.setdefault(
-            "detection_dimensions",
-            {"width": int(current.shape[1]), "height": int(current.shape[0])},
-        )
-    else:
-        skew = _detect_skew_on_proxy(current)
-
+    skew = detect_skew(current)
     result["skew"] = skew
 
     result["steps"].append({
@@ -298,26 +166,21 @@ def prepare_document(
         "confidence": skew["confidence"],
         "line_count": skew["line_count"],
         "dispersion": skew["dispersion"],
-        "detection_scale": skew["detection_scale"],
-        "detection_dimensions": skew["detection_dimensions"],
     })
 
     deskew_result = apply_auto_deskew(current, skew)
-    crop_applied = bool(perspective_allowed and deskew_result.get("crop_applied"))
+    crop_applied = bool(boundary_detected and deskew_result.get("crop_applied"))
     crop_reason = deskew_result.get("crop_reason")
 
-    if not perspective_allowed:
-        crop_reason = (
-            "skipped: document is not safely framed for automatic crop; "
-            "deskew correction keeps the complete current frame"
-        )
+    if not boundary_detected:
+        crop_reason = "skipped: no reliable document boundary; deskew correction kept the original frame without crop"
 
     result["deskew"] = {
         "applied": deskew_result["applied"],
         "angle": deskew_result["angle"],
         "confidence": deskew_result["confidence"],
         "reason": deskew_result["reason"],
-        "safe_crop": deskew_result.get("safe_crop") if perspective_allowed else None,
+        "safe_crop": deskew_result.get("safe_crop") if boundary_detected else None,
         "crop_applied": crop_applied,
         "crop_reason": crop_reason,
     }
@@ -341,18 +204,13 @@ def prepare_document(
     if not np.array_equal(image, original):
         raise RuntimeError("Preparation pipeline modified the original input image.")
 
-    result["prepared"] = perspective_allowed or bool(deskew_result["applied"])
+    result["prepared"] = boundary_detected or bool(deskew_result["applied"])
     result["image"] = current
     if result["prepared"]:
         result["reason"] = (
             "prepared: deskew-only correction completed without perspective crop"
-            if not perspective_allowed and deskew_result["applied"]
+            if not boundary_detected and deskew_result["applied"]
             else "prepared: document preparation completed safely"
-        )
-    elif boundary_found and not perspective_allowed:
-        result["reason"] = (
-            "stopped: a document-like boundary was found but automatic crop was blocked "
-            "because the full page is not safely visible inside the frame"
         )
     else:
         result["reason"] = "stopped: no reliable boundary or confident skew correction was available"
