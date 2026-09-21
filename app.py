@@ -1014,13 +1014,8 @@ def create_app(test_config=None):
             return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
 
         try:
-            preview_source = resize_for_preview(
-                image,
-                max_width=PREPARATION_PREVIEW_MAX_DIMENSION,
-                max_height=PREPARATION_PREVIEW_MAX_DIMENSION,
-            )
             preparation = prepare_document(
-                preview_source,
+                image,
                 boundary_detector=detect_preparation_boundary,
             )
         except (ValueError, RuntimeError) as error:
@@ -1059,10 +1054,6 @@ def create_app(test_config=None):
         preparation_metadata["method_used"] = boundary.get("method_used") or (
             "deskew-only" if deskew_metadata.get("applied") else None
         )
-        preparation_metadata["plan_source_dimensions"] = {
-            "width": int(preview_source.shape[1]),
-            "height": int(preview_source.shape[0]),
-        }
 
         try:
             preparation_id, _ = save_preparation_preview(
@@ -1145,54 +1136,20 @@ def create_app(test_config=None):
                 409,
             )
 
-        source_path = resolve_upload_file(upload_folder, image_id)
-        original_image = read_stored_image(source_path) if source_path is not None else None
+        preview_path = resolve_preparation_preview_file(
+            preparation_preview_folder,
+            preparation_id,
+        )
+        prepared_image = read_stored_image(preview_path)
 
-        if original_image is None:
+        if prepared_image is None:
             return error_response(
-                "UNREADABLE_IMAGE",
-                "تعذر قراءة الصورة الأصلية عند اعتماد التجهيز.",
+                "UNREADABLE_PREPARATION",
+                "تعذر قراءة معاينة Preparation.",
                 500,
             )
 
-        preview_preparation_metadata = manifest.get("preparation")
-        can_reuse_preview_plan = (
-            isinstance(preview_preparation_metadata, dict)
-            and isinstance(preview_preparation_metadata.get("boundary"), dict)
-            and isinstance(preview_preparation_metadata.get("skew"), dict)
-            and isinstance(preview_preparation_metadata.get("plan_source_dimensions"), dict)
-        )
-
         try:
-            if can_reuse_preview_plan:
-                final_preparation = prepare_document(
-                    original_image,
-                    boundary_detector=detect_preparation_boundary,
-                    precomputed_boundary=preview_preparation_metadata["boundary"],
-                    precomputed_skew=preview_preparation_metadata["skew"],
-                    plan_source_dimensions=preview_preparation_metadata["plan_source_dimensions"],
-                )
-            else:
-                # Backward compatibility for preview manifests created before
-                # reusable preparation plans were introduced.
-                final_preparation = prepare_document(
-                    original_image,
-                    boundary_detector=detect_preparation_boundary,
-                )
-            if not final_preparation.get("prepared"):
-                return error_response(
-                    "PREPARATION_REJECTED",
-                    "تعذر إعادة تجهيز الصورة الأصلية بدقتها الكاملة.",
-                    422,
-                )
-
-            prepared_image = final_preparation["image"]
-            final_metadata = preparation_public_metadata(final_preparation)
-            final_method = (
-                final_metadata.get("boundary", {}).get("method_used")
-                or ("deskew-only" if final_metadata.get("deskew", {}).get("applied") else None)
-            )
-
             result_id, _ = save_result_artifact(
                 prepared_image,
                 result_folder,
@@ -1200,10 +1157,10 @@ def create_app(test_config=None):
                 origin="preparation",
                 status="approved",
                 parent_result_id=None,
-                method_used=final_method,
+                method_used=manifest.get("method_used"),
                 extra={
                     "preparation_id": preparation_id,
-                    "preparation": final_metadata,
+                    "preparation": manifest.get("preparation", {}),
                 },
             )
         except (ValueError, RuntimeError, OSError):
@@ -1234,9 +1191,9 @@ def create_app(test_config=None):
                     origin="preparation",
                     status="approved",
                     parent_result_id=None,
-                    method_used=final_method,
+                    method_used=manifest.get("method_used"),
                 ),
-                "preparation": final_metadata,
+                "preparation": manifest.get("preparation", {}),
             },
             message="تم اعتماد نتيجة Preparation.",
             status=201,
