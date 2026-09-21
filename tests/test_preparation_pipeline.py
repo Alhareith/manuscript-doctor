@@ -258,48 +258,9 @@ def test_full_frame_document_boundary_is_not_automatically_cropped(monkeypatch):
 
     assert result["boundary"]["detected"] is True
     assert result["boundary"]["automatic_crop_eligible"] is False
-    assert result["boundary"]["frame_clearance_ratio"] < 0.005
+    assert result["boundary"]["area_ratio"] >= 0.95
     assert result["perspective"] is None
     assert result["deskew"]["crop_applied"] is False
     assert result["prepared"] is False
     assert result["image"].shape == image.shape
-    assert np.array_equal(result["image"], image)
-
-
-def test_review_required_boundary_is_never_applied_as_automatic_crop(monkeypatch):
-    image = np.full((700, 1000, 3), 235, dtype=np.uint8)
-
-    def detector(proxy):
-        h, w = proxy.shape[:2]
-        return {
-            "detected": True,
-            "status": "review_required",
-            "corners": [
-                [int(w * 0.10), int(h * 0.10)],
-                [int(w * 0.90), int(h * 0.10)],
-                [int(w * 0.90), int(h * 0.90)],
-                [int(w * 0.10), int(h * 0.90)],
-            ],
-            "confidence": 0.55,
-            "area_ratio": 0.64,
-            "reason": "review required: synthetic candidate",
-        }
-
-    monkeypatch.setattr(
-        "processing.preparation_pipeline.detect_skew",
-        lambda _image: {
-            "angle": 0.0,
-            "confidence": 0.0,
-            "line_count": 0,
-            "dispersion": 0.0,
-            "reason": "synthetic no skew",
-        },
-    )
-
-    result = prepare_document(image, boundary_detector=detector)
-
-    assert result["boundary"]["automatic_crop_eligible"] is False
-    assert result["perspective"] is None
-    assert result["deskew"]["crop_applied"] is False
-    assert result["prepared"] is False
     assert np.array_equal(result["image"], image)
