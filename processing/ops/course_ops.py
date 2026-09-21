@@ -29,7 +29,10 @@ def gaussian_blur(image, kernel_size=5, sigma=0.0):
 
 
 def laplacian_sharpen(image, amount=0.5, kernel_size=3):
-    """Sharpen luminance by subtracting the signed Laplacian response."""
+    """حدّة لابلاسيان: يضيف مشتقة لابلاسيان للصورة (تعريف الحدّة بالمشتقة الثانية).
+
+    result = image + amount * |Laplacian(image)| على قناة الإضاءة.
+    """
     _validate_image(image)
 
     if not isinstance(amount, (int, float)) or amount < 0:
@@ -41,13 +44,11 @@ def laplacian_sharpen(image, amount=0.5, kernel_size=3):
     amount = float(amount)
 
     def _sharpen(gray):
-        source = gray.astype(np.float32)
-        laplacian = cv2.Laplacian(source, cv2.CV_32F, ksize=kernel_size)
-        sharpened = source - amount * laplacian
-        return np.clip(sharpened, 0, 255).astype(np.uint8)
+        laplacian = cv2.Laplacian(gray, cv2.CV_64F, ksize=kernel_size)
+        boosted = gray.astype(np.float64) + amount * np.abs(laplacian)
+        return np.clip(boosted, 0, 255).astype(np.uint8)
 
     return _apply_to_luminance(image, _sharpen)
-
 
 def sobel_edges(image, kernel_size=3):
     """Return a normalized Sobel gradient-magnitude map."""
@@ -69,7 +70,10 @@ def sobel_edges(image, kernel_size=3):
 
 
 def contrast_stretch(image, low_percentile=2, high_percentile=98):
-    """Linearly stretch the selected percentile range to 0..255."""
+    """تمدد التباين الخطي المئيني: يمدد النطاق الفعلي للشدات إلى [0, 255].
+
+    r < p_low  → 0 ، r > p_high → 255 ، وما بينهما خط مستقيم (تعريف خطي مقطعي).
+    """
     _validate_image(image)
 
     for name, value in (("low_percentile", low_percentile), ("high_percentile", high_percentile)):
@@ -81,21 +85,17 @@ def contrast_stretch(image, low_percentile=2, high_percentile=98):
 
     def _stretch(gray):
         low, high = np.percentile(gray, [float(low_percentile), float(high_percentile)])
+
         if high - low < 1e-6:
             return gray.copy()
+
         stretched = (gray.astype(np.float64) - low) * (255.0 / (high - low))
-        return np.rint(np.clip(stretched, 0, 255)).astype(np.uint8)
+        return np.clip(stretched, 0, 255).astype(np.uint8)
 
     return _apply_to_luminance(image, _stretch)
 
-
 def log_transform(image, strength=1.0):
-    """Apply a fixed-range logarithmic intensity transform.
-
-    ``strength`` controls the curvature while 0 and 255 remain fixed endpoints.
-    This avoids per-image max normalization, which could incorrectly map a
-    constant mid-gray image to pure white.
-    """
+    """التحويل اللوغاريتمي: s = c·log(1+r) — يكشف التفاصيل في الظلال الداكنة."""
     _validate_image(image)
 
     if not isinstance(strength, (int, float)) or strength <= 0:
@@ -104,9 +104,16 @@ def log_transform(image, strength=1.0):
     strength = float(strength)
 
     def _log_map(gray):
-        denominator = np.log1p(strength * 255.0)
-        mapped = np.log1p(strength * gray.astype(np.float64))
-        scaled = (mapped / denominator) * 255.0
+        logged = np.log1p(gray.astype(np.float64))
+
+        max_value = logged.max()
+
+        if max_value < 1e-6:
+            return gray.copy()
+
+        scaled = (logged / max_value) * 255.0 * strength
+
         return np.clip(scaled, 0, 255).astype(np.uint8)
 
     return _apply_to_luminance(image, _log_map)
+
