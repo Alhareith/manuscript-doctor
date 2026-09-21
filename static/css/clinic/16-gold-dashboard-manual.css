@@ -309,14 +309,8 @@ html[data-theme="dark"] .dashboard-premium .dashboard-advanced-toggle {
     .manual-editor:not(.clinic-crop-focus) .manual-preview-pane,
     .manual-editor:not(.clinic-crop-focus) .manual-controls-pane { min-height: 0; }
     .manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
-        min-height: 320px;
-        height: clamp(320px, 42vh, 430px);
         margin-top: 9px;
         padding: 9px;
-    }
-    .manual-editor:not(.clinic-crop-focus) .manual-preview-image-wrap {
-        min-height: 0;
-        height: 100%;
     }
     .manual-editor:not(.clinic-crop-focus) .manual-preview-footer { padding-top: 7px; }
     .manual-editor:not(.clinic-crop-focus) .manual-approval-bar {
@@ -351,13 +345,7 @@ html[data-theme="dark"] .dashboard-premium .dashboard-advanced-toggle {
 
 @media (min-width: 1000px) and (max-height: 820px) {
     .manual-editor:not(.clinic-crop-focus) .manual-editor-head p,
-    .manual-editor:not(.clinic-crop-focus) .manual-preview-footer,
-    .manual-editor:not(.clinic-crop-focus) .manual-change-chart { display: none; }
-    .manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
-        min-height: 300px;
-        height: 38vh;
-        max-height: 360px;
-    }
+    .manual-editor:not(.clinic-crop-focus) .manual-preview-footer { display: none; }
     .manual-editor:not(.clinic-crop-focus) .operation-browser { max-height: 170px; }
 }
 

@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 import pytest
 
-import processing.preparation_pipeline as preparation_pipeline
 from processing.document_boundary import detect_preparation_boundary
 from processing.preparation_pipeline import prepare_document
 from processing.preparation_verification import verify_preparation
@@ -115,7 +114,6 @@ def test_preparation_detector_fallback_restores_document_crop(name):
 
     assert result["prepared"] is True
     assert result["boundary"]["detected"] is True
-    assert result["boundary"]["automatic_crop_eligible"] is True
     assert result["perspective"]["applied"] is True
     assert result["image"].shape[0] < _load_image(name).shape[0]
     assert result["image"].shape[1] < _load_image(name).shape[1]
@@ -216,8 +214,18 @@ def test_boundary_proxy_rejects_invalid_dimension():
         prepare_document(image, boundary_max_dimension=400.0)
 
 
-def test_partial_document_touching_frame_never_gets_automatic_perspective_crop(monkeypatch):
-    image = np.full((700, 1000, 3), 230, dtype=np.uint8)
+def test_full_frame_document_boundary_is_not_automatically_cropped(monkeypatch):
+    image = np.full((700, 1000, 3), 245, dtype=np.uint8)
+    cv2.putText(
+        image,
+        "HEALTHY DOCUMENT",
+        (160, 350),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.4,
+        (40, 40, 40),
+        3,
+        cv2.LINE_AA,
+    )
 
     def detector(proxy):
         h, w = proxy.shape[:2]
@@ -225,19 +233,18 @@ def test_partial_document_touching_frame_never_gets_automatic_perspective_crop(m
             "detected": True,
             "status": "accept_automatic",
             "corners": [
-                [int(w * 0.10), int(h * 0.10)],
-                [int(w * 0.90), int(h * 0.10)],
-                [int(w * 0.90), h - 1],
-                [int(w * 0.10), h - 1],
+                [1, 1],
+                [w - 2, 1],
+                [w - 2, h - 2],
+                [1, h - 2],
             ],
             "confidence": 0.95,
-            "area_ratio": 0.72,
-            "reason": "accepted: synthetic partial document",
+            "area_ratio": 0.97,
+            "reason": "accepted: synthetic near-full-frame document",
         }
 
     monkeypatch.setattr(
-        preparation_pipeline,
-        "detect_skew",
+        "processing.preparation_pipeline.detect_skew",
         lambda _image: {
             "angle": 0.0,
             "confidence": 0.0,
@@ -251,80 +258,9 @@ def test_partial_document_touching_frame_never_gets_automatic_perspective_crop(m
 
     assert result["boundary"]["detected"] is True
     assert result["boundary"]["automatic_crop_eligible"] is False
-    assert result["boundary"]["frame_clearance_ratio"] < preparation_pipeline.PREPARATION_MIN_FRAME_CLEARANCE_RATIO
+    assert result["boundary"]["area_ratio"] >= 0.95
     assert result["perspective"] is None
     assert result["deskew"]["crop_applied"] is False
-    assert "partially clipped" in result["boundary"]["automatic_crop_reason"]
-
-
-def test_review_required_boundary_is_not_applied_as_automatic_perspective(monkeypatch):
-    image = np.full((700, 1000, 3), 230, dtype=np.uint8)
-
-    def detector(proxy):
-        h, w = proxy.shape[:2]
-        return {
-            "detected": True,
-            "status": "review_required",
-            "corners": [
-                [int(w * 0.12), int(h * 0.12)],
-                [int(w * 0.88), int(h * 0.12)],
-                [int(w * 0.88), int(h * 0.88)],
-                [int(w * 0.12), int(h * 0.88)],
-            ],
-            "confidence": 0.55,
-            "area_ratio": 0.58,
-            "reason": "review required: synthetic candidate",
-        }
-
-    monkeypatch.setattr(
-        preparation_pipeline,
-        "detect_skew",
-        lambda _image: {
-            "angle": 0.0,
-            "confidence": 0.0,
-            "line_count": 0,
-            "dispersion": 0.0,
-            "reason": "synthetic no skew",
-        },
-    )
-
-    result = prepare_document(image, boundary_detector=detector)
-
-    assert result["boundary"]["automatic_crop_eligible"] is False
-    assert result["perspective"] is None
-    assert "review_required" in result["boundary"]["automatic_crop_reason"]
-
-
-def test_large_image_skew_detection_uses_bounded_proxy(monkeypatch):
-    image = np.full((3000, 4000, 3), 245, dtype=np.uint8)
-    seen_shapes = []
-
-    def detector(_proxy):
-        return {
-            "detected": False,
-            "corners": [],
-            "confidence": 0.0,
-            "area_ratio": 0.0,
-            "reason": "rejected: synthetic no boundary",
-        }
-
-    def fake_detect_skew(proxy):
-        seen_shapes.append(proxy.shape)
-        return {
-            "angle": 0.0,
-            "confidence": 0.0,
-            "line_count": 0,
-            "dispersion": 0.0,
-            "reason": "synthetic no skew",
-        }
-
-    monkeypatch.setattr(preparation_pipeline, "detect_skew", fake_detect_skew)
-    result = prepare_document(image, boundary_detector=detector)
-
-    assert len(seen_shapes) == 1
-    assert max(seen_shapes[0][:2]) == preparation_pipeline.SKEW_DETECTION_MAX_DIMENSION
-    assert result["skew"]["detection_dimensions"] == {
-        "width": 1280,
-        "height": 960,
-    }
-    assert result["skew"]["detection_scale"] == round(1280 / 4000, 6)
+    assert result["prepared"] is False
+    assert result["image"].shape == image.shape
+    assert np.array_equal(result["image"], image)

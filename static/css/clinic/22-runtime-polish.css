@@ -1,0 +1,182 @@
+/* Final runtime/UI corrections: full previews, compact controls and resilient Arabic layout. */
+
+/* The impact chart was visually empty in the compact studio and consumed useful space. */
+.manual-change-chart-inline {
+    display: none !important;
+}
+
+/* Operation lists size to their actual content instead of reserving an empty block. */
+.operation-browser {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: min(42dvh, 360px) !important;
+}
+.operation-group {
+    min-height: 0 !important;
+    align-content: start !important;
+}
+.operation-group.is-active {
+    height: auto !important;
+}
+
+/* Before/after: never crop the rendered document. */
+.manual-preview-stage {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+.manual-preview-pair {
+    height: auto !important;
+    align-items: start !important;
+}
+.manual-preview-card {
+    height: auto !important;
+    min-height: 0 !important;
+    grid-template-rows: auto auto !important;
+    align-self: start !important;
+}
+.manual-preview-image-wrap,
+.manual-editor:not(.clinic-crop-focus) .manual-preview-image-wrap,
+.manual-editor.clinic-crop-focus .manual-preview-image-wrap {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+.manual-preview-image-wrap img,
+.manual-editor.clinic-crop-focus .manual-preview-image-wrap img {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: min(62dvh, 680px) !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+}
+
+/* Keep actions below the images even when image aspect ratios differ. */
+.manual-approval-bar {
+    position: relative !important;
+    clear: both !important;
+    margin-top: 14px !important;
+}
+
+/* Arabic findings must remain horizontal and readable at every width. */
+.analysis-quick-findings,
+.analysis-quick-findings article,
+.finding-inline-details,
+.finding-inline-details .diagnosis-list,
+.finding-inline-details .recommendation-list,
+.finding-inline-details .preservation-indicators,
+.finding-inline-details .diagnosis-item,
+.finding-inline-details .recommendation-item,
+.finding-inline-details .exclusion-item,
+.finding-inline-details .preservation-indicator {
+    min-width: 0 !important;
+    width: 100%;
+}
+.finding-inline-details .item-heading {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+}
+.finding-inline-details .item-heading strong,
+.finding-inline-details .item-heading span,
+.finding-inline-details .diagnosis-item p,
+.finding-inline-details .recommendation-item p,
+.finding-inline-details .exclusion-item p,
+.finding-inline-details .preservation-indicator,
+.finding-inline-details #preservationMessage {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    max-width: 100% !important;
+}
+.finding-inline-details .diagnosis-item p,
+.finding-inline-details .recommendation-item p,
+.finding-inline-details .exclusion-item p {
+    line-height: 1.75 !important;
+}
+
+/* Narrow desktop/tablet: stack the studio before columns become too narrow. */
+@media (max-width: 1180px) {
+    .manual-editor-shell {
+        grid-template-columns: 1fr !important;
+    }
+    .manual-controls-pane,
+    .manual-preview-pane {
+        width: 100% !important;
+    }
+}
+
+/* Mobile: each preview gets its own full-width row; no fixed stage height or overlap. */
+@media (max-width: 720px) {
+    .manual-preview-stage {
+        padding: 8px !important;
+    }
+    .manual-preview-pair {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 16px !important;
+    }
+    .manual-preview-card {
+        width: 100% !important;
+    }
+    .manual-preview-image-wrap,
+    .manual-editor:not(.clinic-crop-focus) .manual-preview-image-wrap,
+    .manual-editor.clinic-crop-focus .manual-preview-image-wrap {
+        width: 100% !important;
+        min-height: 0 !important;
+        height: auto !important;
+    }
+    .manual-preview-image-wrap img,
+    .manual-editor.clinic-crop-focus .manual-preview-image-wrap img {
+        width: auto !important;
+        height: auto !important;
+        max-width: 100% !important;
+        max-height: 64dvh !important;
+    }
+    .manual-approval-bar {
+        margin-top: 12px !important;
+    }
+    .operation-browser {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .analysis-quick-findings {
+        grid-template-columns: 1fr !important;
+    }
+    .finding-inline-details .item-heading {
+        grid-template-columns: 1fr !important;
+        align-items: start !important;
+    }
+    .finding-inline-details .item-heading span {
+        justify-self: start;
+    }
+}
+
+/* Very narrow phones: protect text and controls from horizontal collisions. */
+@media (max-width: 480px) {
+    .container-fluid {
+        padding-inline: 10px !important;
+    }
+    .manual-preview-pane,
+    .manual-controls-pane {
+        padding-inline: 8px !important;
+    }
+    .category-tab {
+        flex-basis: min(104px, 36vw) !important;
+    }
+    .operation-row {
+        min-width: 0 !important;
+    }
+    .operation-row > span {
+        min-width: 0 !important;
+    }
+}
