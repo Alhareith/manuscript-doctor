@@ -12,7 +12,7 @@ from processing.skew_detector import detect_skew
 
 BOUNDARY_DETECTION_MAX_DIMENSION = 640
 BOUNDARY_FALLBACK_MAX_DIMENSIONS = (512, 384)
-PREPARATION_MIN_FRAME_CLEARANCE_RATIO = 0.005
+PREPARATION_SKIP_CROP_AREA_RATIO = 0.95
 
 
 def _validate_image(image):
@@ -69,45 +69,21 @@ def _restore_boundary_coordinates(boundary, scale, width, height):
     return restored
 
 
-def _boundary_frame_clearance_ratio(boundary, width, height):
-    corners = boundary.get("corners") if isinstance(boundary, dict) else None
-    if not corners:
-        return 0.0
-
-    points = np.asarray(corners, dtype=np.float32).reshape(-1, 2)
-    if points.shape != (4, 2):
-        return 0.0
-
-    width_span = max(float(width - 1), 1.0)
-    height_span = max(float(height - 1), 1.0)
-
-    left = float(np.min(points[:, 0])) / width_span
-    right = float(width - 1 - np.max(points[:, 0])) / width_span
-    top = float(np.min(points[:, 1])) / height_span
-    bottom = float(height - 1 - np.max(points[:, 1])) / height_span
-
-    return float(max(0.0, min(left, right, top, bottom)))
-
-
-def _boundary_is_safe_for_automatic_perspective(boundary, width, height):
+def _boundary_needs_automatic_crop(boundary):
     if not isinstance(boundary, dict) or not boundary.get("detected"):
-        return False, 0.0, "no reliable boundary was detected"
+        return False, "no reliable boundary was detected"
 
-    status = boundary.get("status")
-    if status is not None and status != "accept_automatic":
-        clearance = _boundary_frame_clearance_ratio(boundary, width, height)
-        return False, clearance, (
-            f"boundary status is {status}; automatic perspective crop requires accept_automatic"
+    area_ratio = float(boundary.get("area_ratio", 0.0))
+    if not 0.0 < area_ratio <= 1.0:
+        return False, "boundary area ratio is invalid; automatic crop was skipped"
+
+    if area_ratio >= PREPARATION_SKIP_CROP_AREA_RATIO:
+        return False, (
+            "automatic crop skipped: the detected document already occupies "
+            f"{area_ratio:.1%} of the image"
         )
 
-    clearance = _boundary_frame_clearance_ratio(boundary, width, height)
-    if clearance < PREPARATION_MIN_FRAME_CLEARANCE_RATIO:
-        return False, clearance, (
-            "document boundary reaches the image frame; the page may already fill "
-            "the image or be partially clipped"
-        )
-
-    return True, clearance, "boundary has visible background clearance on all four sides"
+    return True, "automatic crop is useful because the detected document leaves meaningful outer area"
 
 
 def prepare_document(
@@ -140,15 +116,8 @@ def prepare_document(
         if boundary.get("detected") or boundary.get("status") != "reject":
             break
 
-    perspective_allowed, frame_clearance, perspective_reason = (
-        _boundary_is_safe_for_automatic_perspective(
-            boundary,
-            image.shape[1],
-            image.shape[0],
-        )
-    )
+    perspective_allowed, perspective_reason = _boundary_needs_automatic_crop(boundary)
     boundary = dict(boundary)
-    boundary["frame_clearance_ratio"] = round(float(frame_clearance), 6)
     boundary["automatic_crop_eligible"] = bool(perspective_allowed)
     boundary["automatic_crop_reason"] = perspective_reason
 
@@ -176,19 +145,15 @@ def prepare_document(
     if not perspective_allowed:
         result["steps"].append({
             "step": "boundary",
-            "status": "review_required" if boundary_detected else "rejected",
+            "status": "accepted" if boundary_detected else "rejected",
             "reason": perspective_reason,
             "confidence": boundary.get("confidence", 0.0),
             "area_ratio": boundary.get("area_ratio", 0.0),
-            "frame_clearance_ratio": round(float(frame_clearance), 6),
         })
         result["steps"].append({
             "step": "perspective",
             "status": "skipped",
-            "reason": (
-                "skipped: automatic perspective crop requires an automatically "
-                "accepted boundary with visible clearance on all four sides"
-            ),
+            "reason": perspective_reason,
         })
     else:
         result["steps"].append({
@@ -196,7 +161,6 @@ def prepare_document(
             "status": "accepted",
             "confidence": boundary["confidence"],
             "area_ratio": boundary["area_ratio"],
-            "frame_clearance_ratio": round(float(frame_clearance), 6),
         })
 
         rectified = rectify_document(image, boundary["corners"])
@@ -235,7 +199,7 @@ def prepare_document(
 
     if not perspective_allowed:
         crop_reason = (
-            "skipped: automatic crop safety gate rejected the boundary; "
+            "skipped: automatic crop was unnecessary or unsafe; "
             "deskew correction kept the complete current frame"
         )
 
@@ -278,8 +242,8 @@ def prepare_document(
         )
     elif boundary_detected and not perspective_allowed:
         result["reason"] = (
-            "stopped: a document-like boundary was found but automatic crop was blocked "
-            "because the page is not safely separated from the image frame"
+            "stopped: the document already fills the image closely enough; "
+            "the original frame was preserved instead of cropping"
         )
     else:
         result["reason"] = "stopped: no reliable boundary or confident skew correction was available"
