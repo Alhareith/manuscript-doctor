@@ -88,10 +88,10 @@ function selectOperationCard(operationId) {
     updateControls();
 
     if (resolvedOperationId === "perspective_crop") {
-        const sourceUrl = currentManualSourceUrl();
-        if (sourceUrl && elements.manualLivePreview && elements.manualLivePreview.src !== sourceUrl) {
-            setManualPreviewSource(sourceUrl, { pending: Boolean(state.manualPreviewSource), requestId: manualPreviewSequence });
-        }
+        const sourceUrl = state.manualWorkingResultId
+            ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}?source=${Date.now()}`
+            : manualOriginalUrl();
+        if (sourceUrl && elements.manualLivePreview) elements.manualLivePreview.src = sourceUrl;
         if (elements.manualPreviewStatus) elements.manualPreviewStatus.innerHTML = '<i class="bi bi-bounding-box-circles"></i> حدد زوايا الوثيقة';
         if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "ضع النقاط الأربع على زوايا الورقة ثم اضغط «اعتماد العملية».";
         if (typeof initializePerspectiveGuide === "function") requestAnimationFrame(initializePerspectiveGuide);
@@ -100,10 +100,10 @@ function selectOperationCard(operationId) {
     }
 
     if (resolvedOperationId === "crop") {
-        const sourceUrl = currentManualSourceUrl();
-        if (sourceUrl && elements.manualLivePreview && elements.manualLivePreview.src !== sourceUrl) {
-            setManualPreviewSource(sourceUrl, { pending: Boolean(state.manualPreviewSource), requestId: manualPreviewSequence });
-        }
+        const sourceUrl = state.manualWorkingResultId
+            ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}?source=${Date.now()}`
+            : manualOriginalUrl();
+        if (sourceUrl && elements.manualLivePreview) elements.manualLivePreview.src = sourceUrl;
         if (elements.manualPreviewStatus) elements.manualPreviewStatus.innerHTML = '<i class="bi bi-crop"></i> حدد منطقة القص';
         if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "حرّك إطار القص على الصورة، ثم اضغط «اعتماد العملية» لتطبيقه.";
         requestAnimationFrame(syncCropGuide);
