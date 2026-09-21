@@ -222,7 +222,7 @@ function manualImageHistogram(image) {
 
 function renderManualChangeChart() {
     const canvas = elements.manualChangeChart;
-    if (!canvas) return;
+    if (!canvas || canvas.offsetParent === null) return;
     const before = manualImageHistogram(elements.manualOriginalPreview);
     const after = manualImageHistogram(elements.manualLivePreview);
     if (!before || !after) {
@@ -281,7 +281,8 @@ const LOCAL_PREVIEW_OPERATIONS = new Set([
     "flip_vertical",
     "flip_horizontal",
     "intensity_adjust",
-    "gamma_correct"
+    "gamma_correct",
+    "crop"
 ]);
 
 function currentManualSourceUrl() {
