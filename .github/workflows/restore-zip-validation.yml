@@ -1,0 +1,24 @@
+name: restore-zip-validation
+
+on:
+  push:
+    branches:
+      - fix/restore-zip-processing
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: python -m compileall processing app.py
+      - run: |
+          node --check static/js/parts/02-upload-api.js
+          node --check static/js/parts/06-manual-preview.js
+          node --check static/js/parts/07-manual-execution.js
+          node --check static/js/parts/10-theme-quick-tools.js
+      - run: python -m pytest -q
