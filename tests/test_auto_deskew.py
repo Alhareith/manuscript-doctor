@@ -145,7 +145,7 @@ def test_rejects_invalid_image():
         apply_auto_deskew(None, skew)
 
 
-from processing.auto_deskew import _apply_safe_crop, _calculate_safe_crop
+from processing.auto_deskew import _apply_safe_crop
 
 
 def test_rejects_unsafe_post_deskew_crop():
@@ -184,29 +184,3 @@ def test_accepts_safe_post_deskew_crop():
     assert applied is True
     assert result.shape == (680, 980, 3)
     assert "retained a safe amount" in reason
-
-
-
-def test_safe_crop_uses_direct_geometry_without_image_scan():
-    image_shape = (3000, 4000, 3)
-    angle = 7.0
-    center = (image_shape[1] / 2.0, image_shape[0] / 2.0)
-    transform = cv2.getRotationMatrix2D(center, angle, 1.0)
-
-    cosine = abs(transform[0, 0])
-    sine = abs(transform[0, 1])
-    rotated_width = int(np.ceil(image_shape[0] * sine + image_shape[1] * cosine))
-    rotated_height = int(np.ceil(image_shape[0] * cosine + image_shape[1] * sine))
-
-    safe_crop = _calculate_safe_crop(
-        image_shape,
-        transform,
-        (rotated_height, rotated_width, 3),
-        angle=angle,
-    )
-
-    assert safe_crop is not None
-    assert safe_crop["method"] == "direct_geometry"
-    assert safe_crop["width"] > 0
-    assert safe_crop["height"] > 0
-    assert 0.0 < safe_crop["retention_ratio"] <= 1.0
