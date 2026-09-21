@@ -3,7 +3,6 @@ from email.mime import image
 import cv2
 import numpy as np
 
-from processing.bright_document_fallback import detect_bright_document_boundary
 from processing.deterministic_hough import hough_lines_p
 
 MIN_AREA_RATIO = 0.18
@@ -12,7 +11,7 @@ MIN_CONFIDENCE = 0.68
 MAX_CANDIDATES = 12
 APPROX_EPSILON_RATIOS = (0.015, 0.02, 0.025, 0.03)
 PREPARATION_REVIEW_MIN_CONFIDENCE = 0.45
-PREPARATION_ALLOWED_METHODS = ("guided", "region", "bright")
+PREPARATION_ALLOWED_METHODS = ("guided", "region")
 
 
 def _validate_image(image):
@@ -1095,283 +1094,123 @@ def detect_document_boundary(image):
         ),
     }
 
-def _edge_support_for_corners(image, corners):
-    gray = _to_gray(image)
-    height, width = gray.shape[:2]
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    median_value = float(np.median(blurred))
-    lower = int(max(18, 0.55 * median_value))
-    upper = int(min(255, max(lower + 25, 1.45 * median_value)))
-    edges = cv2.Canny(blurred, lower, upper)
-    edges = cv2.dilate(
-        edges,
-        cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)),
-        iterations=1,
-    )
-
-    ordered = _order_corners(corners)
-    thickness = max(2, int(round(min(height, width) * 0.006)))
-    supports = []
-
-    for index in range(4):
-        mask = np.zeros((height, width), dtype=np.uint8)
-        a = tuple(np.round(ordered[index]).astype(np.int32))
-        b = tuple(np.round(ordered[(index + 1) % 4]).astype(np.int32))
-        cv2.line(mask, a, b, 255, thickness=thickness, lineType=cv2.LINE_AA)
-        total = cv2.countNonZero(mask)
-        if total <= 0:
-            supports.append(0.0)
-            continue
-        overlap = cv2.bitwise_and(edges, mask)
-        supports.append(float(cv2.countNonZero(overlap)) / float(total))
-
-    mean_support = float(np.mean(supports)) if supports else 0.0
-    minimum_support = float(np.min(supports)) if supports else 0.0
-    combined = float(np.clip((0.68 * mean_support) + (0.32 * minimum_support), 0.0, 1.0))
-    return combined, supports
-
-
-def _downscale_support_stability(image, corners):
-    height, width = image.shape[:2]
-    longest = max(height, width)
-    if longest <= 420:
-        return 1.0
-
-    scale = 420.0 / float(longest)
-    proxy = cv2.resize(
-        image,
-        (max(1, int(round(width * scale))), max(1, int(round(height * scale)))),
-        interpolation=cv2.INTER_AREA,
-    )
-    scaled_corners = _order_corners(corners) * scale
-    original_support, _ = _edge_support_for_corners(image, corners)
-    proxy_support, _ = _edge_support_for_corners(proxy, scaled_corners)
-
-    if original_support <= 1e-6:
-        return 0.0
-
-    ratio = min(original_support, proxy_support) / max(original_support, proxy_support, 1e-6)
-    absolute = float(np.clip(proxy_support / 0.34, 0.0, 1.0))
-    return float(np.clip((0.65 * ratio) + (0.35 * absolute), 0.0, 1.0))
-
-
-def _preparation_area_score(area_ratio):
-    if area_ratio < MIN_AREA_RATIO or area_ratio > MAX_AREA_RATIO:
-        return 0.0
-
-    low = float(np.clip((area_ratio - MIN_AREA_RATIO) / 0.16, 0.0, 1.0))
-    high = float(np.clip((MAX_AREA_RATIO - area_ratio) / 0.10, 0.0, 1.0))
-    return min(low, high)
-
-
-def _preparation_candidate_payload(image, method, candidate):
-    empty = {
-        "method_used": method,
-        "status": "reject",
-        "detected": False,
-        "corners": [],
-        "confidence": 0.0,
-        "final_score": 0.0,
-        "area_ratio": 0.0,
-        "edge_support": 0.0,
-        "contrast_score": 0.0,
-        "angle_score": 0.0,
-        "stability_score": 0.0,
-        "frame_contact_count": 0,
-    }
-
-    candidate_corners = None if candidate is None else candidate.get("corners")
-    if candidate_corners is None or np.asarray(candidate_corners).size != 8:
+def _preparation_candidate_payload(method, candidate):
+    if candidate is None:
         return {
-            **empty,
+            "method_used": method,
+            "status": "reject",
+            "detected": False,
+            "corners": [],
+            "confidence": 0.0,
+            "final_score": 0.0,
+            "area_ratio": 0.0,
+            "edge_support": 0.0,
             "reason": f"rejected: {method} did not produce a valid quadrilateral",
         }
 
-    height, width = image.shape[:2]
-    image_area = float(width * height)
-    corners = _order_corners(
-        np.asarray(candidate_corners, dtype=np.float32).reshape(4, 2)
-    )
+    confidence = float(candidate.get("final_score", candidate.get("confidence", 0.0)))
+    corners = [
+        [int(round(x)), int(round(y))]
+        for x, y in np.asarray(candidate["corners"], dtype=np.float32).reshape(4, 2)
+    ]
+    area_ratio = float(candidate.get("area_ratio", 0.0))
+    edge_support = float(candidate.get("contrast_score", 0.0))
 
-    if not _corners_inside_image(corners, width, height):
-        return {
-            **empty,
-            "reason": f"rejected: {method} produced corners outside the image",
-        }
-
-    if not cv2.isContourConvex(corners.astype(np.int32)):
-        return {
-            **empty,
-            "reason": f"rejected: {method} produced a non-convex quadrilateral",
-        }
-
-    polygon_area = abs(float(cv2.contourArea(corners.astype(np.float32))))
-    area_ratio = polygon_area / max(image_area, 1.0)
-    geometry, geometry_rejection = _geometry_scores(corners, width, height)
-
-    if geometry is None or not (MIN_AREA_RATIO <= area_ratio <= MAX_AREA_RATIO):
-        return {
-            **empty,
-            "corners": [[int(round(x)), int(round(y))] for x, y in corners],
-            "area_ratio": round(float(area_ratio), 4),
-            "reason": geometry_rejection or f"rejected: {method} area is not plausible",
-        }
-
-    edge_support, side_edge_support = _edge_support_for_corners(image, corners)
-    contrast_score = _border_contrast_score(image, corners)
-    stability_score = _downscale_support_stability(image, corners)
-    area_score = _preparation_area_score(area_ratio)
-    frame_contacts = _frame_contact_count(corners, width, height)
-    frame_score = {0: 1.0, 1: 0.88, 2: 0.62}.get(frame_contacts, 0.12)
-    source_score = float(
-        np.clip(candidate.get("final_score", candidate.get("confidence", 0.0)), 0.0, 1.0)
-    )
-
-    confidence = float(np.clip(
-        0.22 * geometry["angle_score"]
-        + 0.11 * geometry["side_balance_score"]
-        + 0.23 * edge_support
-        + 0.15 * contrast_score
-        + 0.09 * area_score
-        + 0.08 * frame_score
-        + 0.07 * stability_score
-        + 0.05 * source_score,
-        0.0,
-        1.0,
-    ))
-
-    low_contrast_bright_profile = (
-        method == "bright"
-        and candidate.get("status") == "accept_automatic"
-        and candidate.get("candidate_source") == "grabcut"
-        and float(candidate.get("confidence", 0.0)) >= 0.58
-        and float(candidate.get("angle_score", 0.0)) >= 0.82
-        and float(candidate.get("balance_score", 0.0)) >= 0.75
-        and float(candidate.get("fill_score", 0.0)) >= 0.90
-        and (
-            float(candidate.get("contrast_score", 0.0)) >= 0.025
-            or float(candidate.get("edge_support", 0.0)) >= 0.05
-        )
-        and 0.22 <= area_ratio <= 0.82
-        and frame_contacts == 0
-    )
-    bright_has_boundary_evidence = (
-        contrast_score >= 0.08
-        or edge_support >= 0.08
-        or low_contrast_bright_profile
-    )
-    bright_profile_accepted = (
-        method == "bright"
-        and candidate.get("status") == "accept_automatic"
-        and float(candidate.get("confidence", 0.0)) >= 0.58
-        and geometry["angle_score"] >= 0.50
-        and bright_has_boundary_evidence
-        and frame_contacts <= 2
-        and (
-            stability_score >= 0.42
-            or contrast_score >= 0.20
-            or low_contrast_bright_profile
-        )
-    )
-    established_primary_profile = (
-        method in {"guided", "region"}
-        and geometry["angle_score"] >= 0.90
-        and stability_score >= 0.50
-        and edge_support >= 0.07
-        and contrast_score >= 0.07
-        and 0.25 <= area_ratio <= 0.80
-        and frame_contacts <= 2
-    )
-
-    automatic_ok = (
-        (
-            confidence >= MIN_CONFIDENCE
-            and geometry["angle_score"] >= 0.55
-            and edge_support >= 0.22
-            and stability_score >= 0.42
-            and frame_contacts <= 2
-        )
-        or bright_profile_accepted
-        or established_primary_profile
-    )
-    review_ok = (
-        confidence >= PREPARATION_REVIEW_MIN_CONFIDENCE
-        and geometry["angle_score"] >= 0.38
-        and edge_support >= 0.08
-        and frame_contacts <= 2
-    )
-
-    if automatic_ok:
+    if confidence >= MIN_CONFIDENCE:
         status = "accept_automatic"
-        reason = (
-            f"accepted: {method} passed detector-specific geometry/stability profile"
-            if bright_profile_accepted
-            else (
-                f"accepted: {method} preserved an established strong geometry profile"
-                if established_primary_profile
-                else f"accepted: {method} passed unified geometry, edge, contrast and stability scoring"
-            )
-        )
-    elif review_ok:
+        reason = f"accepted: {method} passed the automatic confidence threshold"
+    elif confidence >= PREPARATION_REVIEW_MIN_CONFIDENCE:
         status = "review_required"
-        reason = f"review required: {method} produced a usable medium-confidence boundary"
+        reason = f"review required: {method} produced a usable candidate below automatic confidence"
     else:
         status = "reject"
-        reason = f"rejected: {method} failed unified boundary quality checks"
+        reason = f"rejected: {method} confidence is below the Preparation review floor"
 
     return {
         "method_used": method,
         "status": status,
         "detected": status != "reject",
-        "corners": [[int(round(x)), int(round(y))] for x, y in corners],
+        "corners": corners,
         "confidence": round(confidence, 4),
         "final_score": round(confidence, 4),
-        "area_ratio": round(float(area_ratio), 4),
-        "edge_support": round(float(edge_support), 4),
-        "side_edge_support": [round(float(value), 4) for value in side_edge_support],
-        "contrast_score": round(float(contrast_score), 4),
-        "angle_score": round(float(geometry["angle_score"]), 4),
-        "side_balance_score": round(float(geometry["side_balance_score"]), 4),
-        "stability_score": round(float(stability_score), 4),
-        "frame_contact_count": int(frame_contacts),
-        "source_confidence": round(float(source_score), 4),
-        "reason": reason,
-    }
-
-
-def _not_run_preparation_candidate(method, reason):
-    return {
-        "method_used": method,
-        "status": "not_run",
-        "detected": False,
-        "corners": [],
-        "confidence": 0.0,
-        "final_score": 0.0,
-        "area_ratio": 0.0,
-        "edge_support": 0.0,
-        "contrast_score": 0.0,
-        "angle_score": 0.0,
-        "stability_score": 0.0,
-        "frame_contact_count": 0,
+        "area_ratio": round(area_ratio, 4),
+        "edge_support": round(edge_support, 4),
         "reason": reason,
     }
 
 
 def detect_preparation_boundary(image):
-    """Select a Preparation boundary from Guided, Region and Bright candidates.
+    """Select a Preparation boundary using Guided first, then Region.
 
-    Guided remains the first path. Region and Bright are evaluated lazily only
-    when the preceding result is not strong enough. Every candidate is then
-    normalized through the same geometry/edge/contrast/stability score.
+    Hough may be used internally as Guided's seed, but it is never returned
+    as an accepted Preparation method.
     """
     gray = _to_gray(image)
 
     height, width = gray.shape[:2]
     if width < 80 or height < 80:
-        candidates = {
-            method: _preparation_candidate_payload(image, method, None)
-            for method in PREPARATION_ALLOWED_METHODS
+        return {
+            "detected": False,
+            "status": "reject",
+            "method_used": None,
+            "corners": [],
+            "confidence": 0.0,
+            "final_score": 0.0,
+            "area_ratio": 0.0,
+            "edge_support": 0.0,
+            "candidates": {
+                "guided": _preparation_candidate_payload("guided", None),
+                "region": _preparation_candidate_payload("region", None),
+            },
+            "reason": "rejected: image is too small for Preparation boundary detection",
         }
+
+    # Guided uses the existing Hough implementation only as an internal seed.
+    hough_seed = _extract_hough_document_candidate(image, gray)
+    guided_candidate = _extract_guided_region_candidate(image, hough_seed)
+    guided = _preparation_candidate_payload("guided", guided_candidate)
+
+    # Guided has priority. Region is intentionally lazy: it is expensive and is
+    # needed only when Guided cannot produce a reviewable candidate.
+    if guided["status"] != "reject":
+        region = {
+            "method_used": "region",
+            "status": "not_run",
+            "detected": False,
+            "corners": [],
+            "confidence": 0.0,
+            "final_score": 0.0,
+            "area_ratio": 0.0,
+            "edge_support": 0.0,
+            "reason": "skipped: Guided produced a usable candidate",
+        }
+
+        return {
+            **guided,
+            "candidates": {
+                "guided": guided,
+                "region": region,
+            },
+            "allowed_methods": list(PREPARATION_ALLOWED_METHODS),
+        }
+
+    # Guided failed. Only now run Region as the fallback candidate.
+    region_candidates = _extract_region_document_candidates(image, gray)
+    region_candidate = region_candidates[0] if region_candidates else None
+    region = _preparation_candidate_payload("region", region_candidate)
+
+    candidates = {
+        "guided": guided,
+        "region": region,
+    }
+
+
+    # Guided has priority when it is geometrically usable. Region is fallback.
+    if guided["status"] != "reject":
+        selected = guided
+    elif region["status"] != "reject":
+        selected = region
+    else:
         return {
             "detected": False,
             "status": "reject",
@@ -1382,83 +1221,11 @@ def detect_preparation_boundary(image):
             "area_ratio": 0.0,
             "edge_support": 0.0,
             "candidates": candidates,
-            "allowed_methods": list(PREPARATION_ALLOWED_METHODS),
-            "reason": "rejected: image is too small for Preparation boundary detection",
+            "reason": "rejected: neither Guided nor Region produced a reviewable candidate",
         }
-
-    hough_seed = _extract_hough_document_candidate(image, gray)
-    guided_candidate = _extract_guided_region_candidate(image, hough_seed)
-    guided = _preparation_candidate_payload(image, "guided", guided_candidate)
-
-    region = _not_run_preparation_candidate(
-        "region", "skipped: Guided/Bright produced a strong candidate"
-    )
-    bright = _not_run_preparation_candidate(
-        "bright", "skipped: Guided was already strong"
-    )
-
-    guided_strong = (
-        guided["status"] == "accept_automatic"
-        and guided["confidence"] >= 0.76
-        and guided.get("stability_score", 0.0) >= 0.58
-    )
-
-    if not guided_strong:
-        bright_candidate = detect_bright_document_boundary(image)
-        bright = _preparation_candidate_payload(image, "bright", bright_candidate)
-
-    bright_strong = (
-        bright["status"] == "accept_automatic"
-        and bright.get("stability_score", 0.0) >= 0.42
-    )
-
-    if not guided_strong and not bright_strong:
-        region_candidates = _extract_region_document_candidates(image, gray)
-        region_candidate = region_candidates[0] if region_candidates else None
-        region = _preparation_candidate_payload(image, "region", region_candidate)
-
-    candidates = {
-        "guided": guided,
-        "region": region,
-        "bright": bright,
-    }
-
-    usable = [
-        item for item in candidates.values()
-        if item["status"] in {"accept_automatic", "review_required"}
-    ]
-
-    if usable:
-        selected = max(
-            usable,
-            key=lambda item: (
-                1 if item["status"] == "accept_automatic" else 0,
-                item["confidence"],
-                item.get("edge_support", 0.0),
-            ),
-        )
-        return {
-            **selected,
-            "candidates": candidates,
-            "allowed_methods": list(PREPARATION_ALLOWED_METHODS),
-        }
-
-    diagnostics = [
-        item for item in candidates.values()
-        if item["status"] != "not_run" and item.get("corners")
-    ]
-    diagnostic = max(diagnostics, key=lambda item: item["confidence"], default=None)
 
     return {
-        "detected": False,
-        "status": "reject",
-        "method_used": diagnostic.get("method_used") if diagnostic else None,
-        "corners": diagnostic.get("corners", []) if diagnostic else [],
-        "confidence": diagnostic.get("confidence", 0.0) if diagnostic else 0.0,
-        "final_score": diagnostic.get("final_score", 0.0) if diagnostic else 0.0,
-        "area_ratio": diagnostic.get("area_ratio", 0.0) if diagnostic else 0.0,
-        "edge_support": diagnostic.get("edge_support", 0.0) if diagnostic else 0.0,
+        **selected,
         "candidates": candidates,
         "allowed_methods": list(PREPARATION_ALLOWED_METHODS),
-        "reason": "rejected: no candidate passed the unified review-quality floor",
     }
