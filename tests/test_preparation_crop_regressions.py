@@ -16,7 +16,7 @@ def _no_skew(_image):
     }
 
 
-def test_fully_visible_page_close_to_frame_is_still_eligible(monkeypatch):
+def test_fully_visible_page_close_to_frame_is_rectified(monkeypatch):
     image = np.full((800, 1200, 3), 55, dtype=np.uint8)
 
     def detector(proxy):
@@ -40,13 +40,12 @@ def test_fully_visible_page_close_to_frame_is_still_eligible(monkeypatch):
     monkeypatch.setattr(preparation_pipeline, "detect_skew", _no_skew)
     result = prepare_document(image, boundary_detector=detector)
 
-    assert result["boundary"]["automatic_crop_eligible"] is True
-    assert result["boundary"]["frame_clearance_ratio"] >= 0.005
+    assert result["boundary"]["detected"] is True
     assert result["perspective"] is not None
     assert result["perspective"]["applied"] is True
 
 
-def test_page_touching_frame_remains_blocked(monkeypatch):
+def test_detected_page_touching_frame_uses_stable_zip_rectification(monkeypatch):
     image = np.full((800, 1200, 3), 55, dtype=np.uint8)
 
     def detector(proxy):
@@ -68,8 +67,9 @@ def test_page_touching_frame_remains_blocked(monkeypatch):
     monkeypatch.setattr(preparation_pipeline, "detect_skew", _no_skew)
     result = prepare_document(image, boundary_detector=detector)
 
-    assert result["boundary"]["automatic_crop_eligible"] is False
-    assert result["perspective"] is None
+    assert result["boundary"]["detected"] is True
+    assert result["perspective"] is not None
+    assert result["perspective"]["applied"] is True
 
 
 def test_bright_paper_fallback_finds_document_on_textured_background():
