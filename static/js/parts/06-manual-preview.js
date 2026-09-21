@@ -14,54 +14,9 @@ function scheduleManualPreview(delay = 120) {
     manualPreviewTimer = setTimeout(() => applyManualOperation({ live: true }), delay);
 }
 
-function refreshManualPreviewDependents() {
-    updateManualApprovalUI();
-    updateControls();
-    if (typeof syncCropGuide === "function") syncCropGuide();
-    if (typeof syncPerspectiveGuide === "function") syncPerspectiveGuide();
-    renderManualChangeChart();
-}
-
-function setManualPreviewSource(url, options = {}) {
-    if (!url || !elements.manualLivePreview) return Promise.resolve(false);
-
-    const pending = options.pending !== false;
-    const requestId = Number.isInteger(options.requestId) ? options.requestId : manualPreviewSequence;
-    const loadId = ++manualPreviewLoadSequence;
-    const source = { url, requestId, loadId, kind: pending ? "pending" : "approved" };
-
-    if (pending) state.manualPreviewSource = source;
-    else {
-        state.manualApprovedSource = source;
-        state.manualPreviewSource = null;
-    }
-
-    return new Promise((resolve) => {
-        const preview = elements.manualLivePreview;
-        const finish = (loaded) => {
-            const active = pending ? state.manualPreviewSource : state.manualApprovedSource;
-            if (!active || active.loadId !== loadId || active.url !== url) {
-                resolve(false);
-                return;
-            }
-            if (pending && requestId !== manualPreviewSequence) {
-                resolve(false);
-                return;
-            }
-            refreshManualPreviewDependents();
-            resolve(loaded);
-        };
-
-        preview.addEventListener("load", () => finish(true), { once: true });
-        preview.addEventListener("error", () => finish(false), { once: true });
-        preview.src = url;
-    });
-}
-
-function setManualPreviewResult(result, operationId, decisionStatus = null, requestId = manualPreviewSequence) {
+function setManualPreviewResult(result, operationId, decisionStatus = null) {
     if (!result?.id || !elements.manualLivePreview) return;
-    const url = `/api/results/${encodeURIComponent(result.id)}?preview=${Date.now()}`;
-    setManualPreviewSource(url, { pending: true, requestId });
+    elements.manualLivePreview.src = `/api/results/${encodeURIComponent(result.id)}?preview=${Date.now()}`;
     if (elements.manualPreviewNote) {
         const decisionText = decisionStatus ? ` · ${statusLabel(decisionStatus)}` : "";
         elements.manualPreviewNote.textContent = `${operationLabel(operationId)}${decisionText}`;
@@ -70,9 +25,10 @@ function setManualPreviewResult(result, operationId, decisionStatus = null, requ
 
 }
 
-function setManualPreviewData(preview, operationId, requestId = manualPreviewSequence) {
+function setManualPreviewData(preview, operationId) {
     if (!preview?.data_url || !elements.manualLivePreview) return;
-    setManualPreviewSource(preview.data_url, { pending: true, requestId });
+
+    elements.manualLivePreview.src = preview.data_url;
     if (elements.manualPreviewNote) {
         elements.manualPreviewNote.textContent = `${operationLabel(operationId)} · معاينة لحظية`;
     }
@@ -139,12 +95,7 @@ function showPrimaryResult(result, source = "result") {
         state.manualActiveIndex = 0;
         state.manualPreviewCandidate = null;
         if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = manualOriginalUrl() || `${url}?base=${Date.now()}`;
-        if (elements.manualLivePreview) {
-            setManualPreviewSource(`${url}?base=${Date.now()}`, {
-                pending: false,
-                requestId: manualPreviewSequence
-            });
-        }
+        if (elements.manualLivePreview) elements.manualLivePreview.src = `${url}?base=${Date.now()}`;
         if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "المعالجة الذكية هي الصورة الحالية — يمكنك متابعة تجهيز الوثيقة يدويًا.";
         updateManualApprovalUI();
     }
@@ -213,7 +164,7 @@ function renderManualOperationResult(data, options = {}) {
     document.querySelector(".manual-editor")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function renderPreparationPreview(data, requestId = manualPreviewSequence) {
+function renderPreparationPreview(data) {
     const preparationId = data?.preparation_id;
     const preview = data?.preview;
 
@@ -237,14 +188,11 @@ function renderPreparationPreview(data, requestId = manualPreviewSequence) {
     };
 
     if (elements.manualLivePreview) {
-        const previewUrl = `${preview.url}?preview=${Date.now()}`;
-        setManualPreviewSource(previewUrl, { pending: true, requestId });
+        elements.manualLivePreview.src = `${preview.url}?preview=${Date.now()}`;
     }
 
     if (elements.manualPreviewNote) {
-        const method = data.method_used === "bright"
-            ? "Bright/Region"
-            : (data.method_used === "region" ? "Region" : "Guided");
+        const method = data.method_used === "region" ? "Region" : "Guided";
         const status = data.status || "review_required";
         elements.manualPreviewNote.textContent = `Preparation · ${method} · ${statusLabel(status)}`;
     }
@@ -337,15 +285,11 @@ const LOCAL_PREVIEW_OPERATIONS = new Set([
 ]);
 
 function currentManualSourceUrl() {
-    if (state.manualPreviewSource?.url) return state.manualPreviewSource.url;
-
+    const displayed = elements.manualLivePreview?.currentSrc || elements.manualLivePreview?.src;
+    if (displayed) return displayed;
     const activeEntry = state.manualActiveIndex >= 0 ? state.manualChain[state.manualActiveIndex] : null;
     if (activeEntry?.previewDataUrl) return activeEntry.previewDataUrl;
-    if (activeEntry?.result?.id) {
-        return `/api/results/${encodeURIComponent(activeEntry.result.id)}?source=${Date.now()}`;
-    }
-
-    if (state.manualApprovedSource?.url) return state.manualApprovedSource.url;
+    if (activeEntry?.result?.id) return `/api/results/${encodeURIComponent(activeEntry.result.id)}?source=${Date.now()}`;
     return manualOriginalUrl();
 }
 
@@ -446,11 +390,12 @@ function setOptimisticManualApprovalPreview(candidate) {
     const dataUrl = candidate?.data?.preview?.data_url;
     if (!dataUrl) return;
     const activeEntry = state.manualActiveIndex >= 0 ? state.manualChain[state.manualActiveIndex] : null;
-    const beforeUrl = state.manualPreviewSource?.url
+    const displayedBefore = elements.manualLivePreview?.currentSrc || elements.manualLivePreview?.src;
+    const beforeUrl = displayedBefore
         || activeEntry?.previewDataUrl
         || (activeEntry?.result?.id ? `/api/results/${encodeURIComponent(activeEntry.result.id)}?before=${Date.now()}` : manualOriginalUrl());
     if (elements.manualOriginalPreview && beforeUrl) elements.manualOriginalPreview.src = beforeUrl;
-    setManualPreviewSource(dataUrl, { pending: true, requestId: manualPreviewSequence });
+    if (elements.manualLivePreview) elements.manualLivePreview.src = dataUrl;
     if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationLabel(candidate.operation?.id || "manual_operation")} · تم تطبيق المعاينة فورياً، جارٍ حفظها.`;
     renderManualChangeChart();
 }
