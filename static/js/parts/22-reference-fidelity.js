@@ -375,7 +375,7 @@
         const panel = document.getElementById("commandInfoPanel");
         if (!panel) return;
         panel.innerHTML = `
-            <div class="ref-info-head"><strong>1. Image Info</strong><i class="bi bi-info-circle-fill"></i></div>
+            <div class="ref-info-head"><strong>1. Image Info</strong><button type="button" class="ref-info-details" aria-label="Open verification details"><i class="bi bi-info-circle-fill"></i></button></div>
             <div class="ref-info-grid">
                 <span>Filename:</span><strong data-command-info-name>—</strong>
                 <span>Dimensions:</span><strong data-command-info-dimensions>—</strong>
@@ -383,6 +383,7 @@
                 <span>Format:</span><strong data-ref-info-format>—</strong>
             </div>
         `;
+        q(".ref-info-details", panel)?.addEventListener("click", () => document.body.classList.add("command-results-open"));
     }
 
     function syncReferenceData() {
