@@ -302,33 +302,64 @@
     function rebuildActions() {
         const bar = document.getElementById("commandActionBar");
         if (!bar) return;
+
         const realRun = document.getElementById("runPipelineButton");
         const realApprove = document.getElementById("manualApprovalButton");
         const realDownload = document.getElementById("downloadResultButton");
         const manualDownload = document.getElementById("manualManualDownloadButton");
-        [realRun, realApprove, realDownload, manualDownload, document.getElementById("manualUndoButton"), document.getElementById("manualRedoButton"), document.getElementById("startOverButton")].filter(Boolean).forEach((node) => node.classList.add("ref-real-action"));
+        const undo = document.getElementById("manualUndoButton");
+        const redo = document.getElementById("manualRedoButton");
+        const startOver = document.getElementById("startOverButton");
+
+        [realRun, realApprove, realDownload, manualDownload, undo, redo, startOver].filter(Boolean).forEach((node) => node.remove());
 
         bar.innerHTML = `
             <div class="ref-action-title"><strong><i class="bi bi-play-btn-fill"></i> 5. Processing Actions</strong></div>
-            <div class="ref-action-main">
-                <button type="button" class="ref-run"><i class="bi bi-play-fill"></i> Run Processing</button>
-                <button type="button" data-ref-action="preview"><i class="bi bi-eye-fill"></i> Preview</button>
-                <button type="button" data-ref-action="compare"><i class="bi bi-layout-split"></i> Compare</button>
-                <button type="button" data-ref-action="approve"><i class="bi bi-layers-fill"></i> Apply Step</button>
-            </div>
-            <div class="ref-export">
-                <span>Export & Save</span>
-                <div><button type="button" data-ref-action="download"><i class="bi bi-download"></i> Download Result</button><button type="button" data-ref-action="step-download"><i class="bi bi-floppy"></i> Save Step</button></div>
-            </div>
+            <div class="ref-action-main"></div>
+            <div class="ref-export"><span>Export & Save</span><div></div></div>
+            <div class="ref-preserved-actions" aria-hidden="true"></div>
         `;
-        q(".ref-run", bar)?.addEventListener("click", () => realRun?.click());
-        q('[data-ref-action="preview"]', bar)?.addEventListener("click", () => {
-            q('[data-ref-view="after"]')?.click();
-        });
-        q('[data-ref-action="compare"]', bar)?.addEventListener("click", () => q('[data-ref-view="side"]')?.click());
-        q('[data-ref-action="approve"]', bar)?.addEventListener("click", () => realApprove?.click());
-        q('[data-ref-action="download"]', bar)?.addEventListener("click", () => realDownload?.click());
-        q('[data-ref-action="step-download"]', bar)?.addEventListener("click", () => manualDownload?.click());
+
+        const main = q(".ref-action-main", bar);
+        const exportBox = q(".ref-export > div", bar);
+        const preserved = q(".ref-preserved-actions", bar);
+
+        if (realRun) {
+            realRun.className = "ref-run";
+            realRun.innerHTML = '<i class="bi bi-play-fill"></i><span>Run Processing</span>';
+            main.appendChild(realRun);
+        }
+
+        const preview = document.createElement("button");
+        preview.type = "button";
+        preview.innerHTML = '<i class="bi bi-eye-fill"></i><span>Preview</span>';
+        preview.addEventListener("click", () => q('[data-ref-view="after"]')?.click());
+        main.appendChild(preview);
+
+        const compare = document.createElement("button");
+        compare.type = "button";
+        compare.innerHTML = '<i class="bi bi-layout-split"></i><span>Compare</span>';
+        compare.addEventListener("click", () => q('[data-ref-view="side"]')?.click());
+        main.appendChild(compare);
+
+        if (realApprove) {
+            realApprove.className = "";
+            realApprove.innerHTML = '<i class="bi bi-layers-fill"></i><span>Apply Step</span>';
+            main.appendChild(realApprove);
+        }
+
+        if (realDownload) {
+            realDownload.className = "";
+            realDownload.innerHTML = '<i class="bi bi-download"></i><span>Download Result</span>';
+            exportBox.appendChild(realDownload);
+        }
+        if (manualDownload) {
+            manualDownload.className = "";
+            manualDownload.innerHTML = '<i class="bi bi-floppy"></i><span>Save Step</span>';
+            exportBox.appendChild(manualDownload);
+        }
+
+        [undo, redo, startOver].filter(Boolean).forEach((node) => preserved.appendChild(node));
     }
 
     function rebuildResultsDock() {
