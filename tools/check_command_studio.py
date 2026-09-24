@@ -97,6 +97,23 @@ async def main(args):
         assert not initial["errors"], initial
         assert initial["operationCount"] >= 36, initial["operationCount"]
 
+        # Pixel geometry contract from the approved 1536x1024 reference.
+        expected_panels = {
+            "upload":  {"left": 8, "top": 91, "right": 306,  "bottom": 710},
+            "preview": {"left": 314, "top": 91, "right": 1169, "bottom": 710},
+            "controls":{"left": 1177, "top": 91, "right": 1528, "bottom": 841},
+            "crop":    {"left": 8, "top": 718, "right": 306, "bottom": 1008},
+            "actions": {"left": 314, "top": 718, "right": 1169, "bottom": 841},
+            "results": {"left": 314, "top": 849, "right": 1303, "bottom": 1008},
+            "info":    {"left": 1311, "top": 849, "right": 1528, "bottom": 1008},
+        }
+        for panel_name, expected_rect in expected_panels.items():
+            actual_rect = initial["panels"][panel_name]
+            for edge, expected_value in expected_rect.items():
+                assert abs(actual_rect[edge] - expected_value) <= 2, (
+                    panel_name, edge, actual_rect[edge], expected_value
+                )
+
         # All eight real categories remain reachable through the three visual toolsets.
         expected = {
             "basic": {"page", "lighting", "contrast", "noise"},
@@ -140,6 +157,9 @@ async def main(args):
         assert "ref-overlay" in (await pair.get_attribute("class") or "")
         await page.locator('[data-ref-view="side"]').click()
         assert await pair.get_attribute("data-command-preview-mode") == "side"
+        await page.locator('[data-command-toolset="basic"]').click()
+        await page.wait_for_timeout(180)
+        await page.screenshot(path=str(output / "approved-reference-1536x1024.png"), full_page=False)
 
         # Crop shortcut must route to the existing crop tool, preserving the real editor.
         await page.locator('[data-ref-crop="crop"]').click()
