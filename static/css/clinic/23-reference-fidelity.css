@@ -1104,3 +1104,17 @@ body.reference-target-active .command-result-overlay {
         padding-inline: 8px !important;
     }
 }
+
+
+.ref-info-details {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #dce4ea;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+.ref-info-details i { font-size: 12px; }
