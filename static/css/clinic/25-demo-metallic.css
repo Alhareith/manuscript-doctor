@@ -570,3 +570,8 @@ body.demo-hardened label {
         font-size: 16px;
     }
 }
+
+
+body.demo-hardened #usageGuideButton[hidden] {
+    display: none !important;
+}
