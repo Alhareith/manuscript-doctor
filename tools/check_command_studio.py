@@ -147,7 +147,7 @@ async def main(args):
         assert await page.evaluate("state.manualPreviewCandidate?.operation?.id") in [None, "crop"]
 
         # Result details remain accessible without turning the page into a long document.
-        await page.locator("#commandInfoPanel [data-command-results]").click()
+        await page.locator("#commandInfoPanel .ref-info-details").click()
         assert await page.locator("body").evaluate("e => e.classList.contains('command-results-open')")
         await page.locator("#commandResultOverlay .command-result-overlay-head button").click()
 
