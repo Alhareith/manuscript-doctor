@@ -32,8 +32,13 @@
     }
 
     function updateBrandAndHeader() {
+        const logo = q(".brand-mark img");
         const brandTitle = q(".brand-copy strong");
         const brandSub = q(".brand-copy small");
+        if (logo) {
+            logo.src = "/static/assets/reference-studio-logo.png";
+            logo.alt = "";
+        }
         if (brandTitle) brandTitle.textContent = "Manuscript Doctor";
         if (brandSub) brandSub.textContent = "Restore  ·  Enhance  ·  Preserve";
 
