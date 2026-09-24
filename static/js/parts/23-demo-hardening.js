@@ -274,6 +274,26 @@
         }
     }
 
+
+    function localizeDynamicDemoText() {
+        const previewSubtitle = q(".manual-preview-pane > .command-panel-heading small");
+        if (previewSubtitle) previewSubtitle.textContent = "مقارنة الأصل بالمعاينة المعالجة";
+
+        qa("[data-ref-thumbnails] figcaption").forEach((caption) => {
+            const current = caption.textContent.trim();
+            if (current === "Original") {
+                caption.textContent = "الأصل";
+                return;
+            }
+            if (current === "Preview") {
+                caption.textContent = "معاينة";
+                return;
+            }
+            const entry = Object.entries(operationNames || {}).find(([, names]) => names?.[1] === current);
+            if (entry?.[1]?.[0]) caption.textContent = entry[1][0];
+        });
+    }
+
     function syncRealFileSummary() {
         const fileName = elements.selectedFileName?.textContent?.trim();
         const fileMeta = elements.selectedFileMeta?.textContent?.trim();
@@ -312,6 +332,7 @@
         const observer = new MutationObserver(() => requestAnimationFrame(() => {
             syncRealFileSummary();
             removeFakeThumbnailAddButton();
+            localizeDynamicDemoText();
         }));
 
         [elements.selectedFileName, elements.selectedFileMeta, elements.manualOriginalPreview, elements.originalPreview]
@@ -343,6 +364,7 @@
         bindDemoSync();
         syncRealFileSummary();
         removeFakeThumbnailAddButton();
+        localizeDynamicDemoText();
         document.body.classList.add("demo-hardened");
     }
 
