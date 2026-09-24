@@ -1227,3 +1227,101 @@ body.reference-target-active .ref-export button {
     min-width: 105px;
     height: 58px;
 }
+
+
+/* Final header alignment measured directly from the approved reference. */
+body.reference-target-active .app-header-inner {
+    grid-template-columns: 314px minmax(0, 1fr) 330px !important;
+    gap: 16px !important;
+    padding: 0 12px !important;
+}
+
+body.reference-target-active .app-brand {
+    gap: 14px !important;
+}
+
+body.reference-target-active .brand-mark {
+    width: 76px !important;
+    height: 66px !important;
+    flex: 0 0 76px !important;
+    overflow: visible !important;
+}
+
+body.reference-target-active .brand-mark img {
+    width: 76px !important;
+    height: 66px !important;
+    max-width: none !important;
+    object-fit: contain !important;
+}
+
+body.reference-target-active .brand-copy strong {
+    font-size: 25px !important;
+    line-height: 1.08 !important;
+}
+
+body.reference-target-active .brand-copy small {
+    margin-top: 4px !important;
+    font-size: 14px !important;
+    line-height: 1.05 !important;
+}
+
+body.reference-target-active .ref-premium-button {
+    width: 128px !important;
+    min-width: 128px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+}
+
+body.reference-target-active .manual-preview-toolbar {
+    margin: 0 !important;
+}
+
+body.reference-target-active .manual-preview-stage {
+    margin-top: 0 !important;
+}
+
+/* Gold sliders match the approved processing panel rather than inherited green controls. */
+body.reference-target-active .ref-param-row input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    height: 5px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    outline: none !important;
+    background:
+        linear-gradient(
+            90deg,
+            #f4bd4e 0,
+            #f4bd4e var(--ref-range-pct, 50%),
+            #354a5d var(--ref-range-pct, 50%),
+            #354a5d 100%
+        ) !important;
+}
+
+body.reference-target-active .ref-param-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    width: 13px !important;
+    height: 13px !important;
+    border: 1px solid #f8d57f !important;
+    border-radius: 50% !important;
+    background: #f2c05a !important;
+    box-shadow: 0 0 0 2px rgba(10,24,38,.9) !important;
+}
+
+body.reference-target-active .ref-param-row input[type="range"]::-moz-range-thumb {
+    width: 13px !important;
+    height: 13px !important;
+    border: 1px solid #f8d57f !important;
+    border-radius: 50% !important;
+    background: #f2c05a !important;
+    box-shadow: 0 0 0 2px rgba(10,24,38,.9) !important;
+}
+
+body.reference-target-active .command-results-dock {
+    padding-left: 24px !important;
+}
+
+body.reference-target-active .ref-thumbnail-strip figure {
+    width: 104px !important;
+    flex-basis: 104px !important;
+}
