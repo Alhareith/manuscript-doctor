@@ -133,11 +133,11 @@ async def main(args):
 
         # Reference toolbar modes are functional, not decorative.
         pair = page.locator(".manual-preview-pair")
-        await page.locator('[data-command-preview-mode="before"]').click()
-        assert await pair.get_attribute("data-command-preview-mode") == "before"
-        await page.locator('[data-command-preview-mode="after"]').click()
-        assert await pair.get_attribute("data-command-preview-mode") == "after"
-        await page.locator('[data-command-preview-mode="side"]').click()
+        await page.locator('[data-ref-view="zoom"]').click()
+        assert "ref-zoom" in (await pair.get_attribute("class") or "")
+        await page.locator('[data-ref-view="overlay"]').click()
+        assert "ref-overlay" in (await pair.get_attribute("class") or "")
+        await page.locator('[data-ref-view="side"]').click()
         assert await pair.get_attribute("data-command-preview-mode") == "side"
 
         # Crop shortcut must route to the existing crop tool, preserving the real editor.
@@ -171,7 +171,7 @@ async def main(args):
                 "all 8 categories reachable",
                 "upload and automatic examination",
                 "CLAHE preview and approval",
-                "before/after/side preview modes",
+                "reference zoom/overlay/side preview modes",
                 "crop shortcut uses existing crop editor",
                 "result detail overlay",
             ],
