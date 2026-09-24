@@ -1118,3 +1118,50 @@ body.reference-target-active .command-result-overlay {
     cursor: pointer;
 }
 .ref-info-details i { font-size: 12px; }
+
+
+/* Reference geometry corrections from Chromium visual diff. */
+html:has(body.reference-target-active) {
+    scrollbar-gutter: auto !important;
+}
+
+body.reference-target-active .manual-preview-card {
+    display: block !important;
+    position: relative !important;
+}
+
+body.reference-target-active .manual-preview-card > .manual-preview-image-wrap {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+body.reference-target-active .command-control-tabs {
+    direction: ltr !important;
+}
+
+body.reference-target-active .command-crop-panel,
+body.reference-target-active .ref-crop-buttons {
+    direction: ltr !important;
+}
+
+body.reference-target-active .command-action-bar {
+    direction: ltr !important;
+}
+
+body.reference-target-active .command-results-dock {
+    grid-column: 2 / 4 !important;
+    grid-row: 3 !important;
+    justify-self: stretch !important;
+    width: calc(100% - 225px) !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 225px 0 0 !important;
+}
+
+body.reference-target-active .command-info-panel {
+    grid-column: 3 !important;
+    grid-row: 3 !important;
+    justify-self: end !important;
+}
