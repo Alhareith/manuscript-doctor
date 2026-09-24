@@ -20,8 +20,8 @@ function initializeTheme() {
         applyTheme(saved);
         return;
     }
-    // The product default is the quiet metallic dark theme; the user can switch to light.
-    applyTheme("dark");
+    // The reference workspace is light by default; users can switch to dark and the choice persists.
+    applyTheme("light");
 }
 
 function updateQuickAdjustmentReadout() {
