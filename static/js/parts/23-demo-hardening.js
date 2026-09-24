@@ -21,7 +21,7 @@
         originalCopy?.classList.remove("ref-preview-copy-hidden");
 
         const guide = document.getElementById("usageGuideButton");
-        guide?.classList.remove("ref-hidden-guide");
+        if (guide) guide.hidden = true;
     }
 
     function restoreRealHeader() {
@@ -31,10 +31,7 @@
         if (brandSub) brandSub.textContent = "ترميم · تحسين · حفظ";
 
         const guide = document.getElementById("usageGuideButton");
-        if (guide) {
-            guide.querySelector("span")?.replaceChildren(document.createTextNode("دليل الاستخدام"));
-            guide.setAttribute("aria-label", "فتح دليل الاستخدام");
-        }
+        if (guide) guide.hidden = true;
     }
 
     function rebuildActualUploadSummary() {
