@@ -212,7 +212,12 @@
                 return;
             }
             if (event.target.closest("[data-command-reset]")) {
-                elements.removeImageButton?.click();
+                clickOperation("crop");
+                window.setTimeout(() => {
+                    document.querySelector(".manual-live-image-wrap")?.dispatchEvent(
+                        new MouseEvent("dblclick", { bubbles: true })
+                    );
+                }, 0);
             }
         });
     }
