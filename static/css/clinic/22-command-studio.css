@@ -1292,3 +1292,23 @@ body.command-studio-active .operation-category-strip > [hidden] {
         padding-inline: 0;
     }
 }
+
+/* Hard viewport reset for the command workspace: legacy page spacing must not offset the 100dvh grid. */
+html:has(body.command-studio-active) {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+body.command-studio-active {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.command-studio-active .app-shell {
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    position: relative;
+    inset: auto;
+}
