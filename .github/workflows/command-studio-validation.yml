@@ -32,6 +32,7 @@ jobs:
           node --check static/js/parts/20-crop-editor-performance.js
           node --check static/js/parts/21-command-studio-layout.js
           node --check static/js/parts/22-reference-fidelity.js
+          node --check static/js/parts/23-demo-hardening.js
 
       - name: Python regression suite
         run: python -m pytest -q
