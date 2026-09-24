@@ -229,6 +229,51 @@
         }
     }
 
+
+    function localizeTechnicalParameters() {
+        const groupNames = {
+            "Preprocessing": "التهيئة الأولية",
+            "Color & Tone": "الإضاءة والدرجات",
+            "Sharpening": "الحدة والتفاصيل",
+            "Binarization (Optional)": "فصل النص — اختياري"
+        };
+        qa(".ref-param-group h4").forEach((heading) => {
+            const text = heading.textContent.trim();
+            const key = Object.keys(groupNames).find((name) => text.includes(name));
+            if (!key) return;
+            const icon = heading.querySelector("i")?.outerHTML || "";
+            heading.innerHTML = `${icon} ${groupNames[key]}`;
+        });
+
+        const labels = {
+            "Denoise": "إزالة الضوضاء",
+            "Contrast": "التباين",
+            "Brightness": "السطوع",
+            "Gamma": "جاما",
+            "Local Tone": "الدرجات المحلية",
+            "Sharpen": "زيادة الحدة",
+            "Edge Enhance": "تعزيز الحواف",
+            "Threshold": "قيمة العتبة",
+            "Method": "الطريقة"
+        };
+        qa(".ref-param-row > span, .ref-method-row > span").forEach((node) => {
+            const translated = labels[node.textContent.trim()];
+            if (translated) node.textContent = translated;
+        });
+
+        const method = q("[data-ref-threshold-method]");
+        if (method) {
+            const translated = {
+                adaptive_threshold: "تكيفية",
+                otsu_threshold: "أوتسو",
+                global_threshold: "ثابتة"
+            };
+            [...method.options].forEach((option) => {
+                if (translated[option.value]) option.textContent = translated[option.value];
+            });
+        }
+    }
+
     function syncRealFileSummary() {
         const fileName = elements.selectedFileName?.textContent?.trim();
         const fileMeta = elements.selectedFileMeta?.textContent?.trim();
@@ -293,6 +338,7 @@
         localizeInfoPanel();
         localizeVisibleLabels();
         localizeRealWorkspace();
+        localizeTechnicalParameters();
         enforceRealButtonContracts();
         bindDemoSync();
         syncRealFileSummary();
