@@ -79,7 +79,7 @@ async def main(args):
             await upload(Path('static/assets/document-before.png'))
             assert await page.locator('.manual-change-chart').is_hidden()
             imported = await page.evaluate('''()=> [...document.styleSheets].filter(s=>s.href?.endsWith('/style.css')).flatMap(s=>[...s.cssRules].filter(r=>r.styleSheet).map(r=>({href:r.styleSheet.href,rules:r.styleSheet.cssRules.length})))''')
-            assert imported[-1]['href'].endswith('/clinic/21-crop-editor.css')
+            assert imported[-2]['href'].endswith('/clinic/21-crop-editor.css')\n            assert imported[-1]['href'].endswith('/clinic/22-command-studio.css')
             assert all(x['rules']>0 for x in imported)
             layout = []
             for width in SIZES:
