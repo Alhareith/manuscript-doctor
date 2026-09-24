@@ -149,16 +149,43 @@ async def main(args):
         await ready(page)
         assert await page.evaluate("Boolean(state.resultId)")
 
-        # Reference toolbar modes are functional, not decorative.
-        pair = page.locator(".manual-preview-pair")
-        await page.locator('[data-ref-view="zoom"]').click()
-        assert "ref-zoom" in (await pair.get_attribute("class") or "")
-        await page.locator('[data-ref-view="overlay"]').click()
-        assert "ref-overlay" in (await pair.get_attribute("class") or "")
-        await page.locator('[data-ref-view="side"]').click()
-        assert await pair.get_attribute("data-command-preview-mode") == "side"
+        # Demo hardening: no invented/fake controls survive.
+        assert await page.locator(".command-studio-nav").count() == 0
+        assert await page.locator(".ref-premium-button").count() == 0
+        assert await page.locator("[data-ref-view]").count() == 0
+        assert await page.locator(".ref-add-thumb").count() == 0
+        assert await page.locator("#usageGuideButton").is_hidden()
+
+        # Real Undo/Redo controls are visible and connected to the existing history logic.
+        undo = page.locator("#manualUndoButton")
+        redo = page.locator("#manualRedoButton")
+        assert await undo.is_visible()
+        assert await redo.is_visible()
+        assert await undo.is_enabled()
+        await undo.click()
+        await ready(page)
+        assert await redo.is_enabled()
+        await redo.click()
+        await ready(page)
+        assert await page.evaluate("Boolean(state.resultId)")
+
+        # Theme switch is real and both metallic themes stay inside the same viewport.
+        theme = page.locator("#themeToggleButton")
+        assert await theme.is_visible()
+        assert await page.locator("html").get_attribute("data-theme") == "dark"
+        await theme.click()
+        await page.wait_for_function("document.documentElement.dataset.theme === 'light'")
+        light_layout = await page.evaluate(LAYOUT_CHECK)
+        assert not light_layout["errors"], light_layout
+        await page.screenshot(path=str(output / "demo-metallic-light-1536x1024.png"), full_page=False)
+
+        await theme.click()
+        await page.wait_for_function("document.documentElement.dataset.theme === 'dark'")
+        dark_layout = await page.evaluate(LAYOUT_CHECK)
+        assert not dark_layout["errors"], dark_layout
         await page.locator('[data-command-toolset="basic"]').click()
         await page.wait_for_timeout(180)
+        await page.screenshot(path=str(output / "demo-metallic-dark-1536x1024.png"), full_page=False)
         await page.screenshot(path=str(output / "approved-reference-1536x1024.png"), full_page=False)
 
         # Crop shortcut must route to the existing crop tool, preserving the real editor.
@@ -192,7 +219,9 @@ async def main(args):
                 "all 8 categories reachable",
                 "upload and automatic examination",
                 "CLAHE preview and approval",
-                "reference zoom/overlay/side preview modes",
+                "invented reference controls removed",
+                "real Undo/Redo visible and functional",
+                "real dark/light metallic theme switch",
                 "crop shortcut uses existing crop editor",
                 "result detail overlay",
             ],
