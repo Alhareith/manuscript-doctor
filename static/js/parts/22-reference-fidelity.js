@@ -253,11 +253,14 @@
         wrap.className = "ref-preset-row";
         const options = qa("#manualOperation option").map((option) => {
             const value = option.value;
-            const label = value ? (operationNames?.[value]?.[1] || option.textContent) : "Custom (Manual)";
+            const names = value ? operationNames?.[value] : null;
+            const label = value
+                ? (names ? `${names[0]} — ${names[1]}` : option.textContent)
+                : "اختيار عملية يدوية";
             return `<option value="${value}">${label}</option>`;
         }).join("");
         wrap.innerHTML = `
-            <label>Presets</label>
+            <label>العمليات المتاحة</label>
             <div><select data-ref-operation-select>${options}</select><button type="button" title="Save preset"><i class="bi bi-floppy"></i></button><button type="button" title="Expand tools"><i class="bi bi-arrows-fullscreen"></i></button></div>
         `;
         tabs.insertAdjacentElement("beforebegin", wrap);
@@ -284,7 +287,7 @@
 
         qa("[data-command-toolset]", tabs).forEach((button) => {
             const key = button.dataset.commandToolset;
-            button.textContent = key === "basic" ? "Basic" : key === "advanced" ? "Advanced" : "Restoration";
+            button.textContent = key === "basic" ? "أساسي" : key === "advanced" ? "متقدم" : "ترميم";
         });
 
         const stack = document.createElement("div");
