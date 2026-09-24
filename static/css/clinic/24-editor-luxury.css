@@ -1,0 +1,597 @@
+/* Luxury Arabic Editor refinement layer.
+   Keeps the approved geometry; changes only typography, hierarchy and color language. */
+
+body.reference-target-active {
+    --editor-bg: #090c12;
+    --editor-bg-deep: #06090e;
+    --editor-panel: #10151d;
+    --editor-panel-2: #151c26;
+    --editor-panel-3: #1a2330;
+    --editor-line: #293443;
+    --editor-line-soft: #202a37;
+    --editor-text: #f5f7fa;
+    --editor-text-soft: #c7d0da;
+    --editor-muted: #8492a3;
+    --editor-accent: #59d8c7;
+    --editor-accent-strong: #39c6b4;
+    --editor-blue: #6aa8ff;
+    --editor-violet: #9b87f5;
+    --editor-success: #5fd3a2;
+    --editor-warning: #e3b867;
+    --editor-danger: #ef7f78;
+
+    --ref-gold: var(--editor-accent);
+    --ref-gold-hi: #83eee0;
+    --ref-bg: var(--editor-bg);
+    --ref-panel: var(--editor-panel);
+    --ref-panel-2: var(--editor-panel-2);
+    --ref-line: var(--editor-line);
+    --ref-muted: var(--editor-muted);
+    --ref-text: var(--editor-text);
+
+    font-family: "Alexandria", "IBM Plex Sans Arabic", system-ui, sans-serif !important;
+    color: var(--editor-text);
+    background:
+        radial-gradient(64rem 28rem at 48% -18%, rgba(89,216,199,.06), transparent 68%),
+        linear-gradient(180deg,var(--editor-bg),var(--editor-bg-deep)) !important;
+}
+
+body.reference-target-active button,
+body.reference-target-active input,
+body.reference-target-active select,
+body.reference-target-active output,
+body.reference-target-active textarea {
+    font-family: "Alexandria", "IBM Plex Sans Arabic", system-ui, sans-serif !important;
+}
+
+body.reference-target-active .app-shell {
+    background:
+        radial-gradient(54rem 22rem at 52% -14%, rgba(83,148,255,.05), transparent 66%),
+        var(--editor-bg) !important;
+}
+
+/* ---------- Header ---------- */
+body.reference-target-active .app-header {
+    background:
+        radial-gradient(42rem 13rem at 50% -90%, rgba(89,216,199,.10), transparent 70%),
+        linear-gradient(180deg,#111720,#0c1118) !important;
+    border-bottom-color: #26313e !important;
+    box-shadow: 0 10px 34px rgba(0,0,0,.28) !important;
+}
+
+body.reference-target-active .brand-copy strong {
+    font-family: "Alexandria", "IBM Plex Sans Arabic", sans-serif !important;
+    color: #f8fafc !important;
+    font-weight: 700 !important;
+}
+
+body.reference-target-active .brand-copy small {
+    color: #9aa7b6 !important;
+}
+
+body.reference-target-active .command-studio-nav button {
+    color: #c5cfda !important;
+}
+
+body.reference-target-active .command-studio-nav button:hover {
+    color: #eef7f6 !important;
+    background: rgba(89,216,199,.055) !important;
+    border-color: rgba(89,216,199,.20) !important;
+}
+
+body.reference-target-active .command-studio-nav button.is-active {
+    color: #bff9f0 !important;
+    border-color: rgba(89,216,199,.38) !important;
+    background:
+        linear-gradient(180deg,rgba(89,216,199,.11),rgba(89,216,199,.035)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035),0 0 20px rgba(89,216,199,.045) !important;
+}
+
+.ref-theme-icons .bi-sun-fill {
+    color: #73dfd0 !important;
+}
+
+body.reference-target-active #themeToggleButton {
+    border-color: #3b5960 !important;
+    background: linear-gradient(180deg,#182126,#0d1318) !important;
+}
+
+body.reference-target-active #themeToggleButton::after {
+    background: linear-gradient(180deg,#d9fffa,#63dcca) !important;
+    box-shadow: 0 0 13px rgba(89,216,199,.50) !important;
+}
+
+.ref-premium-button {
+    color: #071311 !important;
+    border-color: #5fdfcf !important;
+    background: linear-gradient(180deg,#8cf0e4,#4ed0bf) !important;
+    box-shadow: 0 8px 22px rgba(46,195,177,.15) !important;
+}
+
+/* ---------- Panels ---------- */
+body.reference-target-active #uploadSection,
+body.reference-target-active .manual-preview-pane,
+body.reference-target-active .manual-controls-pane,
+body.reference-target-active .command-crop-panel,
+body.reference-target-active .command-action-bar,
+body.reference-target-active .command-results-dock,
+body.reference-target-active .command-info-panel,
+body.reference-target-active .command-result-overlay {
+    border-color: var(--editor-line) !important;
+    background:
+        radial-gradient(25rem 13rem at 25% -5%,rgba(89,216,199,.035),transparent 68%),
+        linear-gradient(180deg,#121821,#0e141c) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.028),
+        0 12px 30px rgba(0,0,0,.18) !important;
+}
+
+body.reference-target-active .command-panel-heading {
+    border-bottom-color: var(--editor-line-soft) !important;
+}
+
+body.reference-target-active .command-panel-heading i,
+.ref-lower-heading i,
+.ref-action-title i,
+.ref-results-head strong i,
+.ref-param-group h4 i {
+    color: var(--editor-accent) !important;
+}
+
+body.reference-target-active .command-panel-heading strong,
+.ref-lower-heading strong,
+.ref-action-title strong,
+.ref-results-head strong,
+.ref-info-head,
+.ref-param-group h4 {
+    color: var(--editor-text) !important;
+    font-weight: 650 !important;
+}
+
+body.reference-target-active .command-panel-heading small,
+.ref-lower-heading small {
+    color: var(--editor-muted) !important;
+}
+
+/* ---------- Upload ---------- */
+body.reference-target-active #dropZone {
+    border-color: #455466 !important;
+    background:
+        linear-gradient(180deg,rgba(26,36,48,.76),rgba(17,24,33,.64)) !important;
+}
+
+body.reference-target-active #dropZone:hover {
+    border-color: rgba(89,216,199,.70) !important;
+    background:
+        linear-gradient(180deg,rgba(89,216,199,.055),rgba(20,29,39,.76)) !important;
+}
+
+.ref-upload-symbol {
+    color: var(--editor-accent) !important;
+}
+
+.ref-choose-button {
+    color: #061310 !important;
+    border-color: #5addcc !important;
+    background: linear-gradient(180deg,#86eadf,#47c8b7) !important;
+    box-shadow: 0 8px 18px rgba(54,197,180,.12);
+}
+
+.ref-recent-head {
+    border-color: var(--editor-line-soft) !important;
+}
+
+.ref-recent-head button {
+    color: #75e2d4 !important;
+}
+
+.ref-recent-row {
+    border-radius: 7px;
+}
+
+.ref-recent-row:hover {
+    background: rgba(89,216,199,.035);
+}
+
+.ref-recent-row img {
+    border-color: #354252 !important;
+}
+
+/* ---------- Preview toolbar ---------- */
+.ref-view-tools button,
+.ref-preview-controls,
+.ref-preset-row select,
+.ref-preset-row button,
+.ref-method-row select,
+.ref-image-footer button,
+.ref-results-head button,
+.ref-crop-buttons button,
+.ref-action-main button,
+.ref-export button {
+    color: var(--editor-text-soft) !important;
+    border-color: #303c4b !important;
+    background: linear-gradient(180deg,#1a2330,#141c26) !important;
+}
+
+.ref-view-tools button:hover,
+.ref-image-footer button:hover,
+.ref-results-head button:hover,
+.ref-crop-buttons button:hover {
+    color: #e5fffb !important;
+    border-color: rgba(89,216,199,.40) !important;
+    background: #1a2932 !important;
+}
+
+.ref-view-tools button.is-active,
+.ref-crop-buttons button.is-active,
+.ref-results-head button.is-active {
+    color: #cafff7 !important;
+    border-color: rgba(89,216,199,.62) !important;
+    background:
+        linear-gradient(180deg,rgba(89,216,199,.14),rgba(89,216,199,.055)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.03),0 0 16px rgba(89,216,199,.07) !important;
+}
+
+.ref-preview-controls > button,
+.ref-action-main .ref-run {
+    color: #071410 !important;
+    border-color: #5edbcb !important;
+    background: linear-gradient(180deg,#86ebdf,#48c9b8) !important;
+    font-weight: 700 !important;
+}
+
+.ref-preview-controls label input {
+    background: #234b48 !important;
+}
+
+.ref-preview-controls label input::after {
+    background: #bffbf2 !important;
+}
+
+body.reference-target-active .manual-preview-stage,
+body.reference-target-active .manual-preview-image-wrap {
+    background: #080c12 !important;
+}
+
+body.reference-target-active .manual-preview-card {
+    border-color: #2b3644 !important;
+    background: #080c12 !important;
+}
+
+body.reference-target-active .manual-preview-card figcaption span {
+    color: #e8eef4 !important;
+    background: rgba(17,24,33,.90) !important;
+    border: 1px solid rgba(151,168,185,.14);
+}
+
+body.reference-target-active .manual-preview-card:last-of-type figcaption span {
+    color: #cafff7 !important;
+    background: rgba(28,73,69,.92) !important;
+    border-color: rgba(89,216,199,.28);
+}
+
+.ref-preview-separator {
+    color: #dce6ee !important;
+    border-color: #3d4d5e !important;
+    background: #111923 !important;
+}
+
+.ref-preview-separator:hover {
+    color: #bffbf2 !important;
+    border-color: var(--editor-accent) !important;
+}
+
+.ref-image-footer {
+    border-color: var(--editor-line-soft) !important;
+    color: #aebbc7 !important;
+    background: linear-gradient(180deg,#151d27,#10161e) !important;
+}
+
+/* ---------- Tool tabs ---------- */
+body.reference-target-active .command-control-tabs button {
+    color: #b9c5d1 !important;
+    border-color: #303d4b !important;
+    background: #161f2a !important;
+}
+
+body.reference-target-active .command-control-tabs button:hover {
+    color: #ecf7f5 !important;
+    border-color: rgba(89,216,199,.30) !important;
+}
+
+body.reference-target-active .command-control-tabs button.is-active {
+    color: #071411 !important;
+    border-color: #5bdccb !important;
+    background: linear-gradient(180deg,#82e8dc,#46c7b6) !important;
+}
+
+.ref-basic-stack {
+    scrollbar-color: #3b4e58 transparent;
+}
+
+.ref-param-group {
+    border-color: #283441 !important;
+    background:
+        linear-gradient(180deg,#151d27,#121922) !important;
+}
+
+.ref-param-row > span,
+.ref-method-row {
+    color: #d9e2e9 !important;
+}
+
+.ref-param-row input {
+    accent-color: var(--editor-accent) !important;
+}
+
+.ref-param-row output {
+    color: #e8eef3 !important;
+    border-color: #324151 !important;
+    background: #0d131b !important;
+}
+
+/* ---------- Operation browser clarity ---------- */
+body.reference-target-active .operation-category-strip {
+    background: #0f151d !important;
+    border-bottom-color: var(--editor-line-soft) !important;
+}
+
+body.reference-target-active .category-tab {
+    min-height: 48px !important;
+    color: #a9b7c4 !important;
+    border-color: #2b3847 !important;
+    background: #151e29 !important;
+    font-size: .70rem !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+}
+
+body.reference-target-active .category-tab i {
+    color: #7f92a5 !important;
+}
+
+body.reference-target-active .category-tab:hover {
+    color: #e9f5f3 !important;
+    border-color: rgba(89,216,199,.28) !important;
+    background: #19252f !important;
+}
+
+body.reference-target-active .category-tab.is-active {
+    color: #071411 !important;
+    border-color: #58d8c7 !important;
+    background: linear-gradient(180deg,#83eadd,#48c9b8) !important;
+    font-weight: 700 !important;
+}
+
+body.reference-target-active .category-tab.is-active i {
+    color: #071411 !important;
+}
+
+body.reference-target-active .operation-browser {
+    background: #0c1118 !important;
+    padding: 9px !important;
+    scrollbar-color: #385058 transparent !important;
+}
+
+body.reference-target-active .operation-group {
+    gap: 7px !important;
+}
+
+body.reference-target-active .operation-row {
+    min-height: 58px !important;
+    padding: 9px 11px !important;
+    gap: 10px !important;
+    border: 1px solid #293644 !important;
+    border-radius: 9px !important;
+    color: #dfe7ee !important;
+    background:
+        linear-gradient(180deg,#171f2a,#131a23) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+body.reference-target-active .operation-row:hover {
+    border-color: rgba(89,216,199,.40) !important;
+    background:
+        linear-gradient(90deg,rgba(89,216,199,.06),#18222c 48%,#151d27) !important;
+}
+
+body.reference-target-active .operation-row.is-active {
+    border-color: rgba(89,216,199,.72) !important;
+    background:
+        linear-gradient(90deg,rgba(89,216,199,.13),#18262e 52%,#151d27) !important;
+    box-shadow:
+        inset 3px 0 0 var(--editor-accent),
+        0 0 0 1px rgba(89,216,199,.035) !important;
+}
+
+body.reference-target-active .operation-row > i:first-child {
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 29px;
+    border-radius: 7px;
+    color: #73e0d2 !important;
+    background: rgba(89,216,199,.075);
+    font-size: 14px !important;
+}
+
+body.reference-target-active .operation-row > span {
+    min-width: 0;
+    flex: 1 1 auto;
+    text-align: start;
+}
+
+body.reference-target-active .operation-row strong {
+    display: block;
+    color: #f2f6f9 !important;
+    font-family: "Alexandria","IBM Plex Sans Arabic",sans-serif !important;
+    font-size: 12.5px !important;
+    font-weight: 650 !important;
+    line-height: 1.55 !important;
+    letter-spacing: 0 !important;
+}
+
+body.reference-target-active .operation-row small {
+    display: block;
+    margin-top: 2px;
+    color: #8f9ead !important;
+    font-family: "Alexandria","IBM Plex Sans Arabic",sans-serif !important;
+    font-size: 9.5px !important;
+    font-weight: 400 !important;
+    line-height: 1.45 !important;
+    white-space: normal !important;
+}
+
+body.reference-target-active .operation-row > i:last-child {
+    color: #607083 !important;
+    font-size: 11px !important;
+}
+
+body.reference-target-active .operation-row.operation-row-primary {
+    border-color: rgba(106,168,255,.45) !important;
+    background:
+        linear-gradient(90deg,rgba(106,168,255,.10),#17202b 46%) !important;
+}
+
+body.reference-target-active .operation-row.operation-row-primary > i:first-child {
+    color: #86baff !important;
+    background: rgba(106,168,255,.09);
+}
+
+body.reference-target-active .operation-row.operation-row-special {
+    border-color: rgba(155,135,245,.32) !important;
+}
+
+body.reference-target-active .operation-row.operation-row-special > i:first-child {
+    color: #b2a3ff !important;
+    background: rgba(155,135,245,.08);
+}
+
+body.reference-target-active .selected-operation-panel {
+    border-top-color: var(--editor-line-soft) !important;
+    background: #111820 !important;
+}
+
+body.reference-target-active .selected-operation-head strong {
+    color: #f1f5f8 !important;
+    font-size: .88rem !important;
+}
+
+body.reference-target-active .selected-operation-head small,
+body.reference-target-active .selected-operation-head span {
+    color: #8d9ba9 !important;
+}
+
+/* Orientation actions in page group */
+body.reference-target-active .orientation-actions {
+    border-color: #293745 !important;
+    background: #121a23 !important;
+}
+
+body.reference-target-active .orientation-actions-title strong {
+    color: #eef3f6 !important;
+}
+
+body.reference-target-active .orientation-actions-title small {
+    color: #8998a7 !important;
+}
+
+body.reference-target-active .orientation-action {
+    color: #cdd7df !important;
+    border-color: #2b3947 !important;
+    background: #161f2a !important;
+}
+
+body.reference-target-active .orientation-action:hover {
+    color: #eafffb !important;
+    border-color: rgba(89,216,199,.38) !important;
+    background: #1b2931 !important;
+}
+
+body.reference-target-active .capability-note {
+    color: #9fb0bd !important;
+    border-color: rgba(89,216,199,.16) !important;
+    background: rgba(89,216,199,.035) !important;
+}
+
+/* ---------- Crop / actions / results ---------- */
+.ref-crop-stage {
+    border-color: #2b3744 !important;
+    background: #080c12 !important;
+}
+
+.ref-crop-frame {
+    border-color: var(--editor-accent) !important;
+}
+
+.ref-crop-frame i {
+    background: #75e3d5 !important;
+}
+
+.ref-action-main button,
+.ref-export button {
+    font-weight: 500 !important;
+}
+
+.ref-export {
+    border-left-color: var(--editor-line-soft) !important;
+}
+
+.ref-thumbnail-strip figure {
+    border-color: #2f3c4a !important;
+    background: #0a0f15 !important;
+}
+
+.ref-thumbnail-strip figure.is-current {
+    border-color: var(--editor-accent) !important;
+    box-shadow: 0 0 0 1px rgba(89,216,199,.12) !important;
+}
+
+.ref-add-thumb {
+    color: #a9b7c3 !important;
+    border-color: #2f3d4b !important;
+    background: #151e29 !important;
+}
+
+.ref-info-grid span {
+    color: #8393a2 !important;
+}
+
+.ref-info-grid strong {
+    color: #e9eef2 !important;
+}
+
+/* ---------- Scrollbars ---------- */
+body.reference-target-active * {
+    scrollbar-width: thin;
+    scrollbar-color: #344653 transparent;
+}
+
+body.reference-target-active *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body.reference-target-active *::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body.reference-target-active *::-webkit-scrollbar-thumb {
+    background: #344653;
+    border-radius: 999px;
+}
+
+body.reference-target-active *::-webkit-scrollbar-thumb:hover {
+    background: #47616d;
+}
+
+/* Keep geometry fixed; only improve readability. */
+@media (min-width: 981px) {
+    body.reference-target-active .operation-row strong {
+        font-size: 12.5px !important;
+    }
+    body.reference-target-active .operation-row small {
+        font-size: 9.5px !important;
+    }
+}
