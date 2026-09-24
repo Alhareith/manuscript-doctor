@@ -49,8 +49,24 @@ LAYOUT_CHECK = r"""() => {
     if (overlap(panels[a], panels[b])) errors.push('unexpected overlap: ' + a + '/' + b);
   }
   const ids = [...document.querySelectorAll('[data-operation-card]')].map(e => e.dataset.operationCard).filter(Boolean);
+  const styleInfo = (s) => {
+    const e=q(s); if(!e) return null; const x=getComputedStyle(e);
+    return {
+      margin:x.margin, padding:x.padding, transform:x.transform,
+      position:x.position, top:x.top, display:x.display,
+      height:x.height, minHeight:x.minHeight, boxSizing:x.boxSizing,
+      alignContent:x.alignContent, justifyContent:x.justifyContent
+    };
+  };
   return {
     viewport: {width:innerWidth,height:innerHeight},
+    computed: {
+      html: styleInfo('html'),
+      body: styleInfo('body'),
+      shell: styleInfo('.app-shell'),
+      header: styleInfo('.app-header'),
+      workspace: styleInfo('#workspace')
+    },
     scroll: {width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight},
     panels,
     operationCount: new Set(ids).size,
