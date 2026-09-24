@@ -1,4 +1,4 @@
-/* Premium reference workspace layer. */
+/* Premium reference workspace layer. Loaded after the existing clinic system. */
 :root {
   --reference-ivory: #f4f0e8;
   --reference-paper: #fffdf8;
@@ -11,29 +11,131 @@
   --reference-shadow: 0 18px 48px rgba(79, 61, 32, .12);
 }
 
-html[data-theme="light"] body,
-body {
+/* Light reference treatment. Dark mode keeps the existing clinic palette. */
+html[data-theme="light"] body {
   background: radial-gradient(circle at 12% 4%, rgba(181, 138, 67, .08), transparent 28rem), linear-gradient(180deg, var(--reference-ivory) 0%, #ebe5da 100%);
   color: var(--reference-ink);
 }
 
 .app-shell { min-height: 100vh; }
-.app-header, .workflow-bar { background: rgba(255, 253, 248, .94); border-color: var(--reference-line); box-shadow: 0 1px 0 rgba(128, 96, 43, .08); }
+.app-header, .workflow-bar { border-color: var(--reference-line); box-shadow: 0 1px 0 rgba(128, 96, 43, .08); }
+html[data-theme="light"] .app-header, html[data-theme="light"] .workflow-bar { background: rgba(255, 253, 248, .94); }
 .app-header-inner, .workflow-panel, .workspace { max-width: 1480px; margin-inline: auto; }
-.app-brand strong, .section-head h1, .section-head h2, .upload-intro h1, .manual-editor-head h2, .download-section h2 { color: var(--reference-ink); letter-spacing: -.02em; }
-.brand-mark, .upload-icon, .mode-card-icon, .analysis-summary-icon, .reading-icon { background: linear-gradient(145deg, #d2ad6c, var(--reference-gold-dark)); border-color: rgba(128, 96, 43, .4); box-shadow: 0 8px 20px rgba(128, 96, 43, .18); }
-.eyebrow, .section-head small, .upload-intro p, .chart-intro, .manual-preview-footer, .preview-status, .workflow-status { color: var(--reference-muted); }
-.upload-entry, .analysis-workspace, .document-dashboard, .treatment-studio, .verification-panel, .decision-section, .comparison-section, .download-section, .treatment-history, .binarization-section, .manual-editor, .analysis-master-control { background: rgba(255, 253, 248, .9); border: 1px solid var(--reference-line); box-shadow: var(--reference-shadow); }
-.upload-entry, .analysis-workspace, .document-dashboard, .treatment-studio, .verification-panel, .decision-section, .comparison-section, .download-section, .treatment-history, .binarization-section, .manual-editor { border-radius: 22px; }
-.drop-zone { background: linear-gradient(135deg, rgba(234, 223, 200, .48), rgba(255, 253, 248, .8)), repeating-linear-gradient(0deg, rgba(128, 96, 43, .035) 0 1px, transparent 1px 7px); border: 1px dashed rgba(128, 96, 43, .55); border-radius: 18px; }
-.drop-zone:hover, .drop-zone.is-dragging, .operation-row:hover, .operation-row.is-selected, .category-tab.is-active, .viewer-tab.is-active { border-color: var(--reference-gold); background-color: var(--reference-gold-soft); }
-.button-primary, .manual-approval-button, #manualApprovalButton, #runPipelineButton, #downloadResultButton { background: linear-gradient(135deg, var(--reference-gold), var(--reference-gold-dark)); border-color: var(--reference-gold-dark); color: #fffdf8; box-shadow: 0 8px 18px rgba(128, 96, 43, .2); }
-.button-primary:hover, #manualApprovalButton:hover, #runPipelineButton:hover, #downloadResultButton:hover { filter: brightness(1.06); transform: translateY(-1px); }
-.button-ghost, .viewer-tab, .category-tab, .panel-toggle { color: var(--reference-gold-dark); border-color: var(--reference-line); background: rgba(255, 253, 248, .72); }
-.document-stage, .manual-preview-stage, .compare-stage, .chart-stage, .manual-preview-image-wrap { background: #e3ddd1; border-color: var(--reference-line); border-radius: 14px; }
-.analysis-summary-card, .analysis-compact-panel, .metric-card, .dashboard-chart-card, .dashboard-reading-card, .treatment-mode-card, .manual-preview-card, .verification-metrics article, .decision-card, .operation-browser { background: rgba(255, 253, 248, .78); border-color: var(--reference-line); box-shadow: 0 8px 22px rgba(79, 61, 32, .06); }
-.metric-card strong, .analysis-compact-panel h3, .dashboard-chart-card h3, .treatment-mode-card h3, .manual-preview-card figcaption { color: var(--reference-ink); }
-.health-scale span, .progress-fill, .compare-divider, .perspective-edge { background: var(--reference-gold); }
-.status-dot.is-ready, .status-dot.success, .status-dot.active, .status-dot.done { background: var(--reference-gold); box-shadow: 0 0 0 4px rgba(181, 138, 67, .16); }
-.app-footer { background: #282721; border-top-color: var(--reference-gold-dark); }
-@media (max-width: 900px) { .upload-entry, .analysis-workspace, .document-dashboard, .treatment-studio, .verification-panel, .decision-section, .comparison-section, .download-section, .treatment-history, .binarization-section, .manual-editor { border-radius: 16px; } }
+
+html[data-theme="light"] .app-brand strong,
+html[data-theme="light"] .section-head h1,
+html[data-theme="light"] .section-head h2,
+html[data-theme="light"] .upload-intro h1,
+html[data-theme="light"] .manual-editor-head h2,
+html[data-theme="light"] .download-section h2 { color: var(--reference-ink); letter-spacing: -.02em; }
+
+html[data-theme="light"] .brand-mark,
+html[data-theme="light"] .upload-icon,
+html[data-theme="light"] .mode-card-icon,
+html[data-theme="light"] .analysis-summary-icon,
+html[data-theme="light"] .reading-icon { background: linear-gradient(145deg, #d2ad6c, var(--reference-gold-dark)); border-color: rgba(128, 96, 43, .4); box-shadow: 0 8px 20px rgba(128, 96, 43, .18); }
+html[data-theme="light"] .eyebrow,
+html[data-theme="light"] .section-head small,
+html[data-theme="light"] .upload-intro p,
+html[data-theme="light"] .chart-intro,
+html[data-theme="light"] .manual-preview-footer,
+html[data-theme="light"] .preview-status,
+html[data-theme="light"] .workflow-status { color: var(--reference-muted); }
+
+html[data-theme="light"] .upload-entry,
+html[data-theme="light"] .analysis-workspace,
+html[data-theme="light"] .document-dashboard,
+html[data-theme="light"] .treatment-studio,
+html[data-theme="light"] .verification-panel,
+html[data-theme="light"] .decision-section,
+html[data-theme="light"] .comparison-section,
+html[data-theme="light"] .download-section,
+html[data-theme="light"] .treatment-history,
+html[data-theme="light"] .binarization-section,
+html[data-theme="light"] .manual-editor,
+html[data-theme="light"] .analysis-master-control { background: rgba(255, 253, 248, .9); border-color: var(--reference-line); box-shadow: var(--reference-shadow); }
+
+html[data-theme="light"] .upload-entry,
+html[data-theme="light"] .analysis-workspace,
+html[data-theme="light"] .document-dashboard,
+html[data-theme="light"] .treatment-studio,
+html[data-theme="light"] .verification-panel,
+html[data-theme="light"] .decision-section,
+html[data-theme="light"] .comparison-section,
+html[data-theme="light"] .download-section,
+html[data-theme="light"] .treatment-history,
+html[data-theme="light"] .binarization-section,
+html[data-theme="light"] .manual-editor { border-radius: 22px; }
+
+html[data-theme="light"] .drop-zone { background: linear-gradient(135deg, rgba(234, 223, 200, .48), rgba(255, 253, 248, .8)), repeating-linear-gradient(0deg, rgba(128, 96, 43, .035) 0 1px, transparent 1px 7px); border: 1px dashed rgba(128, 96, 43, .55); border-radius: 18px; }
+html[data-theme="light"] .drop-zone:hover,
+html[data-theme="light"] .drop-zone.is-dragging,
+html[data-theme="light"] .operation-row:hover,
+html[data-theme="light"] .operation-row.is-selected,
+html[data-theme="light"] .category-tab.is-active,
+html[data-theme="light"] .viewer-tab.is-active { border-color: var(--reference-gold); background-color: var(--reference-gold-soft); }
+
+html[data-theme="light"] .button-primary,
+html[data-theme="light"] .manual-approval-button,
+html[data-theme="light"] #manualApprovalButton,
+html[data-theme="light"] #runPipelineButton,
+html[data-theme="light"] #downloadResultButton { background: linear-gradient(135deg, var(--reference-gold), var(--reference-gold-dark)); border-color: var(--reference-gold-dark); color: #fffdf8; box-shadow: 0 8px 18px rgba(128, 96, 43, .2); }
+html[data-theme="light"] .button-primary:hover,
+html[data-theme="light"] #manualApprovalButton:hover,
+html[data-theme="light"] #runPipelineButton:hover,
+html[data-theme="light"] #downloadResultButton:hover { filter: brightness(1.06); transform: translateY(-1px); }
+html[data-theme="light"] .button-ghost,
+html[data-theme="light"] .viewer-tab,
+html[data-theme="light"] .category-tab,
+html[data-theme="light"] .panel-toggle { color: var(--reference-gold-dark); border-color: var(--reference-line); background: rgba(255, 253, 248, .72); }
+html[data-theme="light"] .document-stage,
+html[data-theme="light"] .manual-preview-stage,
+html[data-theme="light"] .compare-stage,
+html[data-theme="light"] .chart-stage,
+html[data-theme="light"] .manual-preview-image-wrap { background: #e3ddd1; border-color: var(--reference-line); border-radius: 14px; }
+
+html[data-theme="light"] .analysis-summary-card,
+html[data-theme="light"] .analysis-compact-panel,
+html[data-theme="light"] .metric-card,
+html[data-theme="light"] .dashboard-chart-card,
+html[data-theme="light"] .dashboard-reading-card,
+html[data-theme="light"] .treatment-mode-card,
+html[data-theme="light"] .manual-preview-card,
+html[data-theme="light"] .verification-metrics article,
+html[data-theme="light"] .decision-card,
+html[data-theme="light"] .operation-browser { background: rgba(255, 253, 248, .78); border-color: var(--reference-line); box-shadow: 0 8px 22px rgba(79, 61, 32, .06); }
+html[data-theme="light"] .metric-card strong,
+html[data-theme="light"] .analysis-compact-panel h3,
+html[data-theme="light"] .dashboard-chart-card h3,
+html[data-theme="light"] .treatment-mode-card h3,
+html[data-theme="light"] .manual-preview-card figcaption { color: var(--reference-ink); }
+html[data-theme="light"] .health-scale span,
+html[data-theme="light"] .progress-fill,
+html[data-theme="light"] .compare-divider,
+html[data-theme="light"] .perspective-edge { background: var(--reference-gold); }
+html[data-theme="light"] .app-footer { background: #282721; border-top-color: var(--reference-gold-dark); }
+
+/* Reference-like three-zone treatment workspace on wide screens. */
+@media (min-width: 1181px) {
+  .studio-grid { grid-template-columns: minmax(240px, .72fr) minmax(0, 1.7fr) minmax(270px, .82fr); }
+  .document-viewer-main { grid-column: 2; grid-row: 1; }
+  .after-exam-deck { grid-column: 3; grid-row: 1; }
+  .manual-controls-pane { grid-column: 1; grid-row: 1; }
+  .treatment-studio .manual-editor-shell { grid-template-columns: minmax(0, 1.65fr) minmax(250px, .8fr); }
+  .treatment-studio .manual-preview-pane { grid-column: 1; }
+  .treatment-studio .manual-controls-pane { grid-column: 2; }
+}
+
+@media (max-width: 900px) {
+  html[data-theme="light"] .upload-entry,
+  html[data-theme="light"] .analysis-workspace,
+  html[data-theme="light"] .document-dashboard,
+  html[data-theme="light"] .treatment-studio,
+  html[data-theme="light"] .verification-panel,
+  html[data-theme="light"] .decision-section,
+  html[data-theme="light"] .comparison-section,
+  html[data-theme="light"] .download-section,
+  html[data-theme="light"] .treatment-history,
+  html[data-theme="light"] .binarization-section,
+  html[data-theme="light"] .manual-editor { border-radius: 16px; }
+}
