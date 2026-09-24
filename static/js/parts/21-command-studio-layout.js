@@ -22,6 +22,113 @@
         window.requestAnimationFrame(() => target.click());
     }
 
+
+    function ensurePanelHeading(parent, icon, title, subtitle) {
+        if (!parent || parent.querySelector(":scope > .command-panel-heading")) return;
+        const heading = make("div", "command-panel-heading");
+        heading.innerHTML = `
+            <div><i class="bi ${icon}"></i><strong>${title}</strong></div>
+            <small>${subtitle || ""}</small>
+        `;
+        parent.insertBefore(heading, parent.firstChild);
+    }
+
+    function installPanelHeadings() {
+        ensurePanelHeading(
+            document.getElementById("uploadSection"),
+            "bi-cloud-arrow-up",
+            "رفع وإدخال الوثيقة",
+            "Upload & Input"
+        );
+        ensurePanelHeading(
+            document.querySelector(".manual-preview-pane"),
+            "bi-images",
+            "المعاينة والمقارنة",
+            "Preview & Comparison"
+        );
+        ensurePanelHeading(
+            document.querySelector(".manual-controls-pane"),
+            "bi-sliders2",
+            "معاملات المعالجة",
+            "Processing Parameters"
+        );
+    }
+
+    function installPreviewModes() {
+        const toolbar = document.querySelector(".manual-preview-toolbar");
+        const pair = document.querySelector(".manual-preview-pair");
+        if (!toolbar || !pair || toolbar.querySelector(".command-preview-modes")) return;
+
+        const modes = make("div", "command-preview-modes");
+        modes.innerHTML = `
+            <button type="button" class="is-active" data-command-preview-mode="side"><i class="bi bi-layout-split"></i><span>جنبًا إلى جنب</span></button>
+            <button type="button" data-command-preview-mode="before"><i class="bi bi-image"></i><span>قبل</span></button>
+            <button type="button" data-command-preview-mode="after"><i class="bi bi-stars"></i><span>بعد</span></button>
+            <button type="button" data-command-refresh-preview><i class="bi bi-arrow-repeat"></i><span>تحديث</span></button>
+        `;
+        toolbar.appendChild(modes);
+
+        modes.addEventListener("click", (event) => {
+            const button = event.target.closest("button");
+            if (!button) return;
+
+            if (button.hasAttribute("data-command-refresh-preview")) {
+                const operationId = state?.manualPreviewCandidate?.operation?.id || elements.manualOperation?.value;
+                if (operationId) clickOperation(operationId);
+                return;
+            }
+
+            const mode = button.dataset.commandPreviewMode;
+            if (!mode) return;
+            pair.dataset.commandPreviewMode = mode;
+            modes.querySelectorAll("[data-command-preview-mode]").forEach((item) => {
+                item.classList.toggle("is-active", item === button);
+            });
+        });
+    }
+
+    function installOperationSuperTabs() {
+        const pane = document.querySelector(".manual-controls-pane");
+        const categories = pane?.querySelector(".operation-category-strip");
+        if (!pane || !categories || pane.querySelector(".command-control-tabs")) return;
+
+        const superTabs = make("div", "command-control-tabs");
+        superTabs.innerHTML = `
+            <button type="button" class="is-active" data-command-toolset="basic">أساسي</button>
+            <button type="button" data-command-toolset="advanced">متقدم</button>
+            <button type="button" data-command-toolset="restoration">ترميم</button>
+        `;
+        categories.insertAdjacentElement("beforebegin", superTabs);
+
+        const groups = {
+            basic: ["page", "lighting", "contrast", "noise"],
+            advanced: ["detail", "threshold"],
+            restoration: ["structure", "background"]
+        };
+
+        function activate(toolset) {
+            const allowed = groups[toolset] || groups.basic;
+            const categoryButtons = [...categories.querySelectorAll("[data-operation-group]")];
+            categoryButtons.forEach((button) => {
+                button.hidden = !allowed.includes(button.dataset.operationGroup);
+            });
+
+            const current = categoryButtons.find((button) => button.classList.contains("is-active") && !button.hidden);
+            if (!current) categoryButtons.find((button) => !button.hidden)?.click();
+
+            superTabs.querySelectorAll("[data-command-toolset]").forEach((button) => {
+                button.classList.toggle("is-active", button.dataset.commandToolset === toolset);
+            });
+        }
+
+        superTabs.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-command-toolset]");
+            if (button) activate(button.dataset.commandToolset);
+        });
+
+        activate("basic");
+    }
+
     function installHeaderNav() {
         const inner = bySelector(".app-header-inner");
         if (!inner || bySelector(".command-studio-nav")) return;
@@ -272,6 +379,9 @@
 
         document.body.classList.add("command-studio-active");
         installHeaderNav();
+        installPanelHeadings();
+        installPreviewModes();
+        installOperationSuperTabs();
         installUploadMeta();
         installCropPanel(workspace);
         installActionBar(workspace);
