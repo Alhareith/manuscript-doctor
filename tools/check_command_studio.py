@@ -124,6 +124,7 @@ async def main(args):
 
         # Real manual operation -> preview -> approval.
         await page.locator('[data-ref-operation-select]').select_option('clahe')
+        await page.wait_for_function("state.manualPreviewCandidate?.operation?.id === 'clahe'", timeout=180000)
         await ready(page)
         assert await page.evaluate("state.manualPreviewCandidate?.operation?.id") == "clahe"
         assert await page.locator("#manualApprovalButton").is_enabled()
