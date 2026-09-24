@@ -11,131 +11,48 @@
   --reference-shadow: 0 18px 48px rgba(79, 61, 32, .12);
 }
 
-/* Light reference treatment. Dark mode keeps the existing clinic palette. */
-html[data-theme="light"] body {
-  background: radial-gradient(circle at 12% 4%, rgba(181, 138, 67, .08), transparent 28rem), linear-gradient(180deg, var(--reference-ivory) 0%, #ebe5da 100%);
-  color: var(--reference-ink);
-}
-
+html[data-theme="light"] body { background: radial-gradient(circle at 12% 4%, rgba(181, 138, 67, .08), transparent 28rem), linear-gradient(180deg, var(--reference-ivory) 0%, #ebe5da 100%); color: var(--reference-ink); }
 .app-shell { min-height: 100vh; }
 .app-header, .workflow-bar { border-color: var(--reference-line); box-shadow: 0 1px 0 rgba(128, 96, 43, .08); }
 html[data-theme="light"] .app-header, html[data-theme="light"] .workflow-bar { background: rgba(255, 253, 248, .94); }
 .app-header-inner, .workflow-panel, .workspace { max-width: 1480px; margin-inline: auto; }
-
-html[data-theme="light"] .app-brand strong,
-html[data-theme="light"] .section-head h1,
-html[data-theme="light"] .section-head h2,
-html[data-theme="light"] .upload-intro h1,
-html[data-theme="light"] .manual-editor-head h2,
-html[data-theme="light"] .download-section h2 { color: var(--reference-ink); letter-spacing: -.02em; }
-
-html[data-theme="light"] .brand-mark,
-html[data-theme="light"] .upload-icon,
-html[data-theme="light"] .mode-card-icon,
-html[data-theme="light"] .analysis-summary-icon,
-html[data-theme="light"] .reading-icon { background: linear-gradient(145deg, #d2ad6c, var(--reference-gold-dark)); border-color: rgba(128, 96, 43, .4); box-shadow: 0 8px 20px rgba(128, 96, 43, .18); }
-html[data-theme="light"] .eyebrow,
-html[data-theme="light"] .section-head small,
-html[data-theme="light"] .upload-intro p,
-html[data-theme="light"] .chart-intro,
-html[data-theme="light"] .manual-preview-footer,
-html[data-theme="light"] .preview-status,
-html[data-theme="light"] .workflow-status { color: var(--reference-muted); }
-
-html[data-theme="light"] .upload-entry,
-html[data-theme="light"] .analysis-workspace,
-html[data-theme="light"] .document-dashboard,
-html[data-theme="light"] .treatment-studio,
-html[data-theme="light"] .verification-panel,
-html[data-theme="light"] .decision-section,
-html[data-theme="light"] .comparison-section,
-html[data-theme="light"] .download-section,
-html[data-theme="light"] .treatment-history,
-html[data-theme="light"] .binarization-section,
-html[data-theme="light"] .manual-editor,
-html[data-theme="light"] .analysis-master-control { background: rgba(255, 253, 248, .9); border-color: var(--reference-line); box-shadow: var(--reference-shadow); }
-
-html[data-theme="light"] .upload-entry,
-html[data-theme="light"] .analysis-workspace,
-html[data-theme="light"] .document-dashboard,
-html[data-theme="light"] .treatment-studio,
-html[data-theme="light"] .verification-panel,
-html[data-theme="light"] .decision-section,
-html[data-theme="light"] .comparison-section,
-html[data-theme="light"] .download-section,
-html[data-theme="light"] .treatment-history,
-html[data-theme="light"] .binarization-section,
-html[data-theme="light"] .manual-editor { border-radius: 22px; }
-
+html[data-theme="light"] .app-brand strong, html[data-theme="light"] .section-head h1, html[data-theme="light"] .section-head h2, html[data-theme="light"] .upload-intro h1, html[data-theme="light"] .manual-editor-head h2, html[data-theme="light"] .download-section h2 { color: var(--reference-ink); letter-spacing: -.02em; }
+html[data-theme="light"] .brand-mark, html[data-theme="light"] .upload-icon, html[data-theme="light"] .mode-card-icon, html[data-theme="light"] .analysis-summary-icon, html[data-theme="light"] .reading-icon { background: linear-gradient(145deg, #d2ad6c, var(--reference-gold-dark)); border-color: rgba(128, 96, 43, .4); box-shadow: 0 8px 20px rgba(128, 96, 43, .18); }
+html[data-theme="light"] .eyebrow, html[data-theme="light"] .section-head small, html[data-theme="light"] .upload-intro p, html[data-theme="light"] .chart-intro, html[data-theme="light"] .manual-preview-footer, html[data-theme="light"] .preview-status, html[data-theme="light"] .workflow-status { color: var(--reference-muted); }
+html[data-theme="light"] .upload-entry, html[data-theme="light"] .analysis-workspace, html[data-theme="light"] .document-dashboard, html[data-theme="light"] .treatment-studio, html[data-theme="light"] .verification-panel, html[data-theme="light"] .decision-section, html[data-theme="light"] .comparison-section, html[data-theme="light"] .download-section, html[data-theme="light"] .treatment-history, html[data-theme="light"] .binarization-section, html[data-theme="light"] .manual-editor, html[data-theme="light"] .analysis-master-control { background: rgba(255, 253, 248, .9); border-color: var(--reference-line); box-shadow: var(--reference-shadow); }
+html[data-theme="light"] .upload-entry, html[data-theme="light"] .analysis-workspace, html[data-theme="light"] .document-dashboard, html[data-theme="light"] .treatment-studio, html[data-theme="light"] .verification-panel, html[data-theme="light"] .decision-section, html[data-theme="light"] .comparison-section, html[data-theme="light"] .download-section, html[data-theme="light"] .treatment-history, html[data-theme="light"] .binarization-section, html[data-theme="light"] .manual-editor { border-radius: 22px; }
 html[data-theme="light"] .drop-zone { background: linear-gradient(135deg, rgba(234, 223, 200, .48), rgba(255, 253, 248, .8)), repeating-linear-gradient(0deg, rgba(128, 96, 43, .035) 0 1px, transparent 1px 7px); border: 1px dashed rgba(128, 96, 43, .55); border-radius: 18px; }
-html[data-theme="light"] .drop-zone:hover,
-html[data-theme="light"] .drop-zone.is-dragging,
-html[data-theme="light"] .operation-row:hover,
-html[data-theme="light"] .operation-row.is-selected,
-html[data-theme="light"] .category-tab.is-active,
-html[data-theme="light"] .viewer-tab.is-active { border-color: var(--reference-gold); background-color: var(--reference-gold-soft); }
-
-html[data-theme="light"] .button-primary,
-html[data-theme="light"] .manual-approval-button,
-html[data-theme="light"] #manualApprovalButton,
-html[data-theme="light"] #runPipelineButton,
-html[data-theme="light"] #downloadResultButton { background: linear-gradient(135deg, var(--reference-gold), var(--reference-gold-dark)); border-color: var(--reference-gold-dark); color: #fffdf8; box-shadow: 0 8px 18px rgba(128, 96, 43, .2); }
-html[data-theme="light"] .button-primary:hover,
-html[data-theme="light"] #manualApprovalButton:hover,
-html[data-theme="light"] #runPipelineButton:hover,
-html[data-theme="light"] #downloadResultButton:hover { filter: brightness(1.06); transform: translateY(-1px); }
-html[data-theme="light"] .button-ghost,
-html[data-theme="light"] .viewer-tab,
-html[data-theme="light"] .category-tab,
-html[data-theme="light"] .panel-toggle { color: var(--reference-gold-dark); border-color: var(--reference-line); background: rgba(255, 253, 248, .72); }
-html[data-theme="light"] .document-stage,
-html[data-theme="light"] .manual-preview-stage,
-html[data-theme="light"] .compare-stage,
-html[data-theme="light"] .chart-stage,
-html[data-theme="light"] .manual-preview-image-wrap { background: #e3ddd1; border-color: var(--reference-line); border-radius: 14px; }
-
-html[data-theme="light"] .analysis-summary-card,
-html[data-theme="light"] .analysis-compact-panel,
-html[data-theme="light"] .metric-card,
-html[data-theme="light"] .dashboard-chart-card,
-html[data-theme="light"] .dashboard-reading-card,
-html[data-theme="light"] .treatment-mode-card,
-html[data-theme="light"] .manual-preview-card,
-html[data-theme="light"] .verification-metrics article,
-html[data-theme="light"] .decision-card,
-html[data-theme="light"] .operation-browser { background: rgba(255, 253, 248, .78); border-color: var(--reference-line); box-shadow: 0 8px 22px rgba(79, 61, 32, .06); }
-html[data-theme="light"] .metric-card strong,
-html[data-theme="light"] .analysis-compact-panel h3,
-html[data-theme="light"] .dashboard-chart-card h3,
-html[data-theme="light"] .treatment-mode-card h3,
-html[data-theme="light"] .manual-preview-card figcaption { color: var(--reference-ink); }
-html[data-theme="light"] .health-scale span,
-html[data-theme="light"] .progress-fill,
-html[data-theme="light"] .compare-divider,
-html[data-theme="light"] .perspective-edge { background: var(--reference-gold); }
+html[data-theme="light"] .drop-zone:hover, html[data-theme="light"] .drop-zone.is-dragging, html[data-theme="light"] .operation-row:hover, html[data-theme="light"] .operation-row.is-selected, html[data-theme="light"] .category-tab.is-active, html[data-theme="light"] .viewer-tab.is-active { border-color: var(--reference-gold); background-color: var(--reference-gold-soft); }
+html[data-theme="light"] .button-primary, html[data-theme="light"] .manual-approval-button, html[data-theme="light"] #manualApprovalButton, html[data-theme="light"] #runPipelineButton, html[data-theme="light"] #downloadResultButton { background: linear-gradient(135deg, var(--reference-gold), var(--reference-gold-dark)); border-color: var(--reference-gold-dark); color: #fffdf8; box-shadow: 0 8px 18px rgba(128, 96, 43, .2); }
+html[data-theme="light"] .button-primary:hover, html[data-theme="light"] #manualApprovalButton:hover, html[data-theme="light"] #runPipelineButton:hover, html[data-theme="light"] #downloadResultButton:hover { filter: brightness(1.06); transform: translateY(-1px); }
+html[data-theme="light"] .button-ghost, html[data-theme="light"] .viewer-tab, html[data-theme="light"] .category-tab, html[data-theme="light"] .panel-toggle { color: var(--reference-gold-dark); border-color: var(--reference-line); background: rgba(255, 253, 248, .72); }
+html[data-theme="light"] .document-stage, html[data-theme="light"] .manual-preview-stage, html[data-theme="light"] .compare-stage, html[data-theme="light"] .chart-stage, html[data-theme="light"] .manual-preview-image-wrap { background: #e3ddd1; border-color: var(--reference-line); border-radius: 14px; }
+html[data-theme="light"] .analysis-summary-card, html[data-theme="light"] .analysis-compact-panel, html[data-theme="light"] .metric-card, html[data-theme="light"] .dashboard-chart-card, html[data-theme="light"] .dashboard-reading-card, html[data-theme="light"] .treatment-mode-card, html[data-theme="light"] .manual-preview-card, html[data-theme="light"] .verification-metrics article, html[data-theme="light"] .decision-card, html[data-theme="light"] .operation-browser { background: rgba(255, 253, 248, .78); border-color: var(--reference-line); box-shadow: 0 8px 22px rgba(79, 61, 32, .06); }
+html[data-theme="light"] .metric-card strong, html[data-theme="light"] .analysis-compact-panel h3, html[data-theme="light"] .dashboard-chart-card h3, html[data-theme="light"] .treatment-mode-card h3, html[data-theme="light"] .manual-preview-card figcaption { color: var(--reference-ink); }
+html[data-theme="light"] .health-scale span, html[data-theme="light"] .progress-fill, html[data-theme="light"] .compare-divider, html[data-theme="light"] .perspective-edge { background: var(--reference-gold); }
 html[data-theme="light"] .app-footer { background: #282721; border-top-color: var(--reference-gold-dark); }
 
-/* Reference-like three-zone treatment workspace on wide screens. */
+/* Reference-inspired wide workspace: preview remains central, controls stay beside it. */
 @media (min-width: 1181px) {
-  .studio-grid { grid-template-columns: minmax(240px, .72fr) minmax(0, 1.7fr) minmax(270px, .82fr); }
-  .document-viewer-main { grid-column: 2; grid-row: 1; }
-  .after-exam-deck { grid-column: 3; grid-row: 1; }
-  .manual-controls-pane { grid-column: 1; grid-row: 1; }
-  .treatment-studio .manual-editor-shell { grid-template-columns: minmax(0, 1.65fr) minmax(250px, .8fr); }
-  .treatment-studio .manual-preview-pane { grid-column: 1; }
-  .treatment-studio .manual-controls-pane { grid-column: 2; }
+  .treatment-studio .manual-editor-shell { grid-template-columns: minmax(0, 1.72fr) minmax(290px, .78fr); gap: 20px; }
+  .treatment-studio .manual-preview-pane { min-height: 640px; }
+  .treatment-studio .manual-controls-pane { position: sticky; top: calc(var(--header-h) + var(--workflow-h) + 16px); max-height: calc(100vh - var(--header-h) - var(--workflow-h) - 32px); overflow: auto; }
+  .treatment-studio .manual-preview-image-wrap { min-height: 440px; }
+  .treatment-studio .operation-browser { max-height: min(42vh, 460px); }
+  .studio-grid { grid-template-columns: minmax(0, 1.7fr) minmax(290px, .84fr); }
+  .document-viewer-main { min-height: 620px; }
+  .after-exam-deck { align-self: stretch; }
 }
 
+html[data-theme="light"] .analysis-master-toggle,
+html[data-theme="light"] .dashboard-overview-strip,
+html[data-theme="light"] .analysis-quick-findings article { border-color: var(--reference-line); background: rgba(255, 253, 248, .82); }
+html[data-theme="light"] .analysis-master-toggle:hover,
+html[data-theme="light"] .analysis-quick-findings article:hover { border-color: var(--reference-gold); box-shadow: 0 10px 26px rgba(79, 61, 32, .1); }
+
+@media (max-width: 1180px) {
+  .treatment-studio .manual-controls-pane { position: static; max-height: none; overflow: visible; }
+}
 @media (max-width: 900px) {
-  html[data-theme="light"] .upload-entry,
-  html[data-theme="light"] .analysis-workspace,
-  html[data-theme="light"] .document-dashboard,
-  html[data-theme="light"] .treatment-studio,
-  html[data-theme="light"] .verification-panel,
-  html[data-theme="light"] .decision-section,
-  html[data-theme="light"] .comparison-section,
-  html[data-theme="light"] .download-section,
-  html[data-theme="light"] .treatment-history,
-  html[data-theme="light"] .binarization-section,
-  html[data-theme="light"] .manual-editor { border-radius: 16px; }
+  html[data-theme="light"] .upload-entry, html[data-theme="light"] .analysis-workspace, html[data-theme="light"] .document-dashboard, html[data-theme="light"] .treatment-studio, html[data-theme="light"] .verification-panel, html[data-theme="light"] .decision-section, html[data-theme="light"] .comparison-section, html[data-theme="light"] .download-section, html[data-theme="light"] .treatment-history, html[data-theme="light"] .binarization-section, html[data-theme="light"] .manual-editor { border-radius: 16px; }
 }
