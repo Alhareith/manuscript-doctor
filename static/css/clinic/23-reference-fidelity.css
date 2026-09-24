@@ -1325,3 +1325,91 @@ body.reference-target-active .ref-thumbnail-strip figure {
     width: 104px !important;
     flex-basis: 104px !important;
 }
+
+
+/* Final high-impact reference details */
+body.reference-target-active .brand-mark {
+    display: block !important;
+    position: relative;
+    overflow: hidden;
+    background: url("/static/assets/reference-studio-logo.png") center/contain no-repeat !important;
+}
+body.reference-target-active .brand-mark img {
+    opacity: 0 !important;
+}
+
+body.reference-target-active .manual-preview-pair {
+    position: relative;
+}
+
+.ref-preview-separator {
+    position: absolute;
+    z-index: 20;
+    left: 50%;
+    top: 50%;
+    width: 47px;
+    height: 47px;
+    transform: translate(-50%,-50%);
+    display: grid;
+    place-items: center;
+    border: 1px solid #4d6d89;
+    border-radius: 50%;
+    color: #f2f5f7;
+    background: #0b1b2a;
+    box-shadow: 0 8px 24px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.05);
+    font-size: 20px;
+}
+.ref-preview-separator:hover {
+    color: #ffd66d;
+    border-color: #c99636;
+}
+
+body.reference-target-active .manual-preview-card {
+    padding-bottom: 46px !important;
+}
+
+.ref-image-footer {
+    position: absolute;
+    z-index: 9;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 46px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    direction: ltr;
+    border-top: 1px solid #263d52;
+    color: #cbd6df;
+    background: linear-gradient(180deg,#13273b,#0e1d2d);
+    font-size: 10px;
+}
+.ref-image-footer > div {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.ref-image-footer button {
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #30485d;
+    border-radius: 6px;
+    color: #dce5eb;
+    background: #102136;
+}
+.ref-image-footer strong {
+    min-width: 42px;
+    text-align: center;
+    color: #eef3f6;
+    font-size: 10px;
+}
+body.reference-target-active .manual-preview-card img {
+    transform: scale(var(--ref-image-scale,1));
+    transition: transform .15s ease;
+}
+body.reference-target-active .manual-preview-card.ref-swap-highlight {
+    box-shadow: inset 0 0 0 1px rgba(244,189,78,.68),0 0 20px rgba(244,189,78,.13) !important;
+}
