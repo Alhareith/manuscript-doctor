@@ -535,7 +535,7 @@ body.reference-target-active .manual-preview-card figcaption span {
     box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 
-body.reference-target-active .manual-preview-card:last-child figcaption span {
+body.reference-target-active .manual-preview-card:last-of-type figcaption span {
     color: #fff1c8;
     background: rgba(116,73,26,.90);
 }
