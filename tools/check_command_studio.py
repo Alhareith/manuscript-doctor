@@ -123,9 +123,7 @@ async def main(args):
         )
 
         # Real manual operation -> preview -> approval.
-        await page.locator('[data-command-toolset="basic"]').click()
-        await page.locator('[data-operation-group="contrast"]').click()
-        await page.locator('[data-operation-card="clahe"]').click()
+        await page.locator('[data-ref-operation-select]').select_option('clahe')
         await ready(page)
         assert await page.evaluate("state.manualPreviewCandidate?.operation?.id") == "clahe"
         assert await page.locator("#manualApprovalButton").is_enabled()
@@ -143,7 +141,7 @@ async def main(args):
         assert await pair.get_attribute("data-command-preview-mode") == "side"
 
         # Crop shortcut must route to the existing crop tool, preserving the real editor.
-        await page.locator('[data-command-operation="crop"]').click()
+        await page.locator('[data-ref-crop="crop"]').click()
         await page.wait_for_function("document.querySelector('#manualOperation').value === 'crop'", timeout=10000)
         assert await page.evaluate("state.manualPreviewCandidate?.operation?.id") in [None, "crop"]
 
