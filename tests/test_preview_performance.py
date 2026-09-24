@@ -164,7 +164,7 @@ def test_stylesheet_imports_are_real_and_no_escaped_line_separators():
     text = (base / 'style.css').read_text()
     assert '\\n' not in text
     paths = re.findall(r'@import url\("([^"]+)"\)', text)
-    assert paths[-1] == 'clinic/21-crop-editor.css'
+    assert paths[-2:] == ['clinic/21-crop-editor.css', 'clinic/22-command-studio.css']
     for path in paths:
         sheet = base / path
         assert sheet.is_file()
