@@ -1,0 +1,572 @@
+/* Demo-hardening layer: real controls only, metallic 3D dark/light themes, crisp Arabic UI. */
+
+:root {
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme="dark"] body.demo-hardened {
+    --metal-bg-0: #171c22;
+    --metal-bg-1: #202832;
+    --metal-bg-2: #293542;
+    --metal-bg-3: #344250;
+    --metal-edge: #445464;
+    --metal-edge-hi: #596b7c;
+    --metal-text: #f5f8fa;
+    --metal-soft: #c4cdd5;
+    --metal-muted: #95a4b2;
+    --metal-accent: #69d8c8;
+    --metal-accent-hi: #a2f4e8;
+    --metal-blue: #79afff;
+    --metal-shadow: rgba(5,8,11,.42);
+    background:
+        radial-gradient(62rem 28rem at 50% -20%,rgba(111,160,190,.10),transparent 68%),
+        linear-gradient(145deg,#1f2730 0%,#171e26 45%,#222b35 100%) !important;
+}
+
+html[data-theme="light"] body.demo-hardened {
+    --metal-bg-0: #d9e0e6;
+    --metal-bg-1: #e9eef2;
+    --metal-bg-2: #f4f7f9;
+    --metal-bg-3: #cbd4dc;
+    --metal-edge: #aab6c1;
+    --metal-edge-hi: #ffffff;
+    --metal-text: #1d2731;
+    --metal-soft: #3d4b59;
+    --metal-muted: #667583;
+    --metal-accent: #218f82;
+    --metal-accent-hi: #176f65;
+    --metal-blue: #356fae;
+    --metal-shadow: rgba(58,71,82,.20);
+    background:
+        radial-gradient(70rem 30rem at 48% -18%,rgba(255,255,255,.90),transparent 62%),
+        linear-gradient(145deg,#edf2f5 0%,#d8e0e6 52%,#eef2f5 100%) !important;
+}
+
+body.demo-hardened,
+body.demo-hardened button,
+body.demo-hardened select,
+body.demo-hardened input,
+body.demo-hardened output {
+    font-family: "Alexandria","IBM Plex Sans Arabic",system-ui,sans-serif !important;
+}
+
+body.demo-hardened {
+    color: var(--metal-text) !important;
+}
+
+body.demo-hardened .app-shell {
+    background:
+        linear-gradient(135deg,rgba(255,255,255,.018),transparent 26%),
+        transparent !important;
+}
+
+body.demo-hardened .app-header {
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.008)),
+        linear-gradient(145deg,var(--metal-bg-2),var(--metal-bg-0)) !important;
+    border-bottom: 1px solid var(--metal-edge) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.09),
+        inset 0 -1px 0 rgba(0,0,0,.22),
+        0 10px 24px var(--metal-shadow) !important;
+}
+
+body.demo-hardened .app-header-inner {
+    grid-template-columns: minmax(320px,1fr) auto !important;
+}
+
+body.demo-hardened .app-brand {
+    justify-self: start !important;
+}
+
+body.demo-hardened .brand-copy strong {
+    color: var(--metal-text) !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,.05);
+}
+
+body.demo-hardened .brand-copy small {
+    color: var(--metal-muted) !important;
+}
+
+body.demo-hardened .header-actions {
+    justify-self: end !important;
+    gap: 10px !important;
+}
+
+body.demo-hardened #usageGuideButton {
+    display: inline-flex !important;
+    min-height: 38px !important;
+    padding: 0 13px !important;
+    gap: 8px !important;
+    color: var(--metal-soft) !important;
+    border: 1px solid var(--metal-edge) !important;
+    border-radius: 9px !important;
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.055),rgba(0,0,0,.035)),
+        var(--metal-bg-1) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07),0 4px 10px rgba(0,0,0,.08) !important;
+}
+
+body.demo-hardened #usageGuideButton:hover {
+    color: var(--metal-text) !important;
+    border-color: var(--metal-accent) !important;
+}
+
+body.demo-hardened #themeToggleButton {
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    border: 1px solid var(--metal-edge) !important;
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,0,0,.09)),
+        var(--metal-bg-1) !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.20),0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+body.demo-hardened #themeToggleButton::after {
+    width: 21px !important;
+    height: 21px !important;
+    top: 2px !important;
+    background:
+        radial-gradient(circle at 35% 30%,#fff 0 18%,transparent 20%),
+        linear-gradient(145deg,var(--metal-accent-hi),var(--metal-accent)) !important;
+    box-shadow: 0 2px 7px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.18) !important;
+}
+
+html[data-theme="light"] body.demo-hardened #themeToggleButton::after {
+    right: 23px !important;
+}
+
+/* Metallic panels */
+body.demo-hardened #uploadSection,
+body.demo-hardened .manual-preview-pane,
+body.demo-hardened .manual-controls-pane,
+body.demo-hardened .command-crop-panel,
+body.demo-hardened .command-action-bar,
+body.demo-hardened .command-results-dock,
+body.demo-hardened .command-info-panel,
+body.demo-hardened .command-result-overlay {
+    color: var(--metal-text) !important;
+    border: 1px solid var(--metal-edge) !important;
+    background:
+        linear-gradient(135deg,rgba(255,255,255,.040) 0%,transparent 30%),
+        linear-gradient(180deg,var(--metal-bg-2),var(--metal-bg-1)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.10),
+        inset 1px 0 0 rgba(255,255,255,.025),
+        inset 0 -1px 0 rgba(0,0,0,.20),
+        0 10px 25px var(--metal-shadow) !important;
+}
+
+/* Real upload summary only */
+body.demo-hardened #uploadSection {
+    grid-template-rows: 54px 254px minmax(0,1fr) !important;
+}
+
+.demo-current-file-title {
+    height: 39px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    direction: rtl;
+    border-bottom: 1px solid var(--metal-edge);
+    color: var(--metal-soft);
+}
+
+.demo-current-file-title strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--metal-text);
+    font-size: 12px;
+}
+
+.demo-current-file-title i {
+    color: var(--metal-accent);
+}
+
+.demo-current-file-title span {
+    color: var(--metal-muted);
+    font-size: 10px;
+}
+
+.demo-current-file {
+    min-height: 66px;
+    margin-top: 7px;
+    padding: 7px;
+    display: grid;
+    grid-template-columns: 52px minmax(0,1fr);
+    gap: 9px;
+    align-items: center;
+    direction: rtl;
+    border: 1px solid var(--metal-edge);
+    border-radius: 10px;
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.045),rgba(0,0,0,.025)),
+        var(--metal-bg-1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.demo-current-file img {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 7px;
+    border: 1px solid var(--metal-edge);
+}
+
+.demo-current-file strong,
+.demo-current-file small {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.demo-current-file strong {
+    color: var(--metal-text);
+    font-size: 11.5px;
+    font-weight: 650;
+}
+
+.demo-current-file small {
+    margin-top: 4px;
+    color: var(--metal-muted);
+    font-size: 9.5px;
+}
+
+/* Restore meaningful preview status text; no fake view controls. */
+body.demo-hardened .manual-preview-pane {
+    grid-template-rows: 54px 56px minmax(0,1fr) !important;
+}
+
+body.demo-hardened .manual-preview-toolbar {
+    height: 56px !important;
+    min-height: 56px !important;
+    padding: 8px 13px !important;
+    direction: rtl !important;
+    border-bottom: 1px solid var(--metal-edge) !important;
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.035),transparent) !important;
+}
+
+body.demo-hardened .manual-preview-toolbar > div:first-child {
+    display: flex !important;
+    flex-direction: column;
+    gap: 2px;
+}
+
+body.demo-hardened .manual-preview-toolbar > div:first-child small {
+    color: var(--metal-accent) !important;
+    font-size: 9.5px !important;
+}
+
+body.demo-hardened #manualPreviewNote {
+    color: var(--metal-text) !important;
+    font-size: 11.5px !important;
+    font-weight: 550 !important;
+}
+
+body.demo-hardened .command-preview-modes {
+    display: none !important;
+}
+
+body.demo-hardened .manual-preview-card {
+    padding-bottom: 0 !important;
+    border-color: var(--metal-edge) !important;
+    background: var(--metal-bg-0) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035),0 7px 18px rgba(0,0,0,.14) !important;
+}
+
+body.demo-hardened .manual-preview-image-wrap,
+body.demo-hardened .manual-preview-stage {
+    background:
+        radial-gradient(circle at 50% 44%,rgba(255,255,255,.035),transparent 55%),
+        var(--metal-bg-0) !important;
+}
+
+body.demo-hardened .manual-preview-card figcaption span {
+    color: var(--metal-text) !important;
+    background: rgba(32,42,52,.88) !important;
+    border-color: rgba(255,255,255,.10) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] body.demo-hardened .manual-preview-card figcaption span {
+    background: rgba(236,241,244,.94) !important;
+}
+
+/* Processing tools: crisp Arabic and metallic depth */
+body.demo-hardened .ref-preset-row select,
+body.demo-hardened .ref-preset-row button,
+body.demo-hardened .command-control-tabs button,
+body.demo-hardened .category-tab,
+body.demo-hardened .operation-row,
+body.demo-hardened .selected-operation-panel,
+body.demo-hardened .ref-param-group,
+body.demo-hardened .ref-method-row select,
+body.demo-hardened .ref-param-row output {
+    border-color: var(--metal-edge) !important;
+    color: var(--metal-soft) !important;
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.045),rgba(0,0,0,.035)),
+        var(--metal-bg-1) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.055) !important;
+}
+
+body.demo-hardened .command-control-tabs button.is-active,
+body.demo-hardened .category-tab.is-active {
+    color: #071512 !important;
+    border-color: var(--metal-accent) !important;
+    background:
+        linear-gradient(180deg,var(--metal-accent-hi),var(--metal-accent)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.30),
+        0 5px 14px rgba(23,126,112,.16) !important;
+}
+
+body.demo-hardened .operation-row {
+    min-height: 60px !important;
+    padding: 10px 12px !important;
+}
+
+body.demo-hardened .operation-row strong {
+    color: var(--metal-text) !important;
+    font-size: 13px !important;
+    font-weight: 650 !important;
+    line-height: 1.65 !important;
+}
+
+body.demo-hardened .operation-row small {
+    color: var(--metal-muted) !important;
+    font-size: 10px !important;
+    line-height: 1.55 !important;
+}
+
+body.demo-hardened .operation-row:hover {
+    border-color: color-mix(in srgb,var(--metal-accent) 55%,var(--metal-edge)) !important;
+    background:
+        linear-gradient(180deg,rgba(105,216,200,.08),rgba(0,0,0,.02)),
+        var(--metal-bg-2) !important;
+}
+
+body.demo-hardened .operation-row.is-active {
+    border-color: var(--metal-accent) !important;
+    background:
+        linear-gradient(90deg,rgba(105,216,200,.15),rgba(255,255,255,.025)),
+        var(--metal-bg-2) !important;
+    box-shadow:
+        inset 3px 0 0 var(--metal-accent),
+        inset 0 1px 0 rgba(255,255,255,.07),
+        0 5px 15px rgba(0,0,0,.10) !important;
+}
+
+/* Real action bar with visible Undo/Redo */
+body.demo-hardened .command-action-bar {
+    grid-template-columns: 170px minmax(0,1fr) 265px !important;
+    padding: 0 13px !important;
+}
+
+.demo-action-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    direction: rtl;
+}
+
+.demo-action-title strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--metal-text);
+    font-size: 13px;
+}
+
+.demo-action-title strong i {
+    color: var(--metal-accent);
+}
+
+.demo-action-title small {
+    color: var(--metal-muted);
+    font-size: 8.8px;
+}
+
+.demo-action-main {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    direction: rtl;
+    min-width: 0;
+}
+
+.demo-action-export {
+    align-self: stretch;
+    padding: 12px 0 0 12px;
+    border-left: 1px solid var(--metal-edge);
+    direction: rtl;
+}
+
+.demo-action-export > span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--metal-soft);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.demo-action-export > div {
+    display: flex;
+    gap: 6px;
+}
+
+.demo-action {
+    min-width: 82px;
+    height: 57px;
+    padding: 6px 10px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: 1px solid var(--metal-edge) !important;
+    border-radius: 8px !important;
+    color: var(--metal-soft) !important;
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.055),rgba(0,0,0,.045)),
+        var(--metal-bg-1) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.075),
+        0 4px 10px rgba(0,0,0,.09) !important;
+    font-size: 9.5px !important;
+}
+
+.demo-action i {
+    font-size: 15px;
+}
+
+.demo-action:not(:disabled):hover {
+    color: var(--metal-text) !important;
+    border-color: var(--metal-accent) !important;
+    transform: translateY(-1px);
+}
+
+.demo-action:disabled {
+    opacity: .38 !important;
+    cursor: not-allowed !important;
+}
+
+.demo-action-primary,
+.demo-action-approve {
+    color: #061511 !important;
+    border-color: var(--metal-accent) !important;
+    background:
+        linear-gradient(180deg,var(--metal-accent-hi),var(--metal-accent)) !important;
+    font-weight: 700 !important;
+}
+
+.demo-action-history {
+    min-width: 72px;
+}
+
+.demo-action-history:not(:disabled) i {
+    color: var(--metal-blue);
+}
+
+.demo-action-reset:not(:disabled) {
+    color: var(--metal-soft) !important;
+}
+
+/* Actual results only: no fake View/+ buttons */
+.demo-results-head {
+    height: 43px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    direction: rtl;
+}
+
+.demo-results-head strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--metal-text);
+    font-size: 12px;
+}
+
+.demo-results-head i {
+    color: var(--metal-accent);
+}
+
+.demo-results-head small {
+    color: var(--metal-muted);
+    font-size: 9px;
+}
+
+body.demo-hardened .ref-add-thumb {
+    display: none !important;
+}
+
+body.demo-hardened .ref-thumbnail-strip figure {
+    border-color: var(--metal-edge) !important;
+    background: var(--metal-bg-0) !important;
+}
+
+body.demo-hardened .ref-thumbnail-strip figure.is-current {
+    border-color: var(--metal-accent) !important;
+    box-shadow: 0 0 0 1px rgba(105,216,200,.16),0 5px 14px rgba(0,0,0,.13) !important;
+}
+
+/* Info */
+body.demo-hardened .ref-info-head,
+body.demo-hardened .ref-info-grid strong {
+    color: var(--metal-text) !important;
+}
+
+body.demo-hardened .ref-info-grid span {
+    color: var(--metal-muted) !important;
+}
+
+body.demo-hardened .ref-info-details {
+    color: var(--metal-accent) !important;
+}
+
+/* Light theme overrides for text/image badges */
+html[data-theme="light"] body.demo-hardened .manual-preview-card,
+html[data-theme="light"] body.demo-hardened .manual-preview-image-wrap,
+html[data-theme="light"] body.demo-hardened .manual-preview-stage {
+    background: #cbd3da !important;
+}
+
+html[data-theme="light"] body.demo-hardened .operation-row small,
+html[data-theme="light"] body.demo-hardened .demo-current-file small {
+    color: #5f6d79 !important;
+}
+
+/* 4K/demo clarity: avoid blurry transforms and overly thin text */
+body.demo-hardened .workspace,
+body.demo-hardened .app-header,
+body.demo-hardened .manual-preview-card,
+body.demo-hardened .operation-row,
+body.demo-hardened .demo-action {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+body.demo-hardened strong,
+body.demo-hardened button,
+body.demo-hardened label {
+    text-shadow: none !important;
+}
+
+@media (min-width: 1920px) {
+    body.demo-hardened {
+        font-size: 16px;
+    }
+}
