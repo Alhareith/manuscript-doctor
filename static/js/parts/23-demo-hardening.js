@@ -194,6 +194,41 @@
         if (presetLabel) presetLabel.textContent = "العمليات المتاحة";
     }
 
+
+    function localizeRealWorkspace() {
+        const drop = q(".ref-drop-body");
+        if (drop) {
+            const strong = q("strong", drop);
+            const span = q(":scope > span", drop);
+            const choose = q(".ref-choose-button", drop);
+            const small = q("small", drop);
+            if (strong) strong.textContent = "اسحب الوثيقة وأفلتها هنا";
+            if (span) span.textContent = "أو اضغط لاختيار ملف";
+            if (choose) choose.innerHTML = '<i class="bi bi-cloud-arrow-up-fill"></i> اختيار ملف';
+            if (small) small.textContent = "يدعم JPG وPNG · الحد الأقصى 100 MB";
+        }
+
+        const cropPanel = document.getElementById("commandCropPanel");
+        if (cropPanel) {
+            const labelMap = {
+                crop: "اقتصاص",
+                rotate_right: "تدوير",
+                flip_horizontal: "عكس",
+                reset: "إعادة الضبط"
+            };
+            qa("[data-ref-crop]", cropPanel).forEach((button) => {
+                const label = labelMap[button.dataset.refCrop];
+                if (label) button.textContent = label;
+            });
+        }
+
+        const preset = q("[data-ref-operation-select]");
+        if (preset && preset.options.length) {
+            const empty = [...preset.options].find((option) => !option.value);
+            if (empty) empty.textContent = "اختر عملية";
+        }
+    }
+
     function syncRealFileSummary() {
         const fileName = elements.selectedFileName?.textContent?.trim();
         const fileMeta = elements.selectedFileMeta?.textContent?.trim();
@@ -257,6 +292,7 @@
         rebuildActualResultsHeader();
         localizeInfoPanel();
         localizeVisibleLabels();
+        localizeRealWorkspace();
         enforceRealButtonContracts();
         bindDemoSync();
         syncRealFileSummary();
