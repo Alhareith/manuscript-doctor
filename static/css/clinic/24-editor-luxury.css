@@ -595,3 +595,66 @@ body.reference-target-active *::-webkit-scrollbar-thumb:hover {
         font-size: 9.5px !important;
     }
 }
+
+
+/* Unified editor ranges: remove the last gold/yellow traces. */
+body.reference-target-active input[type="range"] {
+    accent-color: var(--editor-accent) !important;
+    background: transparent !important;
+}
+body.reference-target-active input[type="range"]::-webkit-slider-runnable-track {
+    height: 5px !important;
+    border-radius: 999px !important;
+    background: linear-gradient(90deg,#27423f,#3a4552) !important;
+    border: 0 !important;
+}
+body.reference-target-active input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    width: 14px !important;
+    height: 14px !important;
+    margin-top: -4.5px !important;
+    border: 2px solid #0e151c !important;
+    border-radius: 50% !important;
+    background: #68dfd0 !important;
+    box-shadow: 0 0 0 1px rgba(104,223,208,.72),0 3px 9px rgba(42,182,166,.20) !important;
+}
+body.reference-target-active input[type="range"]::-moz-range-track {
+    height: 5px !important;
+    border-radius: 999px !important;
+    background: #3a4552 !important;
+    border: 0 !important;
+}
+body.reference-target-active input[type="range"]::-moz-range-progress {
+    height: 5px !important;
+    border-radius: 999px !important;
+    background: #4bcabb !important;
+}
+body.reference-target-active input[type="range"]::-moz-range-thumb {
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid #0e151c !important;
+    border-radius: 50% !important;
+    background: #68dfd0 !important;
+    box-shadow: 0 0 0 1px rgba(104,223,208,.72),0 3px 9px rgba(42,182,166,.20) !important;
+}
+
+/* Stronger Arabic reading rhythm for technical controls. */
+body.reference-target-active [dir="rtl"],
+body.reference-target-active .operation-row,
+body.reference-target-active .selected-operation-panel,
+body.reference-target-active .orientation-actions,
+body.reference-target-active .capability-note {
+    font-family: "Alexandria","IBM Plex Sans Arabic",sans-serif !important;
+}
+
+body.reference-target-active .ref-preset-row > label {
+    color: #b9c6d2 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+body.reference-target-active [data-ref-operation-select] {
+    font-family: "Alexandria","IBM Plex Sans Arabic",sans-serif !important;
+    font-size: 10.5px !important;
+    font-weight: 500 !important;
+}
