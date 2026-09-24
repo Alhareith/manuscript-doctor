@@ -575,3 +575,168 @@ body.demo-hardened label {
 body.demo-hardened #usageGuideButton[hidden] {
     display: none !important;
 }
+
+
+/* High-specificity range override: eliminate legacy gold completely. */
+body.demo-hardened.reference-target-active .ref-param-row input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    height: 5px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background:
+        linear-gradient(
+            90deg,
+            var(--metal-accent) 0,
+            var(--metal-accent) var(--ref-range-pct,50%),
+            color-mix(in srgb,var(--metal-edge) 78%,transparent) var(--ref-range-pct,50%),
+            color-mix(in srgb,var(--metal-edge) 78%,transparent) 100%
+        ) !important;
+}
+
+body.demo-hardened.reference-target-active .ref-param-row input[type="range"]::-webkit-slider-runnable-track {
+    height: 5px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+}
+
+body.demo-hardened.reference-target-active .ref-param-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    width: 14px !important;
+    height: 14px !important;
+    margin-top: -4.5px !important;
+    border: 2px solid var(--metal-bg-0) !important;
+    border-radius: 50% !important;
+    background: var(--metal-accent-hi) !important;
+    box-shadow:
+        0 0 0 1px color-mix(in srgb,var(--metal-accent) 72%,transparent),
+        0 3px 8px rgba(0,0,0,.20) !important;
+}
+
+body.demo-hardened.reference-target-active .ref-param-row input[type="range"]::-moz-range-track {
+    height: 5px !important;
+    border-radius: 999px !important;
+    background: var(--metal-edge) !important;
+}
+body.demo-hardened.reference-target-active .ref-param-row input[type="range"]::-moz-range-progress {
+    height: 5px !important;
+    border-radius: 999px !important;
+    background: var(--metal-accent) !important;
+}
+body.demo-hardened.reference-target-active .ref-param-row input[type="range"]::-moz-range-thumb {
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid var(--metal-bg-0) !important;
+    border-radius: 50% !important;
+    background: var(--metal-accent-hi) !important;
+}
+
+/* Brushed-metal depth without turning the UI black. */
+body.demo-hardened #uploadSection,
+body.demo-hardened .manual-preview-pane,
+body.demo-hardened .manual-controls-pane,
+body.demo-hardened .command-crop-panel,
+body.demo-hardened .command-action-bar,
+body.demo-hardened .command-results-dock,
+body.demo-hardened .command-info-panel {
+    background:
+        linear-gradient(135deg,rgba(255,255,255,.045) 0%,transparent 26%),
+        repeating-linear-gradient(
+            90deg,
+            rgba(255,255,255,.010) 0,
+            rgba(255,255,255,.010) 1px,
+            rgba(0,0,0,.010) 1px,
+            rgba(0,0,0,.010) 3px
+        ),
+        linear-gradient(180deg,var(--metal-bg-2),var(--metal-bg-1)) !important;
+}
+
+/* Light metallic theme readability contract. */
+html[data-theme="light"] body.demo-hardened .command-panel-heading strong,
+html[data-theme="light"] body.demo-hardened .command-panel-heading small,
+html[data-theme="light"] body.demo-hardened .ref-lower-heading strong,
+html[data-theme="light"] body.demo-hardened .ref-lower-heading small,
+html[data-theme="light"] body.demo-hardened .ref-action-title strong,
+html[data-theme="light"] body.demo-hardened .ref-action-title small,
+html[data-theme="light"] body.demo-hardened .demo-action-title strong,
+html[data-theme="light"] body.demo-hardened .demo-action-title small,
+html[data-theme="light"] body.demo-hardened .demo-action-export > span,
+html[data-theme="light"] body.demo-hardened .demo-results-head strong,
+html[data-theme="light"] body.demo-hardened .demo-results-head small,
+html[data-theme="light"] body.demo-hardened .ref-info-head,
+html[data-theme="light"] body.demo-hardened .ref-param-group h4,
+html[data-theme="light"] body.demo-hardened .ref-param-row > span,
+html[data-theme="light"] body.demo-hardened .ref-method-row,
+html[data-theme="light"] body.demo-hardened .ref-preset-row > label,
+html[data-theme="light"] body.demo-hardened #manualPreviewNote {
+    color: #25313c !important;
+}
+
+html[data-theme="light"] body.demo-hardened .operation-row strong,
+html[data-theme="light"] body.demo-hardened .demo-current-file strong,
+html[data-theme="light"] body.demo-hardened .ref-info-grid strong {
+    color: #202b35 !important;
+}
+
+html[data-theme="light"] body.demo-hardened .operation-row small,
+html[data-theme="light"] body.demo-hardened .demo-current-file small,
+html[data-theme="light"] body.demo-hardened .ref-info-grid span,
+html[data-theme="light"] body.demo-hardened .demo-current-file-title span {
+    color: #647482 !important;
+}
+
+html[data-theme="light"] body.demo-hardened .ref-param-group,
+html[data-theme="light"] body.demo-hardened .operation-row,
+html[data-theme="light"] body.demo-hardened .ref-preset-row select,
+html[data-theme="light"] body.demo-hardened .ref-preset-row button,
+html[data-theme="light"] body.demo-hardened .ref-method-row select,
+html[data-theme="light"] body.demo-hardened .ref-param-row output,
+html[data-theme="light"] body.demo-hardened .category-tab,
+html[data-theme="light"] body.demo-hardened .demo-action {
+    color: #34424e !important;
+    border-color: #aebac4 !important;
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.72),rgba(205,215,223,.56)),
+        #e4eaee !important;
+    box-shadow:
+        inset 0 1px 0 #fff,
+        inset 0 -1px 0 rgba(84,100,115,.10),
+        0 3px 8px rgba(83,96,108,.08) !important;
+}
+
+html[data-theme="light"] body.demo-hardened .command-control-tabs button:not(.is-active) {
+    color: #40505e !important;
+    border-color: #aebac4 !important;
+    background: linear-gradient(180deg,#f8fafb,#d9e1e6) !important;
+}
+
+html[data-theme="light"] body.demo-hardened .ref-param-row output,
+html[data-theme="light"] body.demo-hardened .ref-method-row select,
+html[data-theme="light"] body.demo-hardened .ref-preset-row select {
+    color: #25313c !important;
+}
+
+html[data-theme="light"] body.demo-hardened .demo-action:disabled {
+    color: #788691 !important;
+    opacity: .55 !important;
+}
+
+html[data-theme="light"] body.demo-hardened .demo-action-primary:not(:disabled),
+html[data-theme="light"] body.demo-hardened .demo-action-approve:not(:disabled) {
+    color: #06211d !important;
+}
+
+/* Crisper large-screen demo rendering. */
+body.demo-hardened .brand-copy strong,
+body.demo-hardened .command-panel-heading strong,
+body.demo-hardened .operation-row strong,
+body.demo-hardened .demo-action span,
+body.demo-hardened .ref-param-group h4 {
+    font-kerning: normal;
+    font-synthesis: none;
+}
+
+body.demo-hardened img {
+    image-rendering: auto;
+}
