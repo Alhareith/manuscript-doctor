@@ -90,8 +90,15 @@ function bindAutomaticExamination() {
 function bindUsageGuidePlaceholder() {
     const button = document.getElementById("usageGuideButton");
     if (!button) return;
+    button.setAttribute("aria-label", "فتح دليل الاستخدام");
     button.addEventListener("click", () => {
-        // Reserved intentionally. A full usage guide/document will be wired here later.
+        const target = document.getElementById("uploadSection");
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        const dropZone = document.getElementById("dropZone");
+        if (dropZone) {
+            dropZone.classList.add("is-guide-focus");
+            window.setTimeout(() => dropZone.classList.remove("is-guide-focus"), 1200);
+        }
     });
 }
 
