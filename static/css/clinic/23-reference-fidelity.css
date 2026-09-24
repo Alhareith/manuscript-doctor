@@ -1165,3 +1165,65 @@ body.reference-target-active .command-info-panel {
     grid-row: 3 !important;
     justify-self: end !important;
 }
+
+
+/* Processing Actions follows the approved two-row reference composition. */
+body.reference-target-active .command-action-bar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 255px !important;
+    grid-template-rows: 35px minmax(0, 1fr) !important;
+    column-gap: 10px !important;
+    row-gap: 0 !important;
+    padding: 8px 14px 10px !important;
+}
+
+body.reference-target-active .ref-action-title {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0 !important;
+    align-items: center !important;
+}
+
+body.reference-target-active .ref-action-main {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    align-items: center;
+}
+
+body.reference-target-active .ref-action-main button {
+    min-width: 92px;
+    height: 58px;
+}
+
+body.reference-target-active .ref-action-main .ref-run {
+    min-width: 181px;
+}
+
+body.reference-target-active #manualApprovalButton {
+    min-width: 112px;
+}
+
+body.reference-target-active .ref-export {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    padding: 0 0 0 14px !important;
+    display: grid;
+    grid-template-rows: 35px minmax(0, 1fr);
+    align-items: center;
+}
+
+body.reference-target-active .ref-export > span {
+    margin: 0 !important;
+    align-self: center;
+}
+
+body.reference-target-active .ref-export > div {
+    padding: 0 !important;
+    align-self: center;
+}
+
+body.reference-target-active .ref-export button {
+    min-width: 105px;
+    height: 58px;
+}
