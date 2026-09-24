@@ -1109,3 +1109,186 @@ body.command-studio-active #errorSection:not(.hidden) {
         max-height: 180px;
     }
 }
+
+
+/* ---------- Panel headings & toolset hierarchy ---------- */
+.command-panel-heading {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 11px;
+    border-bottom: 1px solid var(--cmd-line);
+    background: linear-gradient(180deg, rgba(19,42,63,.78), rgba(9,24,38,.58));
+}
+
+.command-panel-heading > div {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.command-panel-heading i {
+    color: var(--cmd-gold);
+    font-size: .95rem;
+}
+
+.command-panel-heading strong {
+    color: #f1f5f8;
+    font-size: .84rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.command-panel-heading small {
+    flex: 0 0 auto;
+    color: #71879a;
+    font-size: .56rem;
+    letter-spacing: .02em;
+}
+
+body.command-studio-active #uploadSection {
+    padding: 0;
+    gap: 0;
+}
+
+body.command-studio-active #uploadSection > #dropZone,
+body.command-studio-active #uploadSection > #selectedFile,
+body.command-studio-active #uploadSection > .command-upload-meta {
+    margin-inline: 12px;
+    width: calc(100% - 24px) !important;
+}
+
+body.command-studio-active #uploadSection > #dropZone {
+    margin-top: 12px;
+}
+
+body.command-studio-active #uploadSection > #selectedFile {
+    margin-top: 8px;
+}
+
+body.command-studio-active #uploadSection > .command-upload-meta {
+    margin-top: 8px;
+    margin-bottom: 10px;
+}
+
+body.command-studio-active .manual-preview-pane {
+    grid-template-rows: 44px 52px minmax(0,1fr);
+}
+
+body.command-studio-active .manual-preview-toolbar {
+    min-height: 52px;
+    height: 52px;
+    padding: 6px 9px;
+    gap: 8px;
+}
+
+body.command-studio-active .manual-preview-toolbar > div:first-child {
+    min-width: 160px;
+    flex: 1 1 auto;
+}
+
+.command-preview-modes {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    direction: rtl;
+}
+
+.command-preview-modes button {
+    min-height: 34px;
+    min-width: 62px;
+    padding: 5px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid #29455d;
+    border-radius: 7px;
+    color: #aebfcd;
+    background: #102238;
+    font-size: .61rem;
+    white-space: nowrap;
+}
+
+.command-preview-modes button i {
+    font-size: .78rem;
+}
+
+.command-preview-modes button:hover,
+.command-preview-modes button.is-active {
+    color: #211701;
+    border-color: #efb63f;
+    background: linear-gradient(180deg, #ffd56d, #dea32e);
+}
+
+body.command-studio-active .manual-preview-pair[data-command-preview-mode="before"] {
+    grid-template-columns: 1fr !important;
+}
+
+body.command-studio-active .manual-preview-pair[data-command-preview-mode="before"] .manual-preview-card:last-child {
+    display: none;
+}
+
+body.command-studio-active .manual-preview-pair[data-command-preview-mode="after"] {
+    grid-template-columns: 1fr !important;
+}
+
+body.command-studio-active .manual-preview-pair[data-command-preview-mode="after"] .manual-preview-card:first-child {
+    display: none;
+}
+
+body.command-studio-active .manual-controls-pane {
+    grid-template-rows: 44px 42px auto minmax(0,1fr) auto;
+}
+
+.command-control-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 5px;
+    padding: 7px 9px 5px;
+    background: #0b1928;
+}
+
+.command-control-tabs button {
+    min-height: 30px;
+    border: 1px solid #29445a;
+    border-radius: 7px;
+    color: #b8c6d1;
+    background: #102238;
+    font-size: .65rem;
+    font-weight: 650;
+}
+
+.command-control-tabs button:hover,
+.command-control-tabs button.is-active {
+    color: #251900;
+    border-color: #f1ba45;
+    background: linear-gradient(180deg, #ffd66f, #dfa42d);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+}
+
+body.command-studio-active .operation-category-strip {
+    grid-template-columns: repeat(4, minmax(0,1fr)) !important;
+    min-height: 54px;
+    padding-top: 5px;
+}
+
+body.command-studio-active .operation-category-strip > [hidden] {
+    display: none !important;
+}
+
+@media (max-width: 1320px) {
+    .command-preview-modes button span {
+        display: none;
+    }
+    .command-preview-modes button {
+        min-width: 34px;
+        width: 34px;
+        padding-inline: 0;
+    }
+}
