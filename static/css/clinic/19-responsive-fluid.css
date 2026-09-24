@@ -1,4 +1,4 @@
-/* Final fluid responsive layer. Loaded last: resolves overlap without rewriting earlier design layers. */
+/* Responsive workspace layout. Preview image geometry lives in 05-studio-b.css. */
 
 :root {
     --safe-inline: max(var(--gutter), env(safe-area-inset-left));
@@ -49,9 +49,8 @@ article,
     min-width: 0;
 }
 
-h1, h2, h3, p, small, strong, span, button, a, label {
-    overflow-wrap: anywhere;
-}
+/* Break only genuinely unbroken identifiers, not every Arabic word. */
+#selectedFileName, .technical-details pre { overflow-wrap: break-word; }
 
 .container-fluid {
     width: min(100%, var(--shell-max));
@@ -134,13 +133,8 @@ img, canvas, svg, video {
     gap: clamp(12px, 1.5vw, 18px);
     align-items: start;
 }
-.manual-preview-stage {
-    min-width: 0;
-}
-.manual-preview-pair {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(8px, 1vw, 12px);
-}
+
+
 .manual-preview-card figcaption { min-height: 1.55em; }
 .operation-category-strip {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -191,6 +185,7 @@ img, canvas, svg, video {
         grid-template-columns: 1fr;
     }
     .manual-controls-pane { width: 100%; }
+    .after-exam-deck { grid-template-columns: 1fr; }
     .operation-browser { max-height: min(48dvh, 430px); }
     .dashboard-premium .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .app-footer.app-footer-fixed .footer-fixed-inner {
@@ -233,8 +228,8 @@ img, canvas, svg, video {
     }
     .dashboard-premium .dashboard-analytics-pair { grid-template-columns: 1fr; }
     .treatment-mode-grid { grid-template-columns: 1fr; }
-    .manual-preview-stage { height: auto !important; max-height: none !important; }
-    .manual-preview-image-wrap { min-height: clamp(260px, 40dvh, 420px) !important; }
+
+
     .compare-wrap { height: clamp(300px, 52dvh, 560px); }
 }
 
@@ -299,12 +294,8 @@ img, canvas, svg, video {
         grid-template-columns: 58px minmax(0, 1fr);
     }
 
-    .manual-preview-pair { grid-template-columns: 1fr; }
-    .manual-preview-card { height: auto !important; }
-    .manual-preview-image-wrap {
-        height: min(46dvh, 420px) !important;
-        min-height: 240px !important;
-    }
+
+
     .operation-category-strip {
         display: flex;
         gap: 7px;
@@ -373,7 +364,7 @@ img, canvas, svg, video {
         justify-content: space-between;
     }
     .manual-preview-toolbar-actions .button { min-width: 0; flex: 1; }
-    .manual-preview-image-wrap { min-height: 220px !important; height: min(42dvh, 350px) !important; }
+
 }
 
 /* Very narrow devices. */
@@ -392,12 +383,7 @@ img, canvas, svg, video {
     html { scroll-padding-top: calc(var(--header-h) + 10px); }
     .workflow-bar { position: relative; top: auto; }
     .document-stage { min-height: 280px; max-height: 58dvh; }
-    .manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
-        min-height: 280px !important;
-        height: 52dvh !important;
-        max-height: 340px !important;
-    }
-    .manual-preview-image-wrap { min-height: 0 !important; }
+
     .operation-browser { max-height: 44dvh; }
 }
 

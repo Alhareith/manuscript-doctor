@@ -69,11 +69,6 @@ function renderParameterFields(operationId) {
                 markCropDraft();
                 return;
             }
-            if (typeof LOCAL_PREVIEW_OPERATIONS !== "undefined" && LOCAL_PREVIEW_OPERATIONS.has(operationId)) {
-                clearTimeout(manualPreviewTimer);
-                applyManualOperation({ live: true });
-                return;
-            }
             scheduleManualPreview();
         });
         head.append(label, output);
@@ -259,5 +254,3 @@ function endCropDrag(event) {
     elements.manualCropGuide?.releasePointerCapture?.(event.pointerId);
     cropDragState = null;
 }
-
-

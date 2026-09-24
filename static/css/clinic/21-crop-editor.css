@@ -1,4 +1,6 @@
 .manual-live-image-wrap.crop-editor-active {
+    /* Clip the outside selection shade, never the intrinsically sized image. */
+    overflow: clip;
     cursor: crosshair;
     touch-action: none;
     user-select: none;

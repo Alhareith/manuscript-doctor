@@ -61,7 +61,7 @@ body.has-document .selected-file {
     grid-template-columns: 1fr;
     gap: 9px;
 }
-.analysis-quick-findings article {
+.analysis-quick-findings > article {
     --finding-accent: #6785a3;
     position: relative;
     overflow: hidden;
@@ -75,7 +75,7 @@ body.has-document .selected-file {
     background: linear-gradient(135deg, color-mix(in srgb, var(--finding-accent) 7%, var(--surface)), var(--surface));
     box-shadow: var(--shadow-xs);
 }
-.analysis-quick-findings article::after {
+.analysis-quick-findings > article::after {
     content: "";
     position: absolute;
     inset-block: 0;
@@ -84,11 +84,11 @@ body.has-document .selected-file {
     background: var(--finding-accent);
     opacity: .8;
 }
-.analysis-quick-findings article[data-tone="good"] { --finding-accent: #269773; }
-.analysis-quick-findings article[data-tone="warning"] { --finding-accent: #c08a27; }
-.analysis-quick-findings article[data-tone="danger"] { --finding-accent: #c35e4c; }
-.analysis-quick-findings article[data-tone="info"] { --finding-accent: #4c86ae; }
-.analysis-quick-findings article > span {
+.analysis-quick-findings > article[data-tone="good"] { --finding-accent: #269773; }
+.analysis-quick-findings > article[data-tone="warning"] { --finding-accent: #c08a27; }
+.analysis-quick-findings > article[data-tone="danger"] { --finding-accent: #c35e4c; }
+.analysis-quick-findings > article[data-tone="info"] { --finding-accent: #4c86ae; }
+.analysis-quick-findings > article > span {
     width: 42px;
     height: 42px;
     border-radius: 14px;
@@ -382,7 +382,7 @@ body.has-document .selected-file {
 
 /* ---------- Metallic dark refinements for the new layer ---------- */
 html[data-theme="dark"] .dashboard-premium .metric-card,
-html[data-theme="dark"] .analysis-quick-findings article,
+html[data-theme="dark"] .analysis-quick-findings > article,
 html[data-theme="dark"] .treatment-mode-card,
 html[data-theme="dark"] .dashboard-overview-strip {
     box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 16px 34px rgba(0,0,0,.24);

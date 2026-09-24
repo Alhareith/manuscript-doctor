@@ -1,0 +1,250 @@
+{
+  "layout": [
+    {
+      "width": 1440,
+      "errors": [],
+      "imageHeights": [
+        238.546875,
+        238.546875
+      ],
+      "diagnosisWidths": [
+        404.015625,
+        353.015625,
+        353.015625,
+        314.015625
+      ]
+    },
+    {
+      "width": 1024,
+      "errors": [],
+      "imageHeights": [
+        282.8125,
+        282.8125
+      ],
+      "diagnosisWidths": [
+        405,
+        354,
+        354,
+        315
+      ]
+    },
+    {
+      "width": 768,
+      "errors": [],
+      "imageHeights": [
+        205.5,
+        205.5
+      ],
+      "diagnosisWidths": [
+        603.75,
+        552.75,
+        552.75,
+        513.75
+      ]
+    },
+    {
+      "width": 430,
+      "errors": [],
+      "imageHeights": [
+        204.578125,
+        204.578125
+      ],
+      "diagnosisWidths": [
+        274,
+        223,
+        223,
+        184
+      ]
+    },
+    {
+      "width": 390,
+      "errors": [],
+      "imageHeights": [
+        177.921875,
+        177.921875
+      ],
+      "diagnosisWidths": [
+        234,
+        183,
+        183,
+        300
+      ]
+    }
+  ],
+  "tall_layout": [
+    {
+      "width": 1440,
+      "errors": [],
+      "imageHeights": [
+        1551.125,
+        1551.1875
+      ],
+      "diagnosisWidths": [
+        404.015625,
+        352.015625
+      ]
+    },
+    {
+      "width": 1024,
+      "errors": [],
+      "imageHeights": [
+        1839.015625,
+        1839.015625
+      ],
+      "diagnosisWidths": [
+        359,
+        307
+      ]
+    },
+    {
+      "width": 768,
+      "errors": [],
+      "imageHeights": [
+        1336.28125,
+        1336.28125
+      ],
+      "diagnosisWidths": [
+        603.75,
+        551.75
+      ]
+    },
+    {
+      "width": 430,
+      "errors": [],
+      "imageHeights": [
+        1330.328125,
+        1330.328125
+      ],
+      "diagnosisWidths": [
+        274,
+        222
+      ]
+    },
+    {
+      "width": 390,
+      "errors": [],
+      "imageHeights": [
+        1157,
+        1157
+      ],
+      "diagnosisWidths": [
+        234,
+        182
+      ]
+    }
+  ],
+  "slider_posts": [
+    "http://127.0.0.1:5002/api/images/e273d03138ca43a6a3441c89b3048a5e/preview"
+  ],
+  "errors": [],
+  "failed_assets": [],
+  "stylesheets": [
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/01-tokens.css",
+      "rules": 2
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/02-base.css",
+      "rules": 34
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/03-components.css",
+      "rules": 63
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/04-header-workflow.css",
+      "rules": 42
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/05-studio-a.css",
+      "rules": 82
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/05-studio-b.css",
+      "rules": 103
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/06-panels-a.css",
+      "rules": 57
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/06-panels-b.css",
+      "rules": 81
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/07-responsive.css",
+      "rules": 6
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/08-refinements.css",
+      "rules": 36
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/09-layout-polish.css",
+      "rules": 48
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/10-dashboard-workspace.css",
+      "rules": 30
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/11-upload-hero.css",
+      "rules": 23
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/12-metallic-dark.css",
+      "rules": 14
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/13-history-cards.css",
+      "rules": 14
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/14-header-polish.css",
+      "rules": 11
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/15-premium-workspace.css",
+      "rules": 88
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/16-gold-dashboard-manual.css",
+      "rules": 64
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/17-interaction-consolidation.css",
+      "rules": 47
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/18-layout-stability.css",
+      "rules": 9
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/19-responsive-fluid.css",
+      "rules": 46
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/20-scroll-ux.css",
+      "rules": 14
+    },
+    {
+      "href": "http://127.0.0.1:5002/static/css/clinic/21-crop-editor.css",
+      "rules": 19
+    }
+  ],
+  "checks": [
+    "prep approval",
+    "smart pipeline",
+    "closed chart zero work",
+    "two steps",
+    "undo redo",
+    "download",
+    "stable gamma",
+    "local flip",
+    "crop coordinates",
+    "slider race",
+    "comparison slider",
+    "legacy quick preview draft-only",
+    "both themes"
+  ]
+}

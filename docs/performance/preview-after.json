@@ -1,0 +1,82 @@
+{
+  "baseline": false,
+  "dimensions": [
+    4200,
+    2799
+  ],
+  "opencv": "5.0.0",
+  "routes": {
+    "clahe": {
+      "first_ms": 169.67,
+      "warm_median_ms": 5.895,
+      "all_ms": [
+        169.67,
+        7.323,
+        5.953,
+        5.396,
+        6.881,
+        5.837,
+        5.04
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 1,
+        "imdecode": 1
+      },
+      "profile": "         1354 function calls (1340 primitive calls) in 0.007 seconds\n\n   Ordered by: cumulative time\n   List reduced from 325 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.007    0.007 test.py:1164(post)\n        1    0.000    0.000    0.007    0.007 testing.py:204(open)\n        1    0.000    0.000    0.007    0.007 test.py:1058(open)\n        1    0.000    0.000    0.007    0.007 test.py:980(run_wsgi_app)\n        1    0.000    0.000    0.006    0.006 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    0.006    0.006 app.py:1529(__call__)\n        1    0.000    0.000    0.006    0.006 app.py:1479(wsgi_app)\n        1    0.000    0.000    0.006    0.006 app.py:904(full_dispatch_request)\n        1    0.000    0.000    0.006    0.006 app.py:879(dispatch_request)\n        1    0.000    0.000    0.006    0.006 app.py:656(preview_manual_operation)\n        1    0.000    0.000    0.004    0.004 registry.py:288(apply_operation)\n        1    0.000    0.000    0.004    0.004 enhancement.py:7(clahe)\n        1    0.000    0.000    0.004    0.004 common.py:53(_apply_to_luminance)\n        2    0.003    0.001    0.003    0.001 {cvtColor}\n        1    0.001    0.001    0.001    0.001 {method 'apply' of 'cv2.CLAHE' objects}\n        1    0.000    0.000    0.001    0.001 app.py:132(build_preview_payload)\n        1    0.001    0.001    0.001    0.001 {imencode}\n        1    0.000    0.000    0.000    0.000 app.py:32(success_response)\n        1    0.000    0.000    0.000    0.000 __init__.py:138(jsonify)\n        1    0.000    0.000    0.000    0.000 testing.py:193(_request_from_builder_args)\n        1    0.000    0.000    0.000    0.000 provider.py:189(response)\n        2    0.000    0.000    0.000    0.000 provider.py:166(dumps)\n\n\n"
+    },
+    "sharpen": {
+      "first_ms": 2.953,
+      "warm_median_ms": 2.5925000000000002,
+      "all_ms": [
+        2.953,
+        2.343,
+        2.47,
+        2.573,
+        2.612,
+        2.978,
+        2.697
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 0,
+        "imdecode": 0
+      },
+      "profile": "         1347 function calls (1333 primitive calls) in 0.004 seconds\n\n   Ordered by: cumulative time\n   List reduced from 321 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.004    0.004 test.py:1164(post)\n        1    0.000    0.000    0.004    0.004 testing.py:204(open)\n        1    0.000    0.000    0.003    0.003 test.py:1058(open)\n        1    0.000    0.000    0.003    0.003 test.py:980(run_wsgi_app)\n        1    0.000    0.000    0.003    0.003 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    0.003    0.003 app.py:1529(__call__)\n        1    0.000    0.000    0.003    0.003 app.py:1479(wsgi_app)\n        1    0.000    0.000    0.003    0.003 app.py:904(full_dispatch_request)\n        1    0.000    0.000    0.003    0.003 app.py:879(dispatch_request)\n        1    0.000    0.000    0.003    0.003 app.py:656(preview_manual_operation)\n        1    0.000    0.000    0.001    0.001 app.py:132(build_preview_payload)\n        1    0.001    0.001    0.001    0.001 {imencode}\n        1    0.000    0.000    0.001    0.001 registry.py:288(apply_operation)\n        1    0.000    0.000    0.001    0.001 enhancement.py:154(sharpen)\n        1    0.000    0.000    0.000    0.000 {GaussianBlur}\n        1    0.000    0.000    0.000    0.000 testing.py:193(_request_from_builder_args)\n        1    0.000    0.000    0.000    0.000 {addWeighted}\n        1    0.000    0.000    0.000    0.000 app.py:32(success_response)\n        1    0.000    0.000    0.000    0.000 __init__.py:138(jsonify)\n        1    0.000    0.000    0.000    0.000 provider.py:189(response)\n        2    0.000    0.000    0.000    0.000 provider.py:166(dumps)\n        2    0.000    0.000    0.000    0.000 __init__.py:185(dumps)\n\n\n"
+    },
+    "bilateral_denoise": {
+      "first_ms": 6.787,
+      "warm_median_ms": 5.3465,
+      "all_ms": [
+        6.787,
+        5.124,
+        4.961,
+        5.161,
+        5.532,
+        5.671,
+        5.627
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 0,
+        "imdecode": 0
+      },
+      "profile": "         1344 function calls (1330 primitive calls) in 0.006 seconds\n\n   Ordered by: cumulative time\n   List reduced from 320 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.006    0.006 test.py:1164(post)\n        1    0.000    0.000    0.006    0.006 testing.py:204(open)\n        1    0.000    0.000    0.006    0.006 test.py:1058(open)\n        1    0.000    0.000    0.006    0.006 test.py:980(run_wsgi_app)\n        1    0.000    0.000    0.006    0.006 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    0.006    0.006 app.py:1529(__call__)\n        1    0.000    0.000    0.006    0.006 app.py:1479(wsgi_app)\n        1    0.000    0.000    0.006    0.006 app.py:904(full_dispatch_request)\n        1    0.000    0.000    0.006    0.006 app.py:879(dispatch_request)\n        1    0.000    0.000    0.006    0.006 app.py:656(preview_manual_operation)\n        1    0.000    0.000    0.004    0.004 registry.py:288(apply_operation)\n        1    0.000    0.000    0.004    0.004 denoising.py:14(bilateral_denoise)\n        1    0.004    0.004    0.004    0.004 {bilateralFilter}\n        1    0.000    0.000    0.001    0.001 app.py:132(build_preview_payload)\n        1    0.001    0.001    0.001    0.001 {imencode}\n        1    0.000    0.000    0.000    0.000 testing.py:193(_request_from_builder_args)\n        1    0.000    0.000    0.000    0.000 testing.py:49(__init__)\n        1    0.000    0.000    0.000    0.000 test.py:298(__init__)\n        1    0.000    0.000    0.000    0.000 app.py:32(success_response)\n        1    0.000    0.000    0.000    0.000 __init__.py:138(jsonify)\n        1    0.000    0.000    0.000    0.000 provider.py:189(response)\n        1    0.000    0.000    0.000    0.000 app.py:155(resolve_upload_file)\n\n\n"
+    },
+    "preparation": {
+      "first_ms": 2082.073,
+      "warm_median_ms": 33.2385,
+      "all_ms": [
+        2082.073,
+        34.429,
+        32.978,
+        33.424,
+        33.053,
+        34.314,
+        32.893
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 1,
+        "imdecode": 1
+      },
+      "profile": "         2799 function calls (2528 primitive calls) in 0.035 seconds\n\n   Ordered by: cumulative time\n   List reduced from 307 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.035    0.035 test.py:1164(post)\n        1    0.000    0.000    0.035    0.035 testing.py:204(open)\n        1    0.000    0.000    0.035    0.035 test.py:1058(open)\n        1    0.000    0.000    0.035    0.035 test.py:980(run_wsgi_app)\n        1    0.000    0.000    0.035    0.035 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    0.035    0.035 app.py:1529(__call__)\n        1    0.000    0.000    0.035    0.035 app.py:1479(wsgi_app)\n        1    0.000    0.000    0.035    0.035 app.py:904(full_dispatch_request)\n        1    0.000    0.000    0.035    0.035 app.py:879(dispatch_request)\n        1    0.000    0.000    0.034    0.034 app.py:1035(preview_preparation)\n        1    0.000    0.000    0.033    0.033 app.py:201(save_preparation_preview)\n        1    0.000    0.000    0.033    0.033 app.py:238(save_png_result)\n        1    0.033    0.033    0.033    0.033 {imencode}\n    229/1    0.000    0.000    0.001    0.001 copy.py:119(deepcopy)\n     15/1    0.000    0.000    0.001    0.001 copy.py:218(_deepcopy_dict)\n        1    0.000    0.000    0.000    0.000 _abc.py:635(write_bytes)\n        1    0.000    0.000    0.000    0.000 testing.py:193(_request_from_builder_args)\n        1    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}\n        9    0.000    0.000    0.000    0.000 _local.py:166(__fspath__)\n       11    0.000    0.000    0.000    0.000 _local.py:227(__str__)\n     18/6    0.000    0.000    0.000    0.000 copy.py:192(_deepcopy_list)\n        1    0.000    0.000    0.000    0.000 testing.py:49(__init__)\n\n\n"
+    }
+  }
+}

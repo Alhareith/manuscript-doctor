@@ -1,6 +1,26 @@
 "use strict";
 
-const CROP_LOCAL_PREVIEW_MAX_DIMENSION = 1400;
+const CROP_LOCAL_PREVIEW_MAX_DIMENSION = 960;
+let localPreviewSourceKey = null;
+let localPreviewSourcePromise = null;
+
+function getLocalPreviewSource() {
+    const key = currentManualSourceUrl();
+    if (key !== localPreviewSourceKey || !localPreviewSourcePromise) {
+        localPreviewSourceKey = key;
+        const pending = loadCanvasImage(key).then(image => {
+            const scale = Math.min(1, CROP_LOCAL_PREVIEW_MAX_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            return canvas;
+        });
+        localPreviewSourcePromise = pending;
+        pending.catch(() => { if (localPreviewSourcePromise === pending) localPreviewSourcePromise = null; });
+    }
+    return localPreviewSourcePromise;
+}
 
 function currentCropMetadata() {
     const activeEntry = Number.isInteger(state.manualActiveIndex) && state.manualActiveIndex >= 0
@@ -119,7 +139,7 @@ async function createFastLocalManualPreview(operationId, parameters = {}) {
         if (operationId !== "crop") return null;
     }
 
-    const image = await loadCanvasImage(currentManualSourceUrl());
+    const image = await getLocalPreviewSource();
     const naturalWidth = image.naturalWidth || image.width;
     const naturalHeight = image.naturalHeight || image.height;
     if (!naturalWidth || !naturalHeight) return null;
@@ -166,23 +186,7 @@ async function createFastLocalManualPreview(operationId, parameters = {}) {
 
             context.drawImage(image, 0, 0, naturalWidth, naturalHeight, 0, 0, workWidth, workHeight);
 
-            if (operationId === "intensity_adjust" || operationId === "gamma_correct") {
-                const pixels = context.getImageData(0, 0, workWidth, workHeight);
-                const data = pixels.data;
-                const alpha = Number(parameters.alpha ?? 1);
-                const beta = Number(parameters.beta ?? 0);
-                const gamma = Number(parameters.gamma ?? 1);
-                for (let index = 0; index < data.length; index += 4) {
-                    for (let channel = 0; channel < 3; channel += 1) {
-                        const normalized = data[index + channel];
-                        const adjusted = operationId === "gamma_correct"
-                            ? 255 * Math.pow(normalized / 255, gamma)
-                            : (normalized * alpha) + beta;
-                        data[index + channel] = clamp(Math.round(adjusted), 0, 255);
-                    }
-                }
-                context.putImageData(pixels, 0, 0);
-            }
+
         }
     }
 
@@ -208,10 +212,6 @@ function bindCropEditorEnhancements() {
     elements.manualLivePreview?.addEventListener("load", () => {
         if (elements.manualOperation?.value === "crop") requestAnimationFrame(syncCropGuide);
     });
-
-    if (typeof createLocalManualPreview === "function") {
-        createLocalManualPreview = createFastLocalManualPreview;
-    }
 
     syncCropEditorMode();
 }

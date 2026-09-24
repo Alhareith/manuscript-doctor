@@ -1,0 +1,69 @@
+........................................................................ [ 17%]
+........................................................................ [ 34%]
+........................................................................ [ 52%]
+...................................................FFF.................. [ 69%]
+.............sssss...s...ssss..s..ssss..s............................... [ 86%]
+......................................................                   [100%]
+=================================== FAILURES ===================================
+___ test_preparation_detector_fallback_restores_document_crop[check/c05.jpg] ___
+
+name = 'check/c05.jpg'
+
+    @pytest.mark.parametrize("name", ["check/c04.jpg", "check/c05.jpg", "check/c06.jpg"])
+    def test_preparation_detector_fallback_restores_document_crop(name):
+        result = prepare_document(
+            _load_image(name),
+            boundary_detector=detect_preparation_boundary,
+        )
+    
+        assert result["prepared"] is True
+        assert result["boundary"]["detected"] is True
+>       assert result["boundary"]["automatic_crop_eligible"] is True
+E       assert False is True
+
+tests/test_preparation_pipeline.py:118: AssertionError
+___ test_preparation_detector_fallback_restores_document_crop[check/c06.jpg] ___
+
+name = 'check/c06.jpg'
+
+    @pytest.mark.parametrize("name", ["check/c04.jpg", "check/c05.jpg", "check/c06.jpg"])
+    def test_preparation_detector_fallback_restores_document_crop(name):
+        result = prepare_document(
+            _load_image(name),
+            boundary_detector=detect_preparation_boundary,
+        )
+    
+>       assert result["prepared"] is True
+E       assert False is True
+
+tests/test_preparation_pipeline.py:116: AssertionError
+_____________ test_c08_preparation_and_verification_are_repeatable _____________
+
+    def test_c08_preparation_and_verification_are_repeatable():
+        image = _load_image("check/c08.jpg")
+    
+        observations = []
+        for _ in range(5):
+            result = prepare_document(image, boundary_detector=detect_preparation_boundary)
+            verification = verify_preparation(result)
+            observations.append(
+                (
+                    result["boundary"]["corners"],
+                    result["skew"],
+                    result["deskew"],
+                    verification["status"],
+                    verification["verified"],
+                    result["orientation"]["automatic_180_correction"],
+                )
+            )
+    
+        assert all(observation == observations[0] for observation in observations)
+>       assert observations[0][4] is True
+E       assert False is True
+
+tests/test_preparation_pipeline.py:143: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_preparation_pipeline.py::test_preparation_detector_fallback_restores_document_crop[check/c05.jpg]
+FAILED tests/test_preparation_pipeline.py::test_preparation_detector_fallback_restores_document_crop[check/c06.jpg]
+FAILED tests/test_preparation_pipeline.py::test_c08_preparation_and_verification_are_repeatable
+3 failed, 395 passed, 16 skipped in 30.45s

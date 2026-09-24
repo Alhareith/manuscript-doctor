@@ -203,12 +203,8 @@ html[data-theme="dark"] #manualParameters.inline-operation-parameters output {
 .manual-preview-image-wrap {
     min-width: 0;
 }
-.manual-preview-stage {
-    position: relative;
-    z-index: 0;
-    overflow: hidden;
-}
-.manual-preview-image-wrap { overflow: hidden; }
+.manual-preview-stage { position: relative; z-index: 0; }
+
 .manual-approval-bar {
     position: relative !important;
     inset: auto !important;
@@ -226,13 +222,6 @@ html[data-theme="dark"] #manualParameters.inline-operation-parameters output {
     clear: both;
     margin-top: 18px !important;
     z-index: 0;
-}
-.manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
-    min-height: clamp(340px, 44vh, 500px);
-}
-.manual-editor:not(.clinic-crop-focus) .manual-preview-image-wrap {
-    min-height: 0;
-    height: clamp(285px, 38vh, 425px);
 }
 
 /* --------------------------------------------------------------------------

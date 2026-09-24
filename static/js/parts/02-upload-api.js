@@ -63,6 +63,7 @@ function updateManualApprovalUI() {
 }
 
 function resetManualChain() {
+    invalidateManualPreview();
     state.manualChain = [];
     state.manualActiveIndex = -1;
     state.manualWorkingResultId = null;
@@ -106,6 +107,8 @@ function resetAll() {
 }
 
 function selectFile(file) {
+    invalidateManualPreview();
+    manualPreviewAbortController?.abort();
     clearError();
     if (!isSupportedFile(file)) { showError("نوع الملف غير مدعوم. استخدم JPG أو PNG."); return; }
     revokePreviewUrl();
@@ -133,6 +136,7 @@ function selectFile(file) {
     if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = state.previewUrl;
     if (elements.manualOperation) {
         elements.manualOperation.value = "document_prepare";
+        setOperationGroup("page");
         syncOperationCardSelection("document_prepare");
         renderParameterFields("document_prepare");
     }

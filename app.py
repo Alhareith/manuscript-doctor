@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 import base64
 import json
+from copy import deepcopy
+from processing.preview_cache import PreviewCache, file_key
 
 from flask import Flask, jsonify, render_template, request, send_file
 from processing.analyzer import analyze_image
@@ -173,7 +175,9 @@ def resize_for_preview(image, max_width=PREVIEW_MAX_WIDTH, max_height=PREVIEW_MA
 
 def build_preview_payload(image, preferred_format="png"):
     """Encode a bounded in-memory preview without writing a result file."""
-    preview = resize_for_preview(image)
+    # Most operations already return a bounded image; avoid a redundant copy.
+    preview = (resize_for_preview(image) if image.shape[1] > PREVIEW_MAX_WIDTH
+               or image.shape[0] > PREVIEW_MAX_HEIGHT else image)
     normalized_format = "jpeg" if str(preferred_format).lower() in {"jpg", "jpeg"} else "png"
     if normalized_format == "jpeg":
         success, encoded = cv2.imencode(".jpg", preview, [cv2.IMWRITE_JPEG_QUALITY, 82])
@@ -425,6 +429,25 @@ def create_app(test_config=None):
         exist_ok=True
     )
 
+
+    # Scoped to this app/worker, byte bounded, never a full-resolution cache.
+    source_previews = PreviewCache()
+    prepared_previews = PreviewCache(max_bytes=32 * 1024 * 1024, max_entries=16)
+    app.extensions["source_previews"] = source_previews
+    app.extensions["prepared_previews"] = prepared_previews
+
+    def preview_source(path, width=PREVIEW_MAX_WIDTH, height=PREVIEW_MAX_HEIGHT):
+        def load():
+            original = read_stored_image(path)
+            if original is None:
+                return None
+            proxy = resize_for_preview(original, width, height)
+            proxy.setflags(write=False)
+            return proxy, image_dimensions(original)
+        return source_previews.get_or_create(
+            (file_key(path), width, height), load,
+            lambda item: item[0].nbytes if item is not None else 0,
+        )
 
     @app.get("/")
     def index():
@@ -693,7 +716,6 @@ def create_app(test_config=None):
 
         operation_id = payload.get("operation_id")
         parameters = payload.get("parameters", {})
-        source_result_id = payload.get("source_result_id")
 
         if not isinstance(operation_id, str):
             return error_response("INVALID_OPERATION", "معرف العملية غير صالح.", 400)
@@ -713,16 +735,19 @@ def create_app(test_config=None):
                 400,
             )
 
-        source_path = path
+        source_result_id = payload.get("source_result_id")
 
         if source_result_id is not None:
             if not isinstance(source_result_id, str) or not is_valid_resource_id(source_result_id):
                 return error_response(
-                    "INVALID_SOURCE_RESULT_ID",
+                   "INVALID_SOURCE_RESULT_ID",
                     "معرف النتيجة المصدرية غير صالح.",
                     400,
                 )
 
+        source_path = path
+
+        if source_result_id:
             source_result_path = resolve_result_file(result_folder, source_result_id)
             source_manifest = read_manual_manifest(result_folder, source_result_id)
 
@@ -736,7 +761,7 @@ def create_app(test_config=None):
             source_kind = source_manifest.get("kind")
             source_origin = source_manifest.get("origin")
             source_status = source_manifest.get("status")
-
+            
             is_approved_manual_source = source_kind == "manual_approved"
             is_approved_unified_source = (
                 source_origin in {"manual", "preparation"}
@@ -762,30 +787,38 @@ def create_app(test_config=None):
 
             source_path = source_result_path
 
+            if source_manifest.get("source_image_id") != image_id:
+                return error_response("SOURCE_RESULT_MISMATCH", "لا يمكن استخدام نتيجة مرتبطة بوثيقة أخرى.", 400)
+            source_path = source_result_path
+
         try:
+            source = preview_source(source_path)
+            if source is None:
+                return error_response("UNREADABLE_IMAGE", "تعذر قراءة مصدر المعاينة.", 500)
+            proxy, dimensions = source
+            preview_parameters = dict(parameters)
+            # Coordinates belong to the full-resolution source, never the display.
+            # Validate there, then map to the bounded proxy. No full-size crop work.
+            sx = proxy.shape[1] / dimensions["width"]
+            sy = proxy.shape[0] / dimensions["height"]
             if operation_id == "crop":
-                working_image = read_stored_image(source_path)
-                if working_image is None:
-                    return error_response(
-                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
-                        "تعذر قراءة مصدر المعاينة.",
-                        500,
-                    )
-                processed = apply_operation(operation_id, working_image, parameters)
-                processed = resize_for_preview(processed)
-            else:
-                preview_source = _cached_preview_source(source_path)
-                if preview_source is None:
-                    return error_response(
-                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
-                        "تعذر قراءة مصدر المعاينة.",
-                        500,
-                    )
-                processed = apply_operation(operation_id, preview_source, parameters)
+                x, y, w, h = [int(round(float(parameters[k]))) for k in ("x", "y", "width", "height")]
+                if x < 0 or y < 0 or w <= 0 or h <= 0 or x+w > dimensions["width"] or y+h > dimensions["height"]:
+                    raise ValueError("Crop rectangle is outside source bounds.")
+                px = min(proxy.shape[1]-1, int(round(x*sx)))
+                py = min(proxy.shape[0]-1, int(round(y*sy)))
+                preview_parameters.update(x=px, y=py,
+                    width=max(1, min(proxy.shape[1]-px, int(round(w*sx)))),
+                    height=max(1, min(proxy.shape[0]-py, int(round(h*sy)))))
+            elif operation_id == "perspective_crop":
+                for index in range(1, 5):
+                    preview_parameters[f"x{index}"] = float(parameters[f"x{index}"]) * sx
+                    preview_parameters[f"y{index}"] = float(parameters[f"y{index}"]) * sy
+            processed = apply_operation(operation_id, proxy.copy(), preview_parameters)
 
             preferred_preview_format = request.headers.get("X-Preview-Format", "png")
             preview = build_preview_payload(processed, preferred_preview_format)
-        except (ValueError, TypeError) as error:
+        except (ValueError, TypeError, KeyError, OverflowError) as error:
             return error_response(
                 "INVALID_OPERATION_PARAMETERS",
                 "Parameters العملية غير صالحة.",
@@ -810,7 +843,6 @@ def create_app(test_config=None):
             message="تم تحديث المعاينة.",
             status=200,
         )
-
     @app.post("/api/images/<image_id>/pipeline")
     def run_pipeline(image_id):
         if not is_valid_resource_id(image_id):
@@ -1053,15 +1085,19 @@ def create_app(test_config=None):
         if upload_path is None:
             return error_response("IMAGE_NOT_FOUND", "الصورة غير موجودة.", 404)
 
-        image = read_stored_image(upload_path)
-        if image is None:
-            return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
-
         try:
-            preparation = prepare_document(
-                image,
-                boundary_detector=detect_preparation_boundary,
-            )
+            source = preview_source(upload_path, PREPARATION_PREVIEW_MAX_DIMENSION,
+                                    PREPARATION_PREVIEW_MAX_DIMENSION)
+            if source is None:
+                return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
+            def prepare_proxy():
+                return prepare_document(source[0].copy(), boundary_detector=detect_preparation_boundary)
+            # Cache the computation, NOT the approval token or manifest. Each
+            # request still gets its own one-use review artifact below.
+            preparation = deepcopy(prepared_previews.get_or_create(
+                (file_key(upload_path), PREPARATION_PREVIEW_MAX_DIMENSION), prepare_proxy,
+                lambda value: value["image"].nbytes + 16384,
+            ))
         except (ValueError, RuntimeError) as error:
             return error_response(
                 "PREPARATION_FAILED",
@@ -1184,14 +1220,78 @@ def create_app(test_config=None):
             preparation_preview_folder,
             preparation_id,
         )
-        prepared_image = read_stored_image(preview_path)
-
-        if prepared_image is None:
+        if preview_path is None:
             return error_response(
-                "UNREADABLE_PREPARATION",
-                "تعذر قراءة معاينة Preparation.",
+                "PREPARATION_NOT_FOUND",
+                "معاينة Preparation غير موجودة.",
+                404,
+            )
+
+        # Approval uses the full-resolution original, never the preview proxy.
+        upload_path = resolve_upload_file(upload_folder, image_id)
+        if upload_path is None:
+            return error_response(
+                "IMAGE_NOT_FOUND",
+                "الصورة الأصلية غير موجودة.",
+                404,
+            )
+
+        original = read_stored_image(upload_path)
+        if original is None:
+            return error_response(
+                "UNREADABLE_IMAGE",
+                "تعذر قراءة الصورة الأصلية لاعتماد التجهيز.",
                 500,
             )
+
+        try:
+            full_preparation = prepare_document(
+                original,
+                boundary_detector=detect_preparation_boundary,
+            )
+
+            if not full_preparation.get("prepared"):
+                return error_response(
+                    "PREPARATION_REJECTED",
+                    "لم ينتج التجهيز بالدقة الكاملة نتيجة صالحة للاعتماد.",
+                    422,
+                    details={
+                        "preparation": preparation_public_metadata(
+                            full_preparation
+                        ),
+                        "image_id": image_id,
+                    },
+                )
+
+            prepared_image = full_preparation["image"]
+            full_metadata = preparation_public_metadata(full_preparation)
+            boundary = full_metadata.get("boundary", {})
+            deskew = full_metadata.get("deskew", {})
+            method_used = boundary.get("method_used") or (
+                "deskew-only" if deskew.get("applied") else None
+            )
+
+            full_metadata["source_image_id"] = image_id
+            full_metadata["method_used"] = method_used
+
+        except (ValueError, RuntimeError) as error:
+            return error_response(
+                "PREPARATION_FAILED",
+                "تعذر تنفيذ التجهيز بالدقة الكاملة.",
+                422,
+                details=str(error),
+            )
+        except Exception:
+            app.logger.exception("Full-resolution preparation approval failed")
+            return error_response(
+                "PREPARATION_FAILED",
+                "حدث خطأ أثناء تجهيز الصورة الأصلية للاعتماد.",
+                500,
+            )
+
+        # The saved artifact and response must describe the full-size result.
+        manifest["preparation"] = full_metadata
+        manifest["method_used"] = method_used
 
         try:
             result_id, _ = save_result_artifact(

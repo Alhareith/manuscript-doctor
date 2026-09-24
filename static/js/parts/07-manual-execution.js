@@ -1,4 +1,19 @@
 async function applyManualOperation(options = {}) {
+    if (!options.live) return executeManualOperation(options);
+    if (!state.imageId || state.isBusy) return;
+    if (manualRequestInFlight) { queuedManualPreview = true; return; }
+    manualRequestInFlight = true;
+    try { await executeManualOperation(options); }
+    finally {
+        manualRequestInFlight = false;
+        if (queuedManualPreview) {
+            queuedManualPreview = false;
+            if (state.imageId && !state.isBusy) applyManualOperation({ live: true });
+        }
+    }
+}
+
+async function executeManualOperation(options = {}) {
     const live = Boolean(options.live);
     if (!state.imageId || !elements.manualOperation?.value) return;
     if (!live && state.isBusy) return;
@@ -88,7 +103,7 @@ async function applyManualOperation(options = {}) {
             renderManualOperationResult(data, { live });
         }
     } catch (error) {
-        if (error?.name === "AbortError") return;
+        if (error?.name === "AbortError" || requestId !== manualPreviewSequence) return;
         if (!live) showError(error.message);
         else if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `تعذر تحديث المعاينة: ${error.message}`;
     } finally {
@@ -105,6 +120,7 @@ function manualOriginalUrl() {
 }
 
 function syncManualChainSelection(options = {}) {
+    invalidateManualPreview();
     const instant = Boolean(options.instant);
     const index = Number.isInteger(state.manualActiveIndex) ? state.manualActiveIndex : -1;
     const entry = index >= 0 ? state.manualChain[index] : null;
@@ -118,12 +134,12 @@ function syncManualChainSelection(options = {}) {
         state.manualApprovedResult = { ...entry.result, operation: entry.operation || {} };
         const afterUrl = instant && entry.previewDataUrl
             ? entry.previewDataUrl
-            : `/api/results/${encodeURIComponent(entry.result.id)}?chain=${Date.now()}`;
+            : `/api/results/${encodeURIComponent(entry.result.id)}`;
         const previousEntry = index > 0 ? state.manualChain[index - 1] : null;
         const beforeUrl = previousEntry?.result?.id
             ? (instant && previousEntry.previewDataUrl
                 ? previousEntry.previewDataUrl
-                : `/api/results/${encodeURIComponent(previousEntry.result.id)}?before=${Date.now()}`)
+                : `/api/results/${encodeURIComponent(previousEntry.result.id)}`)
             : manualOriginalUrl();
         if (elements.manualOriginalPreview && beforeUrl) elements.manualOriginalPreview.src = beforeUrl;
         if (elements.manualLivePreview) elements.manualLivePreview.src = afterUrl;
@@ -234,7 +250,7 @@ async function approveManualOperation() {
             state.manualPreviewCandidate = null;
             setBusy(false);
 
-            const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}?approved=${Date.now()}`;
+            const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}`;
             if (elements.manualOriginalPreview) elements.manualOriginalPreview.src = approvedUrl;
             if (elements.manualLivePreview) elements.manualLivePreview.src = approvedUrl;
             if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "Preparation · النتيجة المعتمدة أصبحت الصورة الحالية";
@@ -293,7 +309,7 @@ async function approveManualOperation() {
             operationId,
             data.preservation?.assessment?.status || data.verification?.status
         );
-        const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}?approved=${Date.now()}`;
+        const approvedUrl = `/api/results/${encodeURIComponent(data.result.id)}`;
 
         if (elements.manualOriginalPreview) {
             elements.manualOriginalPreview.src = approvedUrl;
@@ -318,4 +334,3 @@ async function approveManualOperation() {
         updateManualApprovalUI();
     }
 }
-

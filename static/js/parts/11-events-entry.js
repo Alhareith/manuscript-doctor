@@ -16,6 +16,7 @@ function bindEvents() {
     elements.removeImageButton?.addEventListener("click", resetAll);
     elements.startExaminationButton?.addEventListener("click", startExamination);
     elements.manualOperation?.addEventListener("change", () => {
+        invalidateManualPreview();
         renderParameterFields(elements.manualOperation.value);
         document.querySelectorAll("[data-operation-card]").forEach((button) => {
             const selected = button.dataset.operationCard === elements.manualOperation.value;
@@ -42,6 +43,7 @@ function bindEvents() {
         elements.manualCropGuide?.addEventListener("pointercancel", endCropDrag);
     elements.manualLivePreview?.addEventListener("load", () => { syncCropGuide(); renderManualChangeChart(); });
     elements.manualOriginalPreview?.addEventListener("load", () => renderManualChangeChart());
+    elements.manualChangeChart?.closest("details")?.addEventListener("toggle", renderManualChangeChart);
 
     elements.manualUndoButton?.addEventListener("click", undoManualStep);
     elements.manualRedoButton?.addEventListener("click", redoManualStep);

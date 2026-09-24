@@ -7,11 +7,31 @@ function setManualPreviewBusy(busy) {
     }
 }
 
+let manualPreviewFrame = null;
+let manualRequestInFlight = false;
+let queuedManualPreview = false;
+
+function invalidateManualPreview() {
+    clearTimeout(manualPreviewTimer);
+    cancelAnimationFrame(manualPreviewFrame);
+    manualPreviewSequence += 1;
+    queuedManualPreview = false;
+    state.manualPreviewCandidate = null;
+    setManualPreviewBusy(false);
+    updateManualApprovalUI();
+}
+
 function scheduleManualPreview(delay = 120) {
     if (!state.imageId || !elements.manualOperation?.value || state.isBusy) return;
-    clearTimeout(manualPreviewTimer);
+    // Invalidate NOW, not when the debounce expires: a late old response must
+    // never become approvable while the sliders show newer parameters.
+    invalidateManualPreview();
     if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = "تغيّرت الإعدادات — يتم تحديث المعاينة تلقائيًا.";
-    manualPreviewTimer = setTimeout(() => applyManualOperation({ live: true }), delay);
+    if (LOCAL_PREVIEW_OPERATIONS.has(elements.manualOperation.value)) {
+        manualPreviewFrame = requestAnimationFrame(() => applyManualOperation({ live: true }));
+    } else {
+        manualPreviewTimer = setTimeout(() => applyManualOperation({ live: true }), delay);
+    }
 }
 
 function setManualPreviewResult(result, operationId, decisionStatus = null) {
@@ -198,13 +218,18 @@ function renderPreparationPreview(data) {
     }
 
     updateManualApprovalUI();
-    updateTechnicalDetails();
+    if (elements.technicalDetails && !elements.technicalDetails.classList.contains("hidden")) updateTechnicalDetails();
 }
 
 
 
+const manualHistogramCache = new WeakMap();
+
 function manualImageHistogram(image) {
     if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return null;
+    const key = image.currentSrc || image.src;
+    const cached = manualHistogramCache.get(image);
+    if (cached?.key === key) return cached.values;
     const sample = document.createElement("canvas");
     sample.width = 160;
     sample.height = 90;
@@ -217,12 +242,27 @@ function manualImageHistogram(image) {
         histogram[Math.min(15, Math.floor(gray / 16))] += 1;
     }
     const peak = Math.max(...histogram, 1);
-    return histogram.map((value) => value / peak);
+    const values = histogram.map((value) => value / peak);
+    manualHistogramCache.set(image, { key, values });
+    return values;
 }
 
+let manualChartFrame = null;
 function renderManualChangeChart() {
+    if (manualChartFrame !== null) return;
+    manualChartFrame = requestAnimationFrame(() => {
+        manualChartFrame = null;
+        drawManualChangeChart();
+    });
+}
+
+function drawManualChangeChart() {
     const canvas = elements.manualChangeChart;
-    if (!canvas || canvas.offsetParent === null) return;
+    if (!canvas) return;
+    const panel = canvas.closest(".manual-change-chart");
+    const hasComparison = Boolean(state.manualPreviewCandidate || state.manualWorkingResultId || state.resultId);
+    if (panel) panel.hidden = !hasComparison;
+    if (!hasComparison || (panel?.tagName === "DETAILS" && !panel.open) || !canvas.getClientRects().length) return;
     const before = manualImageHistogram(elements.manualOriginalPreview);
     const after = manualImageHistogram(elements.manualLivePreview);
     if (!before || !after) {
@@ -275,22 +315,14 @@ function renderManualChangeChart() {
 }
 
 /* ---------- Instant local preview layer ---------- */
+// Geometric operations are pixel-equivalent in Canvas. Gamma/intensity stay
+// on the server: their existing algorithms act on Lab luminance, NOT RGB.
 const LOCAL_PREVIEW_OPERATIONS = new Set([
-    "rotate_right",
-    "rotate_left",
-    "flip_vertical",
-    "flip_horizontal",
-    "intensity_adjust",
-    "gamma_correct",
-    "crop"
+    "rotate_right", "rotate_left", "flip_vertical", "flip_horizontal"
 ]);
 
 function currentManualSourceUrl() {
-    const displayed = elements.manualLivePreview?.currentSrc || elements.manualLivePreview?.src;
-    if (displayed) return displayed;
-    const activeEntry = state.manualActiveIndex >= 0 ? state.manualChain[state.manualActiveIndex] : null;
-    if (activeEntry?.previewDataUrl) return activeEntry.previewDataUrl;
-    if (activeEntry?.result?.id) return `/api/results/${encodeURIComponent(activeEntry.result.id)}?source=${Date.now()}`;
+    if (state.manualWorkingResultId) return `/api/results/${encodeURIComponent(state.manualWorkingResultId)}`;
     return manualOriginalUrl();
 }
 
@@ -305,62 +337,7 @@ function loadCanvasImage(sourceUrl) {
 }
 
 async function createLocalManualPreview(operationId, parameters = {}) {
-    if (!LOCAL_PREVIEW_OPERATIONS.has(operationId) && operationId !== "crop") return null;
-    const image = await loadCanvasImage(currentManualSourceUrl());
-    const sourceWidth = image.naturalWidth || image.width;
-    const sourceHeight = image.naturalHeight || image.height;
-    if (!sourceWidth || !sourceHeight) return null;
-
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) return null;
-
-    if (operationId === "crop") {
-        const x = clamp(Math.round(Number(parameters.x) || 0), 0, sourceWidth - 1);
-        const y = clamp(Math.round(Number(parameters.y) || 0), 0, sourceHeight - 1);
-        const width = clamp(Math.round(Number(parameters.width) || sourceWidth), 1, sourceWidth - x);
-        const height = clamp(Math.round(Number(parameters.height) || sourceHeight), 1, sourceHeight - y);
-        canvas.width = width;
-        canvas.height = height;
-        context.drawImage(image, x, y, width, height, 0, 0, width, height);
-    } else if (operationId === "rotate_right" || operationId === "rotate_left") {
-        canvas.width = sourceHeight;
-        canvas.height = sourceWidth;
-        context.translate(canvas.width / 2, canvas.height / 2);
-        context.rotate(operationId === "rotate_right" ? Math.PI / 2 : -Math.PI / 2);
-        context.drawImage(image, -sourceWidth / 2, -sourceHeight / 2);
-    } else if (operationId === "flip_vertical" || operationId === "flip_horizontal") {
-        canvas.width = sourceWidth;
-        canvas.height = sourceHeight;
-        context.translate(operationId === "flip_horizontal" ? sourceWidth : 0, operationId === "flip_vertical" ? sourceHeight : 0);
-        context.scale(operationId === "flip_horizontal" ? -1 : 1, operationId === "flip_vertical" ? -1 : 1);
-        context.drawImage(image, 0, 0);
-    } else {
-        canvas.width = sourceWidth;
-        canvas.height = sourceHeight;
-        context.drawImage(image, 0, 0);
-        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-        const data = pixels.data;
-        const alpha = Number(parameters.alpha ?? 1);
-        const beta = Number(parameters.beta ?? 0);
-        const gamma = Number(parameters.gamma ?? 1);
-        for (let index = 0; index < data.length; index += 4) {
-            for (let channel = 0; channel < 3; channel += 1) {
-                const normalized = Math.max(0, Math.min(255, data[index + channel]));
-                const adjusted = operationId === "gamma_correct"
-                    ? 255 * Math.pow(normalized / 255, gamma)
-                    : (normalized * alpha) + beta;
-                data[index + channel] = Math.max(0, Math.min(255, Math.round(adjusted)));
-            }
-        }
-        context.putImageData(pixels, 0, 0);
-    }
-
-    return {
-        data_url: canvas.toDataURL("image/jpeg", 0.86),
-        width: canvas.width,
-        height: canvas.height
-    };
+    return createFastLocalManualPreview(operationId, parameters);
 }
 
 async function renderLocalManualPreview(operationId, parameters = {}, requestId = manualPreviewSequence) {
@@ -378,8 +355,6 @@ async function renderLocalManualPreview(operationId, parameters = {}, requestId 
         if (elements.manualPreviewStatus) elements.manualPreviewStatus.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> معاينة محلية فورية';
         if (elements.manualPreviewNote) elements.manualPreviewNote.textContent = `${operationLabel(operationId)} · معاينة محلية فورية، والاعتماد يحفظ النتيجة بدقة.`;
         updateManualApprovalUI();
-        updateControls();
-        renderManualChangeChart();
         return true;
     } catch (error) {
         console.debug("Local preview fallback:", error);

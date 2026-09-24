@@ -48,7 +48,8 @@
 
                             <div id="manualParameters" class="manual-parameters slider-parameters" aria-live="polite"></div>
 
-                            <section class="manual-change-chart manual-change-chart-inline" aria-labelledby="manualChangeChartTitle">
+                            <details class="manual-change-chart manual-change-chart-inline" aria-labelledby="manualChangeChartTitle" hidden>
+                                <summary>أثر المعاينة</summary>
                                 <div class="manual-change-chart-head">
                                     <div><small>خريطة الأثر اللحظية</small><h3 id="manualChangeChartTitle">أثر المعاينة</h3></div>
                                     <span id="manualChangeChartStatus">بانتظار المعاينة</span>
@@ -56,10 +57,9 @@
                                 <p>مقارنة مصغرة لتوزيع درجات الإضاءة في الصورة الحالية قبل وبعد العملية.</p>
                                 <div class="manual-change-chart-stage"><canvas id="manualChangeChart" aria-label="مخطط تغير درجات الإضاءة قبل وبعد المعالجة"></canvas></div>
                                 <div class="manual-change-legend"><span><i class="legend-before"></i>قبل</span><span><i class="legend-after"></i>بعد</span></div>
-                            </section>
+                            </details>
                         </div>
                     </section>
                 </div>
             </section>
         </section>
-

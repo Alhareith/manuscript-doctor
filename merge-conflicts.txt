@@ -1,0 +1,452 @@
+﻿diff --cc app.py
+index ec1d892,1044253..0000000
+--- a/app.py
++++ b/app.py
+@@@ -674,70 -653,72 +697,139 @@@ def create_app(test_config=None)
+              status=201,
+          )
+  
+++<<<<<<< ours
+ +    @app.post("/api/images/<image_id>/preview")
+ +    def preview_manual_operation(image_id):
+ +        if not is_valid_resource_id(image_id):
+ +            return error_response("INVALID_IMAGE_ID", "┘à╪╣╪▒┘ ╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.", 400)
+ +
+ +        path = resolve_upload_file(upload_folder, image_id)
+ +        if path is None:
+ +            return error_response("IMAGE_NOT_FOUND", "╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ┘à┘ê╪ش┘ê╪»╪ر.", 404)
+ +
+ +        payload = request.get_json(silent=True)
+ +        if not isinstance(payload, dict):
+ +            return error_response(
+ +                "INVALID_REQUEST_BODY",
+ +                "┘è╪ش╪ذ ╪ح╪▒╪│╪د┘ JSON ╪╡╪د┘╪ص ┘╪╖┘╪ذ ╪د┘┘à╪╣╪د┘è┘╪ر.",
+ +                400,
+ +            )
+ +
+ +        operation_id = payload.get("operation_id")
+ +        parameters = payload.get("parameters", {})
+ +        source_result_id = payload.get("source_result_id")
+ +
+ +        if not isinstance(operation_id, str):
+ +            return error_response("INVALID_OPERATION", "┘à╪╣╪▒┘ ╪د┘╪╣┘à┘┘è╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.", 400)
+ +        if not isinstance(parameters, dict):
+ +            return error_response(
+ +                "INVALID_OPERATION_PARAMETERS",
+ +                "Parameters ┘è╪ش╪ذ ╪ث┘ ╪ز┘â┘ê┘ JSON object.",
+ +                400,
+ +            )
+ +
+ +        try:
+ +            get_operation(operation_id)
+ +        except ValueError:
+ +            return error_response(
+ +                "INVALID_OPERATION",
+ +                "╪د┘╪╣┘à┘┘è╪ر ╪د┘┘à╪╖┘┘ê╪ذ╪ر ╪║┘è╪▒ ┘à╪ز╪د╪ص╪ر ┘┘┘à╪╣╪د┘è┘╪ر.",
+ +                400,
+ +            )
+ +
+ +        source_path = path
+ +
+ +        if source_result_id is not None:
+ +            if not isinstance(source_result_id, str) or not is_valid_resource_id(source_result_id):
+ +                return error_response(
+ +                    "INVALID_SOURCE_RESULT_ID",
+ +                    "┘à╪╣╪▒┘ ╪د┘┘╪ز┘è╪ش╪ر ╪د┘┘à╪╡╪»╪▒┘è╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.",
+ +                    400,
+ +                )
+ +
+ +            source_result_path = resolve_result_file(result_folder, source_result_id)
+ +            source_manifest = read_manual_manifest(result_folder, source_result_id)
+ +
+ +            if source_result_path is None or source_manifest is None:
+ +                return error_response(
+ +                    "SOURCE_RESULT_NOT_FOUND",
+ +                    "╪د┘┘╪ز┘è╪ش╪ر ╪د┘┘à╪╣╪ز┘à╪»╪ر ╪د┘┘à╪╡╪»╪▒┘è╪ر ╪║┘è╪▒ ┘à┘ê╪ش┘ê╪»╪ر ╪ث┘ê ╪║┘è╪▒ ╪╡╪د┘╪ص╪ر.",
+ +                    404,
+ +                )
+ +
+ +            source_kind = source_manifest.get("kind")
+ +            source_origin = source_manifest.get("origin")
+ +            source_status = source_manifest.get("status")
+ +
+ +            is_approved_manual_source = source_kind == "manual_approved"
+++=======
++     @app.post("/api/images/<image_id>/preview")
++     def preview_manual_operation(image_id):
++         if not is_valid_resource_id(image_id):
++             return error_response("INVALID_IMAGE_ID", "┘à╪╣╪▒┘ ╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.", 400)
++ 
++         path = resolve_upload_file(upload_folder, image_id)
++         if path is None:
++             return error_response("IMAGE_NOT_FOUND", "╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ┘à┘ê╪ش┘ê╪»╪ر.", 404)
++ 
++         payload = request.get_json(silent=True)
++         if not isinstance(payload, dict):
++             return error_response(
++                 "INVALID_REQUEST_BODY",
++                 "┘è╪ش╪ذ ╪ح╪▒╪│╪د┘ JSON ╪╡╪د┘╪ص ┘╪╖┘╪ذ ╪د┘┘à╪╣╪د┘è┘╪ر.",
++                 400,
++             )
++ 
++         operation_id = payload.get("operation_id")
++         parameters = payload.get("parameters", {})
++ 
++         if not isinstance(operation_id, str):
++             return error_response("INVALID_OPERATION", "┘à╪╣╪▒┘ ╪د┘╪╣┘à┘┘è╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.", 400)
++         if not isinstance(parameters, dict):
++             return error_response(
++                 "INVALID_OPERATION_PARAMETERS",
++                 "Parameters ┘è╪ش╪ذ ╪ث┘ ╪ز┘â┘ê┘ JSON object.",
++                 400,
++             )
++ 
++         try:
++             get_operation(operation_id)
++         except ValueError:
++             return error_response(
++                 "INVALID_OPERATION",
++                 "╪د┘╪╣┘à┘┘è╪ر ╪د┘┘à╪╖┘┘ê╪ذ╪ر ╪║┘è╪▒ ┘à╪ز╪د╪ص╪ر ┘┘┘à╪╣╪د┘è┘╪ر.",
++                 400,
++             )
++ 
++         source_result_id = payload.get("source_result_id")
++ 
++         if source_result_id is not None:
++             if not isinstance(source_result_id, str) or not is_valid_resource_id(source_result_id):
++                 return error_response(
++                    "INVALID_SOURCE_RESULT_ID",
++                     "┘à╪╣╪▒┘ ╪د┘┘╪ز┘è╪ش╪ر ╪د┘┘à╪╡╪»╪▒┘è╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.",
++                     400,
++                 )
++ 
++         source_path = path
++ 
++         if source_result_id:
++             source_result_path = resolve_result_file(result_folder, source_result_id)
++             source_manifest = read_manual_manifest(result_folder, source_result_id)
++ 
++             if source_result_path is None or source_manifest is None:
++                 return error_response(
++                     "SOURCE_RESULT_NOT_FOUND",
++                     "╪د┘┘╪ز┘è╪ش╪ر ╪د┘┘à╪╣╪ز┘à╪»╪ر ╪د┘┘à╪╡╪»╪▒┘è╪ر ╪║┘è╪▒ ┘à┘ê╪ش┘ê╪»╪ر ╪ث┘ê ╪║┘è╪▒ ╪╡╪د┘╪ص╪ر.",
++                     404,
++                 )
++ 
++             source_kind = source_manifest.get("kind")
++             source_origin = source_manifest.get("origin")
++             source_status = source_manifest.get("status")
++             
++             is_approved_manual_source = source_kind == "manual_approved"
+++>>>>>>> theirs
+              is_approved_unified_source = (
+                  source_origin in {"manual", "preparation"}
+                  and source_status == "approved"
+@@@ -759,58 -740,65 +851,117 @@@
+                      "╪د┘┘╪ز┘è╪ش╪ر ╪د┘┘à╪╡╪»╪▒┘è╪ر ┘è╪ش╪ذ ╪ث┘ ╪ز┘â┘ê┘ ┘╪ز┘è╪ش╪ر Manual ╪ث┘ê Smart ╪ث┘ê Preparation ╪╡╪د┘╪ص╪ر.",
+                      400,
+                  )
+ -
+  
+ +            source_path = source_result_path
+ +
+++<<<<<<< ours
+ +        try:
+ +            if operation_id == "crop":
+ +                working_image = read_stored_image(source_path)
+ +                if working_image is None:
+ +                    return error_response(
+ +                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
+ +                        "╪ز╪╣╪░╪▒ ┘é╪▒╪د╪ة╪ر ┘à╪╡╪»╪▒ ╪د┘┘à╪╣╪د┘è┘╪ر.",
+ +                        500,
+ +                    )
+ +                processed = apply_operation(operation_id, working_image, parameters)
+ +                processed = resize_for_preview(processed)
+ +            else:
+ +                preview_source = _cached_preview_source(source_path)
+ +                if preview_source is None:
+ +                    return error_response(
+ +                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
+ +                        "╪ز╪╣╪░╪▒ ┘é╪▒╪د╪ة╪ر ┘à╪╡╪»╪▒ ╪د┘┘à╪╣╪د┘è┘╪ر.",
+ +                        500,
+ +                    )
+ +                processed = apply_operation(operation_id, preview_source, parameters)
+  
+ +            preferred_preview_format = request.headers.get("X-Preview-Format", "png")
+ +            preview = build_preview_payload(processed, preferred_preview_format)
+ +        except (ValueError, TypeError) as error:
+ +            return error_response(
+ +                "INVALID_OPERATION_PARAMETERS",
+ +                "Parameters ╪د┘╪╣┘à┘┘è╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص╪ر.",
+ +                400,
+ +                details=str(error),
+ +            )
+ +        except cv2.error:
+ +            return error_response("PROCESSING_FAILED", "┘╪┤┘╪ز ╪╣┘à┘┘è╪ر ╪ح┘╪┤╪د╪ة ╪د┘┘à╪╣╪د┘è┘╪ر.", 500)
+ +        except (RuntimeError, OSError):
+ +            return error_response("PROCESSING_FAILED", "╪ز╪╣╪░╪▒ ╪ح┘╪┤╪د╪ة ╪د┘┘à╪╣╪د┘è┘╪ر.", 500)
+ +
+ +        return success_response(
+ +            data={
+ +                "preview": preview,
+ +                "source_result_id": source_result_id,
+ +                "operation": {"id": operation_id, "parameters": parameters},
+ +                "verification": {
+ +                    "status": "skipped_for_preview",
+ +                    "message": "╪ز┘à ╪ز╪«╪╖┘è Preservation Verification ┘╪ث┘ ┘ç╪░┘ç ┘à╪╣╪د┘è┘╪ر ╪║┘è╪▒ ┘┘ç╪د╪خ┘è╪ر.",
+ +                },
+ +            },
+ +            message="╪ز┘à ╪ز╪ص╪»┘è╪س ╪د┘┘à╪╣╪د┘è┘╪ر.",
+ +            status=200,
+ +        )
+ +
+++=======
++             if source_manifest.get("source_image_id") != image_id:
++                 return error_response("SOURCE_RESULT_MISMATCH", "┘╪د ┘è┘à┘â┘ ╪د╪│╪ز╪«╪»╪د┘à ┘╪ز┘è╪ش╪ر ┘à╪▒╪ز╪ذ╪╖╪ر ╪ذ┘ê╪س┘è┘é╪ر ╪ث╪«╪▒┘ë.", 400)
++             source_path = source_result_path
++ 
++         try:
++             source = preview_source(source_path)
++             if source is None:
++                 return error_response("UNREADABLE_IMAGE", "╪ز╪╣╪░╪▒ ┘é╪▒╪د╪ة╪ر ┘à╪╡╪»╪▒ ╪د┘┘à╪╣╪د┘è┘╪ر.", 500)
++             proxy, dimensions = source
++             preview_parameters = dict(parameters)
++             # Coordinates belong to the full-resolution source, never the display.
++             # Validate there, then map to the bounded proxy. No full-size crop work.
++             sx = proxy.shape[1] / dimensions["width"]
++             sy = proxy.shape[0] / dimensions["height"]
++             if operation_id == "crop":
++                 x, y, w, h = [int(round(float(parameters[k]))) for k in ("x", "y", "width", "height")]
++                 if x < 0 or y < 0 or w <= 0 or h <= 0 or x+w > dimensions["width"] or y+h > dimensions["height"]:
++                     raise ValueError("Crop rectangle is outside source bounds.")
++                 px = min(proxy.shape[1]-1, int(round(x*sx)))
++                 py = min(proxy.shape[0]-1, int(round(y*sy)))
++                 preview_parameters.update(x=px, y=py,
++                     width=max(1, min(proxy.shape[1]-px, int(round(w*sx)))),
++                     height=max(1, min(proxy.shape[0]-py, int(round(h*sy)))))
++             elif operation_id == "perspective_crop":
++                 for index in range(1, 5):
++                     preview_parameters[f"x{index}"] = float(parameters[f"x{index}"]) * sx
++                     preview_parameters[f"y{index}"] = float(parameters[f"y{index}"]) * sy
++             processed = apply_operation(operation_id, proxy.copy(), preview_parameters)
++ 
++             preferred_preview_format = request.headers.get("X-Preview-Format", "png")
++             preview = build_preview_payload(processed, preferred_preview_format)
++         except (ValueError, TypeError, KeyError, OverflowError) as error:
++             return error_response(
++                 "INVALID_OPERATION_PARAMETERS",
++                 "Parameters ╪د┘╪╣┘à┘┘è╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص╪ر.",
++                 400,
++                 details=str(error),
++             )
++         except cv2.error:
++             return error_response("PROCESSING_FAILED", "┘╪┤┘╪ز ╪╣┘à┘┘è╪ر ╪ح┘╪┤╪د╪ة ╪د┘┘à╪╣╪د┘è┘╪ر.", 500)
++         except (RuntimeError, OSError):
++             return error_response("PROCESSING_FAILED", "╪ز╪╣╪░╪▒ ╪ح┘╪┤╪د╪ة ╪د┘┘à╪╣╪د┘è┘╪ر.", 500)
++ 
++         return success_response(
++             data={
++                 "preview": preview,
++                 "source_result_id": source_result_id,
++                 "operation": {"id": operation_id, "parameters": parameters},
++                 "verification": {
++                     "status": "skipped_for_preview",
++                     "message": "╪ز┘à ╪ز╪«╪╖┘è Preservation Verification ┘╪ث┘ ┘ç╪░┘ç ┘à╪╣╪د┘è┘╪ر ╪║┘è╪▒ ┘┘ç╪د╪خ┘è╪ر.",
++                 },
++             },
++             message="╪ز┘à ╪ز╪ص╪»┘è╪س ╪د┘┘à╪╣╪د┘è┘╪ر.",
++             status=200,
++         )
+++>>>>>>> theirs
+      @app.post("/api/images/<image_id>/pipeline")
+      def run_pipeline(image_id):
+          if not is_valid_resource_id(image_id):
+@@@ -1044,38 -1032,42 +1195,77 @@@
+              message=("╪ز┘à ╪ز╪ص┘┘è┘ ╪ص╪»┘ê╪» ╪د┘┘ê╪س┘è┘é╪ر ╪ذ┘╪ش╪د╪ص."),
+          )
+  
+++<<<<<<< ours
+ +    @app.post("/api/images/<image_id>/preparation/preview")
+ +    def preview_preparation(image_id):
+ +        if not is_valid_resource_id(image_id):
+ +            return error_response("INVALID_IMAGE_ID", "┘à╪╣╪▒┘ ╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.", 400)
+ +
+ +        upload_path = resolve_upload_file(upload_folder, image_id)
+ +        if upload_path is None:
+ +            return error_response("IMAGE_NOT_FOUND", "╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ┘à┘ê╪ش┘ê╪»╪ر.", 404)
+ +
+ +        image = read_stored_image(upload_path)
+ +        if image is None:
+ +            return error_response("UNREADABLE_IMAGE", "╪ز╪╣╪░╪▒ ┘é╪▒╪د╪ة╪ر ╪د┘╪╡┘ê╪▒╪ر ╪د┘┘à╪«╪▓┘╪ر.", 500)
+ +
+ +        try:
+ +            preparation = prepare_document(
+ +                image,
+ +                boundary_detector=detect_preparation_boundary,
+ +            )
+ +        except (ValueError, RuntimeError) as error:
+ +            return error_response(
+ +                "PREPARATION_FAILED",
+ +                "╪ز╪╣╪░╪▒ ╪ز┘┘┘è╪░ Preparation.",
+ +                422,
+ +                details=str(error),
+ +            )
+ +        except Exception:
+ +            return error_response(
+ +                "PREPARATION_FAILED",
+ +                "╪ص╪»╪س ╪«╪╖╪ث ╪ث╪س┘╪د╪ة ╪ز┘┘┘è╪░ Preparation.",
+ +                500,
+ +            )
+ +
+++=======
++     @app.post("/api/images/<image_id>/preparation/preview")
++     def preview_preparation(image_id):
++         if not is_valid_resource_id(image_id):
++             return error_response("INVALID_IMAGE_ID", "┘à╪╣╪▒┘ ╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ╪╡╪د┘╪ص.", 400)
++ 
++         upload_path = resolve_upload_file(upload_folder, image_id)
++         if upload_path is None:
++             return error_response("IMAGE_NOT_FOUND", "╪د┘╪╡┘ê╪▒╪ر ╪║┘è╪▒ ┘à┘ê╪ش┘ê╪»╪ر.", 404)
++ 
++         try:
++             source = preview_source(upload_path, PREPARATION_PREVIEW_MAX_DIMENSION,
++                                     PREPARATION_PREVIEW_MAX_DIMENSION)
++             if source is None:
++                 return error_response("UNREADABLE_IMAGE", "╪ز╪╣╪░╪▒ ┘é╪▒╪د╪ة╪ر ╪د┘╪╡┘ê╪▒╪ر ╪د┘┘à╪«╪▓┘╪ر.", 500)
++             def prepare_proxy():
++                 return prepare_document(source[0].copy(), boundary_detector=detect_preparation_boundary)
++             # Cache the computation, NOT the approval token or manifest. Each
++             # request still gets its own one-use review artifact below.
++             preparation = deepcopy(prepared_previews.get_or_create(
++                 (file_key(upload_path), PREPARATION_PREVIEW_MAX_DIMENSION), prepare_proxy,
++                 lambda value: value["image"].nbytes + 16384,
++             ))
++         except (ValueError, RuntimeError) as error:
++             return error_response(
++                 "PREPARATION_FAILED",
++                 "╪ز╪╣╪░╪▒ ╪ز┘┘┘è╪░ Preparation.",
++                 422,
++                 details=str(error),
++             )
++         except Exception:
++             return error_response(
++                 "PREPARATION_FAILED",
++                 "╪ص╪»╪س ╪«╪╖╪ث ╪ث╪س┘╪د╪ة ╪ز┘┘┘è╪░ Preparation.",
++                 500,
++             )
++ 
+++>>>>>>> theirs
+          preparation_metadata = preparation_public_metadata(preparation)
+          boundary = preparation_metadata.get("boundary", {})
+          deskew_metadata = preparation_metadata.get("deskew", {})
+diff --cc static/css/clinic/18-layout-stability.css
+index cba0a75,14732bf..0000000
+--- a/static/css/clinic/18-layout-stability.css
++++ b/static/css/clinic/18-layout-stability.css
+@@@ -112,45 -47,3 +47,48 @@@
+      width: 100% !important;
+      height: 100% !important;
+  }
+++<<<<<<< ours
+ +
+ +@media (min-width: 1000px) and (max-height: 820px) {
+ +    .manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
+ +        min-height: 330px !important;
+ +        height: clamp(330px, 43vh, 390px) !important;
+ +        max-height: 390px !important;
+ +    }
+ +    .manual-editor:not(.clinic-crop-focus) .manual-preview-card {
+ +        min-height: 0 !important;
+ +    }
+ +}
+ +
+ +@media (max-width: 760px) {
+ +    .manual-preview-pair {
+ +        grid-template-columns: 1fr;
+ +        height: auto;
+ +    }
+ +    .manual-preview-card {
+ +        height: auto;
+ +    }
+ +    .manual-preview-image-wrap {
+ +        min-height: 260px !important;
+ +        height: min(52vh, 440px) !important;
+ +    }
+ +    .manual-editor.clinic-crop-focus .manual-preview-stage {
+ +        height: auto !important;
+ +        max-height: none !important;
+ +    }
+ +}
+ +
+ +
+ +/* Keep both before/after images fully visible inside their cards.
+ +   Earlier auto-sized image rules could exceed the fixed preview row and be clipped. */
+ +.manual-preview-image-wrap img,
+ +.manual-editor.clinic-crop-focus .manual-preview-image-wrap img {
+ +    width: 100% !important;
+ +    height: 100% !important;
+ +    max-width: 100% !important;
+ +    max-height: 100% !important;
+ +    object-fit: contain !important;
+ +    object-position: center center !important;
+ +}
+++=======
+++>>>>>>> theirs
+diff --cc static/js/parts/06-manual-preview.js
+index 5da807d,f5d7d03..0000000
+--- a/static/js/parts/06-manual-preview.js
++++ b/static/js/parts/06-manual-preview.js
+@@@ -217,12 -242,27 +242,31 @@@ function manualImageHistogram(image) 
+          histogram[Math.min(15, Math.floor(gray / 16))] += 1;
+      }
+      const peak = Math.max(...histogram, 1);
+-     return histogram.map((value) => value / peak);
++     const values = histogram.map((value) => value / peak);
++     manualHistogramCache.set(image, { key, values });
++     return values;
+  }
+  
++ let manualChartFrame = null;
+  function renderManualChangeChart() {
++     if (manualChartFrame !== null) return;
++     manualChartFrame = requestAnimationFrame(() => {
++         manualChartFrame = null;
++         drawManualChangeChart();
++     });
++ }
++ 
++ function drawManualChangeChart() {
+      const canvas = elements.manualChangeChart;
+++<<<<<<< ours
+ +    if (!canvas || canvas.offsetParent === null) return;
+++=======
++     if (!canvas) return;
++     const panel = canvas.closest(".manual-change-chart");
++     const hasComparison = Boolean(state.manualPreviewCandidate || state.manualWorkingResultId || state.resultId);
++     if (panel) panel.hidden = !hasComparison;
++     if (!hasComparison || (panel?.tagName === "DETAILS" && !panel.open) || !canvas.getClientRects().length) return;
+++>>>>>>> theirs
+      const before = manualImageHistogram(elements.manualOriginalPreview);
+      const after = manualImageHistogram(elements.manualLivePreview);
+      if (!before || !after) {
+@@@ -275,14 -315,10 +319,20 @@@
+  }
+  
+  /* ---------- Instant local preview layer ---------- */
++ // Geometric operations are pixel-equivalent in Canvas. Gamma/intensity stay
++ // on the server: their existing algorithms act on Lab luminance, NOT RGB.
+  const LOCAL_PREVIEW_OPERATIONS = new Set([
+++<<<<<<< ours
+ +    "rotate_right",
+ +    "rotate_left",
+ +    "flip_vertical",
+ +    "flip_horizontal",
+ +    "intensity_adjust",
+ +    "gamma_correct",
+ +    "crop"
+++=======
++     "rotate_right", "rotate_left", "flip_vertical", "flip_horizontal"
+++>>>>>>> theirs
+  ]);
+  
+  function currentManualSourceUrl() {

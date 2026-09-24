@@ -45,24 +45,24 @@ function resetQuickAdjustments() {
 
 async function previewQuickAdjustments() {
     if (!state.imageId || state.isBusy) return;
-    clearError();
-    resetResultUI();
     const beta = Number(elements.quickBrightness?.value || 0);
     const alpha = Number(elements.quickContrast?.value || 100) / 100;
-    setBusy(true, "جارٍ إنشاء المعاينة", "يتم تطبيق تعديل السطوع والتباين على الوثيقة ثم التحقق من النتيجة.");
-    setWorkflow("treat");
-    try {
-        const data = await apiRequest(`/api/images/${encodeURIComponent(state.imageId)}/operations`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation_id: "intensity_adjust", parameters: { alpha, beta } })
-        });
-        renderManualOperationResult(data);
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        setBusy(false);
+    // The legacy quick entry point must obey the same draft/approval contract.
+    // Do not reset the approved result or send an /operations request here.
+    invalidateManualPreview();
+    elements.manualOperation.value = "intensity_adjust";
+    setOperationGroup("lighting");
+    renderParameterFields("intensity_adjust");
+    syncOperationCardSelection("intensity_adjust");
+    if (typeof mountInlineOperationParameters === "function") mountInlineOperationParameters("intensity_adjust");
+    for (const [name, value] of Object.entries({alpha, beta})) {
+        const input = document.getElementById(`parameter-${name}`);
+        if (!input) continue;
+        input.value = String(value);
+        const output = input.closest(".parameter-slider")?.querySelector("output");
+        if (output) output.textContent = input.value;
     }
+    await applyManualOperation({ live: true });
 }
 
 function syncOperationCardSelection(operationId) {
@@ -79,7 +79,7 @@ function selectOperationCard(operationId) {
 
     /* Keep the existing compatibility mapping, but use the real manual deskew operation as-is. */
     const resolvedOperationId = operationId;
-    state.manualPreviewCandidate = null;
+    invalidateManualPreview();
     elements.manualOperation.value = resolvedOperationId;
     renderParameterFields(resolvedOperationId);
     syncOperationCardSelection(operationId);
@@ -89,7 +89,7 @@ function selectOperationCard(operationId) {
 
     if (resolvedOperationId === "perspective_crop") {
         const sourceUrl = state.manualWorkingResultId
-            ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}?source=${Date.now()}`
+            ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}`
             : manualOriginalUrl();
         if (sourceUrl && elements.manualLivePreview) elements.manualLivePreview.src = sourceUrl;
         if (elements.manualPreviewStatus) elements.manualPreviewStatus.innerHTML = '<i class="bi bi-bounding-box-circles"></i> حدد زوايا الوثيقة';
@@ -101,7 +101,7 @@ function selectOperationCard(operationId) {
 
     if (resolvedOperationId === "crop") {
         const sourceUrl = state.manualWorkingResultId
-            ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}?source=${Date.now()}`
+            ? `/api/results/${encodeURIComponent(state.manualWorkingResultId)}`
             : manualOriginalUrl();
         if (sourceUrl && elements.manualLivePreview) elements.manualLivePreview.src = sourceUrl;
         if (elements.manualPreviewStatus) elements.manualPreviewStatus.innerHTML = '<i class="bi bi-crop"></i> حدد منطقة القص';

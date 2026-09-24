@@ -229,67 +229,6 @@ html[data-theme="dark"] .dashboard-reading-card {
     background: linear-gradient(135deg, #2a2415, #17201c 68%);
 }
 
-/* ---------- Real crop workspace enlargement ---------- */
-.manual-editor.clinic-crop-focus .manual-editor-shell {
-    grid-template-columns: 1fr;
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-pane {
-    padding: 16px;
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-stage {
-    min-height: clamp(620px, 78vh, 980px);
-    padding: 16px;
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-pair {
-    grid-template-columns: 1fr;
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-card:first-child {
-    display: none;
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-card:last-child {
-    width: 100%;
-    min-width: 0;
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-image-wrap {
-    width: 100%;
-    min-height: clamp(540px, 72vh, 900px);
-    height: clamp(540px, 72vh, 900px);
-    border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--line));
-    background-color: color-mix(in srgb, var(--surface-2) 86%, #000);
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-image-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.manual-editor.clinic-crop-focus .manual-crop-guide {
-    border-width: 3px;
-    border-radius: 8px;
-}
-
-.manual-editor.clinic-crop-focus .manual-controls-pane {
-    width: 100%;
-    max-width: none;
-}
-
-.manual-editor.clinic-crop-focus .manual-preview-footer::after {
-    content: "منطقة القص تستخدم مساحة العرض الكاملة؛ الصورة كاملة داخل الإطار وليست تكبيرًا وهميًا.";
-    color: var(--primary-strong);
-    font-weight: 700;
-}
-
-html[data-theme="dark"] .manual-editor.clinic-crop-focus .manual-preview-footer::after {
-    color: var(--primary);
-}
-
 @media (max-width: 980px) {
     .analysis-summary-card {
         grid-template-columns: auto minmax(0, 1fr);
@@ -312,13 +251,5 @@ html[data-theme="dark"] .manual-editor.clinic-crop-focus .manual-preview-footer:
     }
     .metric-card {
         min-height: 118px;
-    }
-    .manual-editor.clinic-crop-focus .manual-preview-stage {
-        min-height: 68vh;
-        padding: 8px;
-    }
-    .manual-editor.clinic-crop-focus .manual-preview-image-wrap {
-        min-height: 62vh;
-        height: 62vh;
     }
 }

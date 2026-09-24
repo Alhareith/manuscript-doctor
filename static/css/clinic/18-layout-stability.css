@@ -9,72 +9,7 @@
     min-height: 0 !important;
 }
 
-/* Keep the before/after cards fully inside the preview stage. */
-.manual-preview-stage {
-    overflow: visible !important;
-}
-.manual-preview-pair {
-    height: 100%;
-    min-height: 0;
-    align-items: stretch;
-}
-.manual-preview-card {
-    height: 100%;
-    min-height: 0;
-    display: grid !important;
-    grid-template-rows: auto minmax(0, 1fr);
-    align-content: stretch;
-}
-.manual-preview-image-wrap {
-    min-height: 0 !important;
-    height: auto !important;
-    overflow: hidden;
-    display: grid;
-    place-items: center;
-}
-.manual-preview-image-wrap img {
-    width: auto !important;
-    height: auto !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain !important;
-    object-position: center center !important;
-}
-
-/* Normal manual preview: enough room for the full document without pushing controls away. */
-.manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
-    min-height: 360px !important;
-    height: clamp(360px, 48vh, 520px) !important;
-    max-height: none !important;
-}
-.manual-editor:not(.clinic-crop-focus) .manual-preview-image-wrap {
-    height: 100% !important;
-}
-
-/* Crop should expose the entire current image, not create a giant 72–78vh canvas that drops the user into its middle. */
-.manual-editor.clinic-crop-focus .manual-preview-stage {
-    min-height: 420px !important;
-    height: clamp(420px, 56vh, 620px) !important;
-    max-height: 620px !important;
-    padding: 12px !important;
-}
-.manual-editor.clinic-crop-focus .manual-preview-pair {
-    height: 100% !important;
-}
-.manual-editor.clinic-crop-focus .manual-preview-card:last-child {
-    height: 100% !important;
-}
-.manual-editor.clinic-crop-focus .manual-preview-image-wrap {
-    min-height: 0 !important;
-    height: 100% !important;
-}
-.manual-editor.clinic-crop-focus .manual-preview-image-wrap img {
-    width: auto !important;
-    height: auto !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain !important;
-}
+/* Preview geometry is owned by 05-studio-b.css (intrinsic aspect ratios). */
 
 /* Remove the obsolete operation panel footprint completely. The live parameter node is re-parented under the chosen operation. */
 .selected-operation-panel {
@@ -111,46 +46,4 @@
 .dashboard-premium .chart-stage-secondary canvas {
     width: 100% !important;
     height: 100% !important;
-}
-
-@media (min-width: 1000px) and (max-height: 820px) {
-    .manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
-        min-height: 330px !important;
-        height: clamp(330px, 43vh, 390px) !important;
-        max-height: 390px !important;
-    }
-    .manual-editor:not(.clinic-crop-focus) .manual-preview-card {
-        min-height: 0 !important;
-    }
-}
-
-@media (max-width: 760px) {
-    .manual-preview-pair {
-        grid-template-columns: 1fr;
-        height: auto;
-    }
-    .manual-preview-card {
-        height: auto;
-    }
-    .manual-preview-image-wrap {
-        min-height: 260px !important;
-        height: min(52vh, 440px) !important;
-    }
-    .manual-editor.clinic-crop-focus .manual-preview-stage {
-        height: auto !important;
-        max-height: none !important;
-    }
-}
-
-
-/* Keep both before/after images fully visible inside their cards.
-   Earlier auto-sized image rules could exceed the fixed preview row and be clipped. */
-.manual-preview-image-wrap img,
-.manual-editor.clinic-crop-focus .manual-preview-image-wrap img {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain !important;
-    object-position: center center !important;
 }

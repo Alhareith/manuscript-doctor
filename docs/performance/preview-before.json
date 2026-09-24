@@ -1,0 +1,82 @@
+{
+  "baseline": true,
+  "dimensions": [
+    4200,
+    2799
+  ],
+  "opencv": "5.0.0",
+  "routes": {
+    "clahe": {
+      "first_ms": 174.126,
+      "warm_median_ms": 84.065,
+      "all_ms": [
+        174.126,
+        84.83,
+        82.935,
+        84.318,
+        83.812,
+        83.582,
+        86.091
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 7,
+        "imdecode": 7
+      },
+      "profile": "         1288 function calls (1277 primitive calls) in 0.086 seconds\n\n   Ordered by: cumulative time\n   List reduced from 324 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.086    0.086 test.py:1164(post)\n        1    0.000    0.000    0.086    0.086 testing.py:204(open)\n        1    0.000    0.000    0.086    0.086 test.py:1058(open)\n        1    0.000    0.000    0.086    0.086 test.py:980(run_wsgi_app)\n        1    0.000    0.000    0.086    0.086 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    0.086    0.086 app.py:1529(__call__)\n        1    0.000    0.000    0.086    0.086 app.py:1479(wsgi_app)\n        1    0.000    0.000    0.085    0.085 app.py:904(full_dispatch_request)\n        1    0.000    0.000    0.085    0.085 app.py:879(dispatch_request)\n        1    0.000    0.000    0.085    0.085 app.py:633(preview_manual_operation)\n        1    0.000    0.000    0.061    0.061 app.py:86(read_stored_image)\n        1    0.000    0.000    0.061    0.061 app.py:77(decode_image)\n        1    0.061    0.061    0.061    0.061 {imdecode}\n        2    0.000    0.000    0.019    0.009 app.py:108(resize_for_preview)\n        1    0.019    0.019    0.019    0.019 {resize}\n        1    0.000    0.000    0.003    0.003 registry.py:288(apply_operation)\n        1    0.000    0.000    0.003    0.003 enhancement.py:7(clahe)\n        1    0.000    0.000    0.003    0.003 common.py:53(_apply_to_luminance)\n        2    0.002    0.001    0.002    0.001 {cvtColor}\n        1    0.000    0.000    0.001    0.001 app.py:130(build_preview_payload)\n        1    0.001    0.001    0.001    0.001 {imencode}\n        1    0.001    0.001    0.001    0.001 {method 'apply' of 'cv2.CLAHE' objects}\n\n\n"
+    },
+    "sharpen": {
+      "first_ms": 83.874,
+      "warm_median_ms": 75.2365,
+      "all_ms": [
+        83.874,
+        81.062,
+        74.522,
+        74.416,
+        74.065,
+        75.951,
+        80.774
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 7,
+        "imdecode": 7
+      },
+      "profile": "         1281 function calls (1270 primitive calls) in 0.072 seconds\n\n   Ordered by: cumulative time\n   List reduced from 320 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.071    0.071 test.py:1164(post)\n        1    0.000    0.000    0.071    0.071 testing.py:204(open)\n        1    0.000    0.000    0.071    0.071 test.py:1058(open)\n        1    0.000    0.000    0.071    0.071 test.py:980(run_wsgi_app)\n        1    0.000    0.000    0.071    0.071 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    0.071    0.071 app.py:1529(__call__)\n        1    0.000    0.000    0.071    0.071 app.py:1479(wsgi_app)\n        1    0.000    0.000    0.071    0.071 app.py:904(full_dispatch_request)\n        1    0.000    0.000    0.071    0.071 app.py:879(dispatch_request)\n        1    0.000    0.000    0.070    0.070 app.py:633(preview_manual_operation)\n        1    0.000    0.000    0.052    0.052 app.py:86(read_stored_image)\n        1    0.000    0.000    0.051    0.051 app.py:77(decode_image)\n        1    0.051    0.051    0.051    0.051 {imdecode}\n        2    0.000    0.000    0.016    0.008 app.py:108(resize_for_preview)\n        1    0.016    0.016    0.016    0.016 {resize}\n        1    0.000    0.000    0.001    0.001 app.py:130(build_preview_payload)\n        1    0.001    0.001    0.001    0.001 {imencode}\n        1    0.000    0.000    0.001    0.001 registry.py:288(apply_operation)\n        1    0.000    0.000    0.001    0.001 enhancement.py:154(sharpen)\n        1    0.000    0.000    0.001    0.001 _abc.py:621(read_bytes)\n        1    0.001    0.001    0.001    0.001 {method 'read' of '_io.BufferedReader' objects}\n        1    0.000    0.000    0.000    0.000 {GaussianBlur}\n\n\n"
+    },
+    "bilateral_denoise": {
+      "first_ms": 106.807,
+      "warm_median_ms": 83.34049999999999,
+      "all_ms": [
+        106.807,
+        106.902,
+        83.878,
+        82.803,
+        82.561,
+        81.648,
+        85.418
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 7,
+        "imdecode": 7
+      },
+      "profile": "         1278 function calls (1267 primitive calls) in 0.086 seconds\n\n   Ordered by: cumulative time\n   List reduced from 319 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.086    0.086 test.py:1164(post)\n        1    0.000    0.000    0.086    0.086 testing.py:204(open)\n        1    0.000    0.000    0.086    0.086 test.py:1058(open)\n        1    0.000    0.000    0.086    0.086 test.py:980(run_wsgi_app)\n        1    0.000    0.000    0.085    0.085 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    0.085    0.085 app.py:1529(__call__)\n        1    0.000    0.000    0.085    0.085 app.py:1479(wsgi_app)\n        1    0.000    0.000    0.085    0.085 app.py:904(full_dispatch_request)\n        1    0.000    0.000    0.085    0.085 app.py:879(dispatch_request)\n        1    0.000    0.000    0.085    0.085 app.py:633(preview_manual_operation)\n        1    0.000    0.000    0.059    0.059 app.py:86(read_stored_image)\n        1    0.000    0.000    0.058    0.058 app.py:77(decode_image)\n        1    0.058    0.058    0.058    0.058 {imdecode}\n        2    0.000    0.000    0.019    0.009 app.py:108(resize_for_preview)\n        1    0.019    0.019    0.019    0.019 {resize}\n        1    0.000    0.000    0.005    0.005 registry.py:288(apply_operation)\n        1    0.000    0.000    0.005    0.005 denoising.py:14(bilateral_denoise)\n        1    0.005    0.005    0.005    0.005 {bilateralFilter}\n        1    0.000    0.000    0.001    0.001 app.py:130(build_preview_payload)\n        1    0.001    0.001    0.001    0.001 {imencode}\n        1    0.000    0.000    0.001    0.001 _abc.py:621(read_bytes)\n        1    0.001    0.001    0.001    0.001 {method 'read' of '_io.BufferedReader' objects}\n\n\n"
+    },
+    "preparation": {
+      "first_ms": 2088.008,
+      "warm_median_ms": 1995.0865,
+      "all_ms": [
+        2088.008,
+        1990.631,
+        2001.432,
+        1912.343,
+        1988.549,
+        1999.542,
+        2167.245
+      ],
+      "counts_7_requests": {
+        "read_stored_image": 7,
+        "imdecode": 7
+      },
+      "profile": "         35576 function calls (35565 primitive calls) in 2.233 seconds\n\n   Ordered by: cumulative time\n   List reduced from 493 to 22 due to restriction <22>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    2.233    2.233 test.py:1164(post)\n        1    0.000    0.000    2.233    2.233 testing.py:204(open)\n        1    0.000    0.000    2.233    2.233 test.py:1058(open)\n        1    0.000    0.000    2.233    2.233 test.py:980(run_wsgi_app)\n        1    0.000    0.000    2.233    2.233 test.py:1226(run_wsgi_app)\n        1    0.000    0.000    2.233    2.233 app.py:1529(__call__)\n        1    0.000    0.000    2.233    2.233 app.py:1479(wsgi_app)\n        1    0.000    0.000    2.232    2.232 app.py:904(full_dispatch_request)\n        1    0.000    0.000    2.232    2.232 app.py:879(dispatch_request)\n        1    0.001    0.001    2.232    2.232 app.py:1003(preview_preparation)\n        1    0.000    0.000    2.125    2.125 preparation_pipeline.py:152(prepare_document)\n        1    0.000    0.000    2.073    2.073 document_boundary.py:1142(detect_preparation_boundary)\n        1    0.000    0.000    1.916    1.916 document_boundary.py:833(_extract_guided_region_candidate)\n        1    1.912    1.912    1.912    1.912 {grabCut}\n        1    0.003    0.003    0.156    0.156 document_boundary.py:459(_extract_hough_document_candidate)\n       55    0.000    0.000    0.116    0.002 document_boundary.py:341(_rank_boundary_candidate)\n       55    0.002    0.000    0.115    0.002 document_boundary.py:271(_border_contrast_score)\n      330    0.096    0.000    0.096    0.000 {calcHist}\n        1    0.000    0.000    0.066    0.066 app.py:86(read_stored_image)\n        1    0.000    0.000    0.065    0.065 app.py:77(decode_image)\n        1    0.065    0.065    0.065    0.065 {imdecode}\n        1    0.000    0.000    0.031    0.031 app.py:197(save_preparation_preview)\n\n\n"
+    }
+  }
+}
