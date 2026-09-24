@@ -182,6 +182,63 @@
         if (cards[1]) cards[1].querySelector("figcaption").innerHTML = '<span>Processed Preview</span><i class="bi bi-arrows-fullscreen"></i>';
     }
 
+
+    function installReferencePreviewChrome() {
+        const pair = q(".manual-preview-pair");
+        if (!pair || pair.dataset.referenceChrome === "true") return;
+        pair.dataset.referenceChrome = "true";
+
+        const separator = document.createElement("button");
+        separator.type = "button";
+        separator.className = "ref-preview-separator";
+        separator.setAttribute("aria-label", "التبديل بين قبل وبعد");
+        separator.innerHTML = '<i class="bi bi-chevron-right"></i>';
+        separator.addEventListener("click", () => {
+            const cards = qa(".manual-preview-card", pair);
+            cards.forEach((card) => card.classList.toggle("ref-swap-highlight"));
+        });
+        pair.appendChild(separator);
+
+        qa(".manual-preview-card", pair).forEach((card, index) => {
+            if (q(".ref-image-footer", card)) return;
+            const footer = document.createElement("div");
+            footer.className = "ref-image-footer";
+            footer.innerHTML = `
+                <span data-ref-image-meta>—</span>
+                <div>
+                    <button type="button" data-ref-zoom-out aria-label="تصغير">−</button>
+                    <strong data-ref-zoom-value>45%</strong>
+                    <button type="button" data-ref-zoom-in aria-label="تكبير">+</button>
+                    <button type="button" data-ref-fullscreen aria-label="ملء الشاشة"><i class="bi bi-arrows-fullscreen"></i></button>
+                </div>
+            `;
+            card.appendChild(footer);
+
+            const image = q("img", card);
+            let zoom = 45;
+            const applyZoom = () => {
+                const target = q("[data-ref-zoom-value]", footer);
+                if (target) target.textContent = `${zoom}%`;
+                if (image) image.style.setProperty("--ref-image-scale", String(Math.max(.35, zoom / 45)));
+            };
+            q("[data-ref-zoom-out]", footer)?.addEventListener("click", () => { zoom = Math.max(20, zoom - 5); applyZoom(); });
+            q("[data-ref-zoom-in]", footer)?.addEventListener("click", () => { zoom = Math.min(100, zoom + 5); applyZoom(); });
+            q("[data-ref-fullscreen]", footer)?.addEventListener("click", () => card.requestFullscreen?.());
+            applyZoom();
+
+            const updateMeta = () => {
+                const meta = q("[data-ref-image-meta]", footer);
+                if (!meta || !image) return;
+                const w = image.naturalWidth || state?.imageData?.width || 0;
+                const h = image.naturalHeight || state?.imageData?.height || 0;
+                const sizeText = elements.selectedFileMeta?.textContent?.trim() || "";
+                meta.textContent = w && h ? `${w} × ${h}${sizeText ? "  |  " + sizeText : ""}` : "Preview";
+            };
+            image?.addEventListener("load", updateMeta);
+            updateMeta();
+        });
+    }
+
     function installPresetRow() {
         const pane = q(".manual-controls-pane");
         const tabs = q(".command-control-tabs", pane);
@@ -481,6 +538,7 @@
         rebuildDropZone();
         rebuildRecentFiles();
         rebuildPreviewToolbar();
+        installReferencePreviewChrome();
         installPresetRow();
         installBasicParameters();
         rebuildCropPanel();
