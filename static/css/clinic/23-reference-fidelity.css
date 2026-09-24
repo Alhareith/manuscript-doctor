@@ -924,8 +924,13 @@ body.reference-target-active .command-action-bar {
     min-width: 105px;
 }
 
-body.reference-target-active .ref-real-action {
-    display: none !important;
+.ref-preserved-actions {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Results: span beneath part of right column exactly like reference. */
