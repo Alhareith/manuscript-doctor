@@ -231,8 +231,14 @@
                 if (!meta || !image) return;
                 const w = image.naturalWidth || state?.imageData?.width || 0;
                 const h = image.naturalHeight || state?.imageData?.height || 0;
-                const sizeText = elements.selectedFileMeta?.textContent?.trim() || "";
-                meta.textContent = w && h ? `${w} × ${h}${sizeText ? "  |  " + sizeText : ""}` : "Preview";
+                const rawMeta = elements.selectedFileMeta?.textContent?.trim() || "";
+                const compactMeta = rawMeta
+                    .replace(/\b\d+\s*[×x]\s*\d+\b\s*[·|]?\s*/i, "")
+                    .replace(/^\s*[·|]\s*/, "")
+                    .trim();
+                meta.textContent = w && h
+                    ? `${w} × ${h}${compactMeta ? "  |  " + compactMeta : ""}`
+                    : "Preview";
             };
             image?.addEventListener("load", updateMeta);
             updateMeta();
