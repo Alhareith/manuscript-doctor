@@ -1,0 +1,1111 @@
+/* Premium Command Studio
+   Reference target: 1536x1024, single-screen workstation.
+   Loaded last; preserves existing component contracts and image-processing logic. */
+
+:root {
+    --cmd-bg: #07111d;
+    --cmd-bg-2: #0a1624;
+    --cmd-panel: #0d1b2b;
+    --cmd-panel-2: #102235;
+    --cmd-panel-3: #13283d;
+    --cmd-line: #223a51;
+    --cmd-line-soft: rgba(128, 157, 183, .16);
+    --cmd-text: #eef3f7;
+    --cmd-muted: #94a8ba;
+    --cmd-gold: #efb63f;
+    --cmd-gold-2: #ffd36c;
+    --cmd-gold-soft: rgba(239, 182, 63, .13);
+    --cmd-danger: #d86f63;
+    --cmd-ok: #55bd94;
+    --cmd-radius: 12px;
+    --cmd-gap: 8px;
+    --cmd-header: 78px;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body.command-studio-active {
+    overflow: hidden !important;
+    min-height: 100dvh;
+    background:
+        radial-gradient(58rem 32rem at 50% -20%, rgba(47, 84, 119, .22), transparent 70%),
+        linear-gradient(180deg, #081420 0%, #06101b 100%);
+    color: var(--cmd-text);
+}
+
+body.command-studio-active .app-shell {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: var(--cmd-header) minmax(0, 1fr);
+    overflow: hidden;
+}
+
+/* ---------- Header ---------- */
+body.command-studio-active .app-header {
+    position: relative;
+    inset: auto;
+    z-index: 50;
+    height: var(--cmd-header);
+    min-height: var(--cmd-header);
+    border-bottom: 1px solid var(--cmd-line);
+    background:
+        linear-gradient(90deg, rgba(255,255,255,.025), transparent 24%),
+        linear-gradient(180deg, #0b1725, #081420);
+    box-shadow: 0 10px 34px rgba(0,0,0,.22);
+}
+
+body.command-studio-active .app-header-inner {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    padding: 0 18px;
+    display: grid;
+    grid-template-columns: minmax(250px, 1fr) auto minmax(250px, 1fr);
+    align-items: center;
+    gap: 18px;
+    direction: ltr;
+}
+
+body.command-studio-active .app-brand {
+    justify-self: start;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    direction: rtl;
+}
+
+body.command-studio-active .brand-mark {
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(255, 207, 100, .32);
+    border-radius: 15px;
+    background:
+        radial-gradient(circle at 35% 30%, rgba(255,255,255,.25), transparent 30%),
+        linear-gradient(145deg, #f6c75a, #a77317);
+    box-shadow: 0 8px 26px rgba(222, 165, 44, .22), inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+body.command-studio-active .brand-mark img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    filter: brightness(0) saturate(100%);
+    opacity: .82;
+}
+
+body.command-studio-active .brand-copy strong {
+    font-family: var(--font-display);
+    font-size: 1.42rem;
+    color: #f8fafc;
+    line-height: 1.1;
+}
+
+body.command-studio-active .brand-copy small {
+    margin-top: 3px;
+    color: #92a7b8;
+    font-size: .74rem;
+}
+
+body.command-studio-active .header-actions {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    direction: rtl;
+}
+
+body.command-studio-active .header-actions button {
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--cmd-line);
+    background: #102033;
+    color: #dce5ec;
+    padding: 0 13px;
+}
+
+body.command-studio-active .header-actions button:hover {
+    border-color: rgba(239,182,63,.58);
+    color: var(--cmd-gold-2);
+    background: #14283d;
+}
+
+body.command-studio-active .workflow-bar {
+    display: none !important;
+}
+
+.command-studio-nav {
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    direction: rtl;
+}
+
+.command-studio-nav button {
+    min-width: 92px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #bdcad5;
+    background: transparent;
+    font-size: .8rem;
+    font-weight: 650;
+    transition: .16s ease;
+}
+
+.command-studio-nav button:hover,
+.command-studio-nav button.is-active {
+    color: #ffe09a;
+    border-color: rgba(239,182,63,.38);
+    background: linear-gradient(180deg, rgba(239,182,63,.12), rgba(239,182,63,.05));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* ---------- Viewport grid ---------- */
+body.command-studio-active .workspace {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    min-height: 0;
+    padding: 8px;
+    display: grid;
+    grid-template-columns: 298px minmax(0, 1fr) 350px;
+    grid-template-rows: minmax(0, 1fr) 122px 156px;
+    grid-template-areas:
+        "upload preview controls"
+        "crop actions controls"
+        "crop results info";
+    gap: var(--cmd-gap);
+    overflow: hidden;
+    direction: ltr;
+    align-items: stretch;
+}
+
+body.command-studio-active .workspace > *,
+body.command-studio-active .manual-preview-pane,
+body.command-studio-active .manual-controls-pane {
+    min-width: 0;
+    min-height: 0;
+}
+
+/* Flatten legacy wrappers without breaking their IDs/event contracts. */
+body.command-studio-active #treatmentSection,
+body.command-studio-active #treatmentSection.hidden,
+body.command-studio-active #manualEditor,
+body.command-studio-active .manual-editor-shell {
+    display: contents !important;
+}
+
+body.command-studio-active #treatmentSection > .section-head,
+body.command-studio-active #manualEditor > .manual-editor-head,
+body.command-studio-active .treatment-mode-grid,
+body.command-studio-active .manual-preview-footer,
+body.command-studio-active .manual-approval-bar,
+body.command-studio-active .app-footer,
+body.command-studio-active #analysisMasterControl,
+body.command-studio-active #documentPreviewSection,
+body.command-studio-active #examinationSection,
+body.command-studio-active #comparisonSection,
+body.command-studio-active #verificationSection,
+body.command-studio-active #decisionSection,
+body.command-studio-active #binarizationSection,
+body.command-studio-active #downloadSection,
+body.command-studio-active .preview-decision {
+    display: none !important;
+}
+
+body.command-studio-active #processingStateSection {
+    position: fixed;
+    z-index: 100;
+    inset: 88px 50% auto auto;
+    transform: translateX(50%);
+    width: min(440px, calc(100vw - 32px));
+    margin: 0;
+    padding: 12px 16px;
+    border: 1px solid rgba(239,182,63,.42);
+    border-radius: 12px;
+    background: rgba(10,22,36,.96);
+    box-shadow: 0 18px 48px rgba(0,0,0,.42);
+}
+
+/* Shared card language */
+body.command-studio-active #uploadSection,
+body.command-studio-active .manual-preview-pane,
+body.command-studio-active .manual-controls-pane,
+.command-crop-panel,
+.command-action-bar,
+.command-results-dock,
+.command-info-panel,
+.command-result-overlay {
+    border: 1px solid var(--cmd-line);
+    border-radius: var(--cmd-radius);
+    background:
+        radial-gradient(22rem 12rem at 20% 0%, rgba(76,115,150,.08), transparent 68%),
+        linear-gradient(180deg, rgba(15,31,48,.98), rgba(10,24,38,.98));
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.035),
+        0 12px 30px rgba(0,0,0,.14);
+    color: var(--cmd-text);
+}
+
+/* ---------- Upload / Input ---------- */
+body.command-studio-active #uploadSection {
+    grid-area: upload;
+    direction: rtl;
+    padding: 14px;
+    margin: 0;
+    overflow: hidden;
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+}
+
+body.command-studio-active #uploadSection .upload-intro {
+    display: none !important;
+}
+
+body.command-studio-active #dropZone {
+    flex: 0 0 auto;
+    width: 100% !important;
+    min-height: 210px;
+    max-height: 255px;
+    padding: 18px 14px;
+    border: 1.5px dashed #7c91a4;
+    border-radius: 11px;
+    background:
+        linear-gradient(180deg, rgba(25,48,70,.64), rgba(14,31,48,.48));
+    box-shadow: inset 0 0 34px rgba(0,0,0,.12);
+}
+
+body.command-studio-active #dropZone:hover,
+body.command-studio-active #dropZone:focus-visible {
+    border-color: var(--cmd-gold);
+    background: linear-gradient(180deg, rgba(239,182,63,.075), rgba(15,34,52,.7));
+}
+
+body.command-studio-active #dropZone .upload-icon {
+    width: 50px;
+    height: 50px;
+    color: var(--cmd-gold-2);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    font-size: 2.05rem;
+}
+
+body.command-studio-active #dropZone strong {
+    color: #f7f9fb;
+    font-size: .95rem;
+}
+
+body.command-studio-active #dropZone > span:not(.upload-icon),
+body.command-studio-active #dropZone small {
+    color: var(--cmd-muted);
+    font-size: .72rem;
+}
+
+body.command-studio-active #selectedFile {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border-color: var(--cmd-line);
+    background: rgba(17,37,56,.72);
+}
+
+body.command-studio-active .selected-file-info {
+    min-width: 0;
+}
+
+body.command-studio-active .selected-file-info strong {
+    display: block;
+    max-width: 150px;
+    color: #f2f6f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.command-studio-active .selected-file-info small {
+    color: var(--cmd-muted);
+}
+
+body.command-studio-active .selected-file-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+}
+
+body.command-studio-active .selected-file-actions .button {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: .74rem;
+}
+
+.command-upload-meta {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-top: 2px;
+    display: flex;
+    flex-direction: column;
+}
+
+.command-section-title {
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #eef4f8;
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.command-section-title > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.command-section-title i {
+    color: var(--cmd-gold);
+}
+
+.command-file-stack {
+    display: grid;
+    gap: 7px;
+    overflow: auto;
+    scrollbar-width: thin;
+}
+
+.command-file-row {
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: 42px minmax(0,1fr) 24px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,.018);
+}
+
+.command-file-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 7px;
+    object-fit: cover;
+    background: #09121c;
+    border: 1px solid #31485c;
+}
+
+.command-file-copy strong,
+.command-file-copy small {
+    display: block;
+    min-width: 0;
+}
+
+.command-file-copy strong {
+    color: #e8eef3;
+    font-size: .74rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.command-file-copy small {
+    margin-top: 1px;
+    color: #8095a7;
+    font-size: .63rem;
+}
+
+.command-file-state {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    color: var(--cmd-gold);
+    background: var(--cmd-gold-soft);
+    font-size: .72rem;
+}
+
+/* ---------- Main before / after viewport ---------- */
+body.command-studio-active .manual-preview-pane {
+    grid-area: preview;
+    direction: rtl;
+    padding: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 58px minmax(0,1fr);
+}
+
+body.command-studio-active .manual-preview-toolbar {
+    min-height: 58px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--cmd-line);
+    background: rgba(9,22,35,.58);
+}
+
+body.command-studio-active .manual-preview-toolbar > div:first-child small {
+    color: var(--cmd-gold);
+    font-size: .66rem;
+}
+
+body.command-studio-active #manualPreviewNote {
+    color: #e5edf3;
+    font-size: .82rem;
+}
+
+body.command-studio-active .manual-preview-toolbar-actions {
+    display: none !important;
+}
+
+body.command-studio-active .manual-preview-stage {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 8px;
+    overflow: hidden;
+    background:
+        linear-gradient(45deg, rgba(255,255,255,.015) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.015) 75%),
+        #07111b;
+    background-size: 18px 18px;
+}
+
+body.command-studio-active .manual-preview-pair {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 8px;
+    direction: ltr;
+}
+
+body.command-studio-active .manual-preview-card {
+    min-width: 0;
+    min-height: 0;
+    height: 100% !important;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 33px minmax(0,1fr);
+    border: 1px solid #243d54;
+    border-radius: 9px;
+    background: #050c13;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+
+body.command-studio-active .manual-preview-card figcaption {
+    min-height: 33px;
+    margin: 0;
+    padding: 7px 10px;
+    color: #c6d3dd;
+    background: linear-gradient(180deg, #11243a, #0c1b2b);
+    border-bottom: 1px solid #22394e;
+    font-size: .7rem;
+    text-align: start;
+    direction: rtl;
+}
+
+body.command-studio-active .manual-preview-card:last-child figcaption {
+    color: #ffe1a0;
+}
+
+body.command-studio-active .manual-preview-image-wrap {
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    overflow: hidden;
+    position: relative;
+    display: grid;
+    place-items: center;
+    background:
+        radial-gradient(circle at 50% 40%, #132133 0, #070e16 72%);
+}
+
+body.command-studio-active .manual-preview-image-wrap img {
+    width: 100%;
+    height: 100%;
+    max-height: none !important;
+    object-fit: contain;
+}
+
+body.command-studio-active .manual-preview-image-wrap:has(img:not([src]))::before {
+    content: "بانتظار رفع الوثيقة";
+    position: absolute;
+    color: #63788a;
+    font-size: .75rem;
+}
+
+/* ---------- Right processing rail ---------- */
+body.command-studio-active .manual-controls-pane {
+    grid-area: controls;
+    direction: rtl;
+    height: 100%;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0,1fr) auto;
+    border-radius: var(--cmd-radius);
+}
+
+body.command-studio-active .operation-category-strip {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0,1fr)) !important;
+    gap: 5px;
+    padding: 9px;
+    overflow: visible !important;
+    border-bottom: 1px solid var(--cmd-line);
+    background: #0b1928;
+}
+
+body.command-studio-active .category-tab {
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding: 5px 3px;
+    gap: 2px;
+    border-radius: 8px;
+    border: 1px solid #263e53;
+    background: #102237;
+    color: #aebfcd;
+    font-size: .62rem;
+}
+
+body.command-studio-active .category-tab i {
+    font-size: .9rem;
+}
+
+body.command-studio-active .category-tab.is-active {
+    color: #251900;
+    border-color: #f5bd45;
+    background: linear-gradient(180deg, #ffd56e, #e3a92f);
+    box-shadow: 0 4px 16px rgba(239,182,63,.16);
+}
+
+body.command-studio-active .operation-browser {
+    min-height: 0;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding: 8px;
+    background: rgba(7,18,29,.36);
+    scrollbar-width: thin;
+    scrollbar-color: #7a6539 transparent;
+}
+
+body.command-studio-active .operation-group {
+    gap: 5px;
+}
+
+body.command-studio-active .operation-row {
+    min-height: 46px;
+    padding: 8px 9px;
+    border: 1px solid #20384c;
+    border-radius: 8px;
+    background: #102034;
+    color: #dce5ec;
+}
+
+body.command-studio-active .operation-row:hover,
+body.command-studio-active .operation-row.is-active {
+    border-color: #c79636;
+    background: linear-gradient(90deg, rgba(239,182,63,.12), #11253a 44%);
+}
+
+body.command-studio-active .operation-row > i:first-child {
+    color: var(--cmd-gold);
+}
+
+body.command-studio-active .operation-row strong {
+    color: #eaf0f4;
+    font-size: .73rem;
+}
+
+body.command-studio-active .operation-row small {
+    color: #8297a8;
+    font-size: .58rem;
+}
+
+body.command-studio-active .selected-operation-panel {
+    max-height: 248px;
+    overflow-y: auto;
+    padding: 10px;
+    border-top: 1px solid var(--cmd-line);
+    background: #0b1928;
+}
+
+body.command-studio-active .selected-operation-head {
+    margin-bottom: 7px;
+}
+
+body.command-studio-active .selected-operation-head small,
+body.command-studio-active .selected-operation-head span {
+    color: var(--cmd-muted);
+}
+
+body.command-studio-active .selected-operation-head strong {
+    color: #f4f7f9;
+    font-size: .8rem;
+}
+
+body.command-studio-active .parameter-slider,
+body.command-studio-active .slider-parameters {
+    color: #dce4eb;
+}
+
+body.command-studio-active .parameter-slider input[type="range"] {
+    accent-color: var(--cmd-gold);
+}
+
+body.command-studio-active .parameter-slider input[type="number"],
+body.command-studio-active .slider-parameters input[type="number"] {
+    border-color: #2b465d;
+    background: #091725;
+    color: #f0f3f6;
+}
+
+body.command-studio-active .manual-change-chart {
+    display: none !important;
+}
+
+/* ---------- Crop & edit ---------- */
+.command-crop-panel {
+    grid-area: crop;
+    direction: rtl;
+    padding: 10px 12px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto auto minmax(0,1fr);
+    gap: 7px;
+}
+
+.command-crop-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 5px;
+}
+
+.command-crop-actions button {
+    min-height: 34px;
+    padding: 5px 3px;
+    border: 1px solid #2b455c;
+    border-radius: 8px;
+    background: #112237;
+    color: #c7d2db;
+    font-size: .62rem;
+}
+
+.command-crop-actions button:hover,
+.command-crop-actions button.is-emphasis {
+    color: #1d1403;
+    border-color: #e6ad36;
+    background: linear-gradient(180deg, #f8cb67, #dca02d);
+}
+
+.command-crop-preview {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 92px minmax(0,1fr);
+    align-items: center;
+    gap: 9px;
+    overflow: hidden;
+}
+
+.command-crop-preview img {
+    width: 92px;
+    height: 100%;
+    max-height: 72px;
+    object-fit: contain;
+    border-radius: 7px;
+    border: 1px solid #2b455c;
+    background: #050c13;
+}
+
+.command-crop-preview div {
+    min-width: 0;
+}
+
+.command-crop-preview strong,
+.command-crop-preview small {
+    display: block;
+}
+
+.command-crop-preview strong {
+    color: #eef3f6;
+    font-size: .7rem;
+}
+
+.command-crop-preview small {
+    margin-top: 2px;
+    color: #7f94a5;
+    font-size: .59rem;
+    line-height: 1.35;
+}
+
+/* ---------- Processing actions ---------- */
+.command-action-bar {
+    grid-area: actions;
+    direction: rtl;
+    padding: 10px 12px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr) auto;
+    align-items: center;
+    gap: 9px;
+}
+
+.command-action-bar .command-section-title {
+    align-self: stretch;
+    min-width: 155px;
+    justify-content: flex-start;
+}
+
+.command-action-buttons {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.command-action-buttons::-webkit-scrollbar {
+    display: none;
+}
+
+.command-action-buttons .button,
+.command-action-buttons > button {
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid #2d465c;
+    border-radius: 8px;
+    background: #112238;
+    color: #dce5ec;
+    font-size: .68rem;
+    box-shadow: none;
+}
+
+.command-action-buttons .button-primary,
+.command-action-buttons #runPipelineButton {
+    color: #251900;
+    border-color: #f5c155;
+    background: linear-gradient(180deg, #ffd56d, #e4a82d);
+    box-shadow: 0 6px 18px rgba(239,182,63,.18);
+}
+
+.command-action-buttons .button:disabled,
+.command-action-buttons > button:disabled {
+    opacity: .38;
+}
+
+.command-action-status {
+    width: 154px;
+    min-width: 154px;
+    color: #8da1b2;
+    font-size: .61rem;
+    line-height: 1.45;
+    text-align: start;
+}
+
+.command-action-status strong {
+    display: block;
+    color: #e7eef3;
+    font-size: .69rem;
+}
+
+/* ---------- Results dock ---------- */
+.command-results-dock {
+    grid-area: results;
+    direction: rtl;
+    padding: 9px 12px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 32px minmax(0,1fr);
+}
+
+.command-results-dock .treatment-history,
+.command-results-dock .treatment-history.hidden {
+    display: block !important;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.command-results-dock .treatment-history > .section-head {
+    display: none;
+}
+
+.command-results-dock .history-timeline {
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: 7px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 3px 1px 6px;
+    scrollbar-width: thin;
+}
+
+.command-results-dock .history-timeline li {
+    position: relative;
+    flex: 0 0 112px;
+    min-width: 112px;
+    height: 86px;
+    padding: 10px;
+    justify-content: flex-end;
+    overflow: hidden;
+    border: 1px solid #2b455b;
+    border-radius: 8px;
+    background:
+        linear-gradient(180deg, rgba(18,38,58,.16), rgba(4,12,20,.88)),
+        radial-gradient(circle at 50% 20%, #324354, #111d29 72%);
+}
+
+.command-results-dock .history-timeline li::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: .22;
+    background:
+        repeating-linear-gradient(0deg, transparent 0 7px, rgba(230,215,172,.18) 7px 8px);
+}
+
+.command-results-dock .history-timeline li.is-current {
+    border-color: var(--cmd-gold);
+    box-shadow: inset 0 0 0 1px rgba(239,182,63,.3), 0 0 18px rgba(239,182,63,.12);
+}
+
+.command-results-dock .history-timeline li span,
+.command-results-dock .history-timeline li small {
+    position: relative;
+    z-index: 1;
+}
+
+.command-results-dock .history-timeline li span {
+    color: #f4f7f9;
+    font-size: .65rem;
+}
+
+.command-results-dock .history-timeline li small {
+    color: #8fa2b1;
+    font-size: .56rem;
+}
+
+/* ---------- Image info ---------- */
+.command-info-panel {
+    grid-area: info;
+    direction: rtl;
+    padding: 10px 12px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 32px minmax(0,1fr);
+}
+
+.command-info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    align-content: start;
+}
+
+.command-info-row {
+    min-height: 22px;
+    display: grid;
+    grid-template-columns: 82px minmax(0,1fr);
+    gap: 8px;
+    align-items: center;
+    font-size: .64rem;
+}
+
+.command-info-row span {
+    color: #8296a7;
+}
+
+.command-info-row strong {
+    min-width: 0;
+    color: #e5ecf2;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.command-info-actions {
+    margin-top: 5px;
+    display: flex;
+    gap: 5px;
+}
+
+.command-info-actions button {
+    flex: 1;
+    min-height: 28px;
+    border: 1px solid #29445b;
+    border-radius: 7px;
+    background: #102237;
+    color: #bfcdd8;
+    font-size: .59rem;
+}
+
+/* ---------- Result details overlay ---------- */
+.command-result-overlay {
+    position: fixed;
+    z-index: 80;
+    inset: 88px 366px 18px 316px;
+    padding: 12px;
+    overflow: auto;
+    direction: rtl;
+    transform: translateY(12px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease;
+    box-shadow: 0 28px 80px rgba(0,0,0,.55);
+}
+
+body.command-results-open .command-result-overlay {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.command-result-overlay-head {
+    position: sticky;
+    top: -12px;
+    z-index: 2;
+    min-height: 48px;
+    margin: -12px -12px 10px;
+    padding: 9px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--cmd-line);
+    background: rgba(10,24,38,.96);
+    backdrop-filter: blur(12px);
+}
+
+.command-result-overlay-head button {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #29445b;
+    border-radius: 8px;
+    background: #102237;
+    color: #dbe5ec;
+}
+
+.command-result-overlay #verificationSection,
+.command-result-overlay #decisionSection,
+.command-result-overlay #binarizationSection,
+.command-result-overlay #comparisonSection,
+.command-result-overlay #downloadSection {
+    display: block !important;
+    margin: 8px 0;
+    padding: 12px;
+    border: 1px solid #20394f;
+    border-radius: 10px;
+    background: #0d1b2b;
+}
+
+.command-result-overlay .hidden {
+    display: none !important;
+}
+
+/* ---------- Error ---------- */
+body.command-studio-active #errorSection:not(.hidden) {
+    position: fixed;
+    z-index: 110;
+    left: 18px;
+    bottom: 18px;
+    width: min(420px, calc(100vw - 36px));
+    margin: 0;
+}
+
+/* ---------- Compact viewport safeguards ---------- */
+@media (max-width: 1240px) {
+    body.command-studio-active .workspace {
+        grid-template-columns: 250px minmax(0,1fr) 310px;
+    }
+    .command-result-overlay {
+        inset-inline: 268px 328px;
+    }
+    .command-studio-nav button {
+        min-width: 70px;
+    }
+}
+
+@media (max-width: 980px) {
+    body.command-studio-active {
+        overflow: auto !important;
+    }
+    body.command-studio-active .app-shell {
+        height: auto;
+        min-height: 100dvh;
+        display: block;
+        overflow: visible;
+    }
+    body.command-studio-active .app-header {
+        position: sticky;
+        top: 0;
+    }
+    body.command-studio-active .app-header-inner {
+        grid-template-columns: minmax(0,1fr) auto;
+    }
+    .command-studio-nav {
+        display: none;
+    }
+    body.command-studio-active .workspace {
+        height: auto;
+        min-height: calc(100dvh - var(--cmd-header));
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+            "upload"
+            "preview"
+            "controls"
+            "crop"
+            "actions"
+            "results"
+            "info";
+        overflow: visible;
+    }
+    body.command-studio-active .manual-preview-pane {
+        min-height: 560px;
+    }
+    body.command-studio-active .manual-controls-pane {
+        min-height: 620px;
+    }
+    .command-result-overlay {
+        inset: 86px 12px 12px;
+    }
+}
+
+@media (max-height: 760px) and (min-width: 981px) {
+    body.command-studio-active .workspace {
+        grid-template-rows: minmax(0,1fr) 104px 126px;
+    }
+    body.command-studio-active #dropZone {
+        min-height: 150px;
+    }
+    body.command-studio-active .selected-operation-panel {
+        max-height: 180px;
+    }
+}
