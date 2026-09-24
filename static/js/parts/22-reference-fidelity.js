@@ -262,7 +262,16 @@
         });
 
         qa(".ref-param-row input", stack).forEach((input) => {
+            const syncRangePaint = () => {
+                const min = Number(input.min || 0);
+                const max = Number(input.max || 100);
+                const value = Number(input.value);
+                const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
+                input.style.setProperty("--ref-range-pct", `${Math.max(0, Math.min(100, pct))}%`);
+            };
+            syncRangePaint();
             input.addEventListener("input", () => {
+                syncRangePaint();
                 const out = input.parentElement.querySelector("output");
                 if (out) out.value = Number(input.value).toFixed(Number(input.step) < 1 ? 2 : 0);
             });
