@@ -1,0 +1,39 @@
+/* Premium reference workspace layer. */
+:root {
+  --reference-ivory: #f4f0e8;
+  --reference-paper: #fffdf8;
+  --reference-ink: #24231f;
+  --reference-muted: #77736a;
+  --reference-line: #d8d0c2;
+  --reference-gold: #b58a43;
+  --reference-gold-dark: #80602b;
+  --reference-gold-soft: #eadfc8;
+  --reference-shadow: 0 18px 48px rgba(79, 61, 32, .12);
+}
+
+html[data-theme="light"] body,
+body {
+  background: radial-gradient(circle at 12% 4%, rgba(181, 138, 67, .08), transparent 28rem), linear-gradient(180deg, var(--reference-ivory) 0%, #ebe5da 100%);
+  color: var(--reference-ink);
+}
+
+.app-shell { min-height: 100vh; }
+.app-header, .workflow-bar { background: rgba(255, 253, 248, .94); border-color: var(--reference-line); box-shadow: 0 1px 0 rgba(128, 96, 43, .08); }
+.app-header-inner, .workflow-panel, .workspace { max-width: 1480px; margin-inline: auto; }
+.app-brand strong, .section-head h1, .section-head h2, .upload-intro h1, .manual-editor-head h2, .download-section h2 { color: var(--reference-ink); letter-spacing: -.02em; }
+.brand-mark, .upload-icon, .mode-card-icon, .analysis-summary-icon, .reading-icon { background: linear-gradient(145deg, #d2ad6c, var(--reference-gold-dark)); border-color: rgba(128, 96, 43, .4); box-shadow: 0 8px 20px rgba(128, 96, 43, .18); }
+.eyebrow, .section-head small, .upload-intro p, .chart-intro, .manual-preview-footer, .preview-status, .workflow-status { color: var(--reference-muted); }
+.upload-entry, .analysis-workspace, .document-dashboard, .treatment-studio, .verification-panel, .decision-section, .comparison-section, .download-section, .treatment-history, .binarization-section, .manual-editor, .analysis-master-control { background: rgba(255, 253, 248, .9); border: 1px solid var(--reference-line); box-shadow: var(--reference-shadow); }
+.upload-entry, .analysis-workspace, .document-dashboard, .treatment-studio, .verification-panel, .decision-section, .comparison-section, .download-section, .treatment-history, .binarization-section, .manual-editor { border-radius: 22px; }
+.drop-zone { background: linear-gradient(135deg, rgba(234, 223, 200, .48), rgba(255, 253, 248, .8)), repeating-linear-gradient(0deg, rgba(128, 96, 43, .035) 0 1px, transparent 1px 7px); border: 1px dashed rgba(128, 96, 43, .55); border-radius: 18px; }
+.drop-zone:hover, .drop-zone.is-dragging, .operation-row:hover, .operation-row.is-selected, .category-tab.is-active, .viewer-tab.is-active { border-color: var(--reference-gold); background-color: var(--reference-gold-soft); }
+.button-primary, .manual-approval-button, #manualApprovalButton, #runPipelineButton, #downloadResultButton { background: linear-gradient(135deg, var(--reference-gold), var(--reference-gold-dark)); border-color: var(--reference-gold-dark); color: #fffdf8; box-shadow: 0 8px 18px rgba(128, 96, 43, .2); }
+.button-primary:hover, #manualApprovalButton:hover, #runPipelineButton:hover, #downloadResultButton:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.button-ghost, .viewer-tab, .category-tab, .panel-toggle { color: var(--reference-gold-dark); border-color: var(--reference-line); background: rgba(255, 253, 248, .72); }
+.document-stage, .manual-preview-stage, .compare-stage, .chart-stage, .manual-preview-image-wrap { background: #e3ddd1; border-color: var(--reference-line); border-radius: 14px; }
+.analysis-summary-card, .analysis-compact-panel, .metric-card, .dashboard-chart-card, .dashboard-reading-card, .treatment-mode-card, .manual-preview-card, .verification-metrics article, .decision-card, .operation-browser { background: rgba(255, 253, 248, .78); border-color: var(--reference-line); box-shadow: 0 8px 22px rgba(79, 61, 32, .06); }
+.metric-card strong, .analysis-compact-panel h3, .dashboard-chart-card h3, .treatment-mode-card h3, .manual-preview-card figcaption { color: var(--reference-ink); }
+.health-scale span, .progress-fill, .compare-divider, .perspective-edge { background: var(--reference-gold); }
+.status-dot.is-ready, .status-dot.success, .status-dot.active, .status-dot.done { background: var(--reference-gold); box-shadow: 0 0 0 4px rgba(181, 138, 67, .16); }
+.app-footer { background: #282721; border-top-color: var(--reference-gold-dark); }
+@media (max-width: 900px) { .upload-entry, .analysis-workspace, .document-dashboard, .treatment-studio, .verification-panel, .decision-section, .comparison-section, .download-section, .treatment-history, .binarization-section, .manual-editor { border-radius: 16px; } }
