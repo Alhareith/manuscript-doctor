@@ -8,8 +8,16 @@
         const target = q(`[data-operation-card="${operationId}"]`);
         if (!target) return;
         const group = target.closest("[data-operation-group-panel]")?.dataset.operationGroupPanel;
-        if (group) q(`[data-operation-group="${group}"]`)?.click();
-        requestAnimationFrame(() => target.click());
+        const toolset = ["page", "lighting", "contrast", "noise"].includes(group)
+            ? "basic"
+            : ["detail", "threshold"].includes(group)
+                ? "advanced"
+                : "restoration";
+        q(`[data-command-toolset="${toolset}"]`)?.click();
+        window.setTimeout(() => {
+            if (group) q(`[data-operation-group="${group}"]`)?.click();
+            requestAnimationFrame(() => target.click());
+        }, 0);
     }
 
     function setReferenceParameter(operationId, parameter, value) {
