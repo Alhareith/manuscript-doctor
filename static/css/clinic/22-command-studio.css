@@ -216,11 +216,11 @@ body.command-studio-active .app-footer,
 body.command-studio-active #analysisMasterControl,
 body.command-studio-active #documentPreviewSection,
 body.command-studio-active #examinationSection,
-body.command-studio-active #comparisonSection,
-body.command-studio-active #verificationSection,
-body.command-studio-active #decisionSection,
-body.command-studio-active #binarizationSection,
-body.command-studio-active #downloadSection,
+body.command-studio-active .workspace > #comparisonSection,
+body.command-studio-active .workspace > #verificationSection,
+body.command-studio-active .workspace > #decisionSection,
+body.command-studio-active .workspace > #binarizationSection,
+body.command-studio-active .workspace > #downloadSection,
 body.command-studio-active .preview-decision {
     display: none !important;
 }
