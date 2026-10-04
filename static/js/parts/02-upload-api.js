@@ -68,6 +68,8 @@ function resetManualChain() {
     state.manualWorkingResultId = null;
     state.manualApprovedResult = null;
     state.manualPreviewCandidate = null;
+    state.manualPreviewSource = null;
+    state.manualApprovedSource = null;
     updateManualApprovalUI();
 }
 

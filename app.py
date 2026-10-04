@@ -1059,6 +1059,10 @@ def create_app(test_config=None):
         preparation_metadata["method_used"] = boundary.get("method_used") or (
             "deskew-only" if deskew_metadata.get("applied") else None
         )
+        preparation_metadata["plan_source_dimensions"] = {
+            "width": int(preview_source.shape[1]),
+            "height": int(preview_source.shape[0]),
+        }
 
         try:
             preparation_id, _ = save_preparation_preview(
@@ -1151,11 +1155,30 @@ def create_app(test_config=None):
                 500,
             )
 
+        preview_preparation_metadata = manifest.get("preparation")
+        can_reuse_preview_plan = (
+            isinstance(preview_preparation_metadata, dict)
+            and isinstance(preview_preparation_metadata.get("boundary"), dict)
+            and isinstance(preview_preparation_metadata.get("skew"), dict)
+            and isinstance(preview_preparation_metadata.get("plan_source_dimensions"), dict)
+        )
+
         try:
-            final_preparation = prepare_document(
-                original_image,
-                boundary_detector=detect_preparation_boundary,
-            )
+            if can_reuse_preview_plan:
+                final_preparation = prepare_document(
+                    original_image,
+                    boundary_detector=detect_preparation_boundary,
+                    precomputed_boundary=preview_preparation_metadata["boundary"],
+                    precomputed_skew=preview_preparation_metadata["skew"],
+                    plan_source_dimensions=preview_preparation_metadata["plan_source_dimensions"],
+                )
+            else:
+                # Backward compatibility for preview manifests created before
+                # reusable preparation plans were introduced.
+                final_preparation = prepare_document(
+                    original_image,
+                    boundary_detector=detect_preparation_boundary,
+                )
             if not final_preparation.get("prepared"):
                 return error_response(
                     "PREPARATION_REJECTED",
