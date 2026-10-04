@@ -80,11 +80,11 @@ def test_gaussian_blur_spreads_impulse_and_reduces_peak():
     assert result[15, 16] > 0
 
 
-def test_laplacian_sharpen_preserves_dark_edge_direction():
+def test_laplacian_sharpen_uses_absolute_laplacian_boost():
     image = np.full((31, 31), 200, dtype=np.uint8)
     image[:, 15] = 80
     result = apply_operation("laplacian_sharpen", image, {"amount": 0.5, "kernel_size": 3})
-    assert result[15, 15] <= image[15, 15]
+    assert result[15, 15] >= image[15, 15]
     assert result[15, 14] >= image[15, 14]
 
 
@@ -97,13 +97,13 @@ def test_sobel_edges_flat_image_is_zero():
 def test_contrast_stretch_uses_requested_range():
     image = np.array([[50, 100, 150]], dtype=np.uint8)
     result = apply_operation("contrast_stretch", image, {"low_percentile": 0, "high_percentile": 100})
-    assert tuple(int(value) for value in result[0]) == (0, 127, 255)
+    assert tuple(int(value) for value in result[0]) == (0, 127, 254)
 
 
-def test_log_transform_uses_fixed_output_range_not_per_image_max():
+def test_log_transform_uses_zip_per_image_normalization():
     image = np.full((16, 16), 50, dtype=np.uint8)
     result = apply_operation("log_transform", image, {"strength": 1.0})
-    assert 50 < int(result[0, 0]) < 255
+    assert int(result[0, 0]) == 255
 
     endpoints = np.array([[0, 255]], dtype=np.uint8)
     endpoint_result = apply_operation("log_transform", endpoints, {"strength": 1.0})

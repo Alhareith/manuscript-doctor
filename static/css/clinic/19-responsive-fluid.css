@@ -49,8 +49,29 @@ article,
     min-width: 0;
 }
 
+/* Arabic UI text wraps at word boundaries. Long technical tokens may break only where needed. */
 h1, h2, h3, p, small, strong, span, button, a, label {
-    overflow-wrap: anywhere;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+.finding-copy,
+.finding-inline-details,
+.item-heading,
+.item-heading strong,
+.item-heading span,
+.diagnosis-item p,
+.recommendation-item p,
+.exclusion-item p,
+.preservation-indicator {
+    min-width: 0;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
+.item-heading > span {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .container-fluid {
@@ -233,8 +254,6 @@ img, canvas, svg, video {
     }
     .dashboard-premium .dashboard-analytics-pair { grid-template-columns: 1fr; }
     .treatment-mode-grid { grid-template-columns: 1fr; }
-    .manual-preview-stage { height: auto !important; max-height: none !important; }
-    .manual-preview-image-wrap { min-height: clamp(260px, 40dvh, 420px) !important; }
     .compare-wrap { height: clamp(300px, 52dvh, 560px); }
 }
 
@@ -302,8 +321,8 @@ img, canvas, svg, video {
     .manual-preview-pair { grid-template-columns: 1fr; }
     .manual-preview-card { height: auto !important; }
     .manual-preview-image-wrap {
-        height: min(46dvh, 420px) !important;
-        min-height: 240px !important;
+        height: auto !important;
+        min-height: 0 !important;
     }
     .operation-category-strip {
         display: flex;
@@ -373,7 +392,6 @@ img, canvas, svg, video {
         justify-content: space-between;
     }
     .manual-preview-toolbar-actions .button { min-width: 0; flex: 1; }
-    .manual-preview-image-wrap { min-height: 220px !important; height: min(42dvh, 350px) !important; }
 }
 
 /* Very narrow devices. */
@@ -392,12 +410,6 @@ img, canvas, svg, video {
     html { scroll-padding-top: calc(var(--header-h) + 10px); }
     .workflow-bar { position: relative; top: auto; }
     .document-stage { min-height: 280px; max-height: 58dvh; }
-    .manual-editor:not(.clinic-crop-focus) .manual-preview-stage {
-        min-height: 280px !important;
-        height: 52dvh !important;
-        max-height: 340px !important;
-    }
-    .manual-preview-image-wrap { min-height: 0 !important; }
     .operation-browser { max-height: 44dvh; }
 }
 

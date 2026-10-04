@@ -104,6 +104,50 @@ PREVIEW_MAX_WIDTH = 720
 PREVIEW_MAX_HEIGHT = 960
 PREPARATION_PREVIEW_MAX_DIMENSION = 1400
 
+_PREVIEW_SOURCE_CACHE = {}
+_PREVIEW_SOURCE_CACHE_ORDER = []
+_PREVIEW_SOURCE_CACHE_LIMIT = 8
+
+
+def _preview_cache_key(path):
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+
+    return (str(path.resolve()), int(stat.st_mtime_ns), int(stat.st_size))
+
+
+def _cached_preview_source(path):
+    key = _preview_cache_key(path)
+    if key is None:
+        return None
+
+    cached = _PREVIEW_SOURCE_CACHE.get(key)
+    if cached is not None:
+        return cached.copy()
+
+    image = read_stored_image(path)
+    if image is None:
+        return None
+
+    preview = resize_for_preview(image)
+    _PREVIEW_SOURCE_CACHE[key] = preview
+
+    try:
+        _PREVIEW_SOURCE_CACHE_ORDER.remove(key)
+    except ValueError:
+        pass
+
+    _PREVIEW_SOURCE_CACHE_ORDER.append(key)
+
+    while len(_PREVIEW_SOURCE_CACHE_ORDER) > _PREVIEW_SOURCE_CACHE_LIMIT:
+        oldest = _PREVIEW_SOURCE_CACHE_ORDER.pop(0)
+        _PREVIEW_SOURCE_CACHE.pop(oldest, None)
+
+    return preview.copy()
+
+
 
 def resize_for_preview(image, max_width=PREVIEW_MAX_WIDTH, max_height=PREVIEW_MAX_HEIGHT):
     """Return a proportional, bounded preview image without changing the source image."""
@@ -649,6 +693,7 @@ def create_app(test_config=None):
 
         operation_id = payload.get("operation_id")
         parameters = payload.get("parameters", {})
+        source_result_id = payload.get("source_result_id")
 
         if not isinstance(operation_id, str):
             return error_response("INVALID_OPERATION", "معرف العملية غير صالح.", 400)
@@ -668,23 +713,16 @@ def create_app(test_config=None):
                 400,
             )
 
-        source_result_id = payload.get("source_result_id")
+        source_path = path
 
         if source_result_id is not None:
             if not isinstance(source_result_id, str) or not is_valid_resource_id(source_result_id):
                 return error_response(
-                   "INVALID_SOURCE_RESULT_ID",
+                    "INVALID_SOURCE_RESULT_ID",
                     "معرف النتيجة المصدرية غير صالح.",
                     400,
                 )
 
-        original = read_stored_image(path)
-        if original is None:
-            return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
-
-        working_image = original
-
-        if source_result_id:
             source_result_path = resolve_result_file(result_folder, source_result_id)
             source_manifest = read_manual_manifest(result_folder, source_result_id)
 
@@ -698,7 +736,7 @@ def create_app(test_config=None):
             source_kind = source_manifest.get("kind")
             source_origin = source_manifest.get("origin")
             source_status = source_manifest.get("status")
-            
+
             is_approved_manual_source = source_kind == "manual_approved"
             is_approved_unified_source = (
                 source_origin in {"manual", "preparation"}
@@ -722,22 +760,27 @@ def create_app(test_config=None):
                     400,
                 )
 
-
-
-            working_image = read_stored_image(source_result_path)
-            if working_image is None:
-                return error_response(
-                    "UNREADABLE_SOURCE_RESULT",
-                    "تعذر قراءة النتيجة اليدوية المعتمدة.",
-                    500,
-                )
+            source_path = source_result_path
 
         try:
             if operation_id == "crop":
+                working_image = read_stored_image(source_path)
+                if working_image is None:
+                    return error_response(
+                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
+                        "تعذر قراءة مصدر المعاينة.",
+                        500,
+                    )
                 processed = apply_operation(operation_id, working_image, parameters)
                 processed = resize_for_preview(processed)
             else:
-                preview_source = resize_for_preview(working_image)
+                preview_source = _cached_preview_source(source_path)
+                if preview_source is None:
+                    return error_response(
+                        "UNREADABLE_SOURCE_RESULT" if source_result_id else "UNREADABLE_IMAGE",
+                        "تعذر قراءة مصدر المعاينة.",
+                        500,
+                    )
                 processed = apply_operation(operation_id, preview_source, parameters)
 
             preferred_preview_format = request.headers.get("X-Preview-Format", "png")
@@ -767,6 +810,7 @@ def create_app(test_config=None):
             message="تم تحديث المعاينة.",
             status=200,
         )
+
     @app.post("/api/images/<image_id>/pipeline")
     def run_pipeline(image_id):
         if not is_valid_resource_id(image_id):
@@ -1014,13 +1058,8 @@ def create_app(test_config=None):
             return error_response("UNREADABLE_IMAGE", "تعذر قراءة الصورة المخزنة.", 500)
 
         try:
-            preview_source = resize_for_preview(
-                image,
-                max_width=PREPARATION_PREVIEW_MAX_DIMENSION,
-                max_height=PREPARATION_PREVIEW_MAX_DIMENSION,
-            )
             preparation = prepare_document(
-                preview_source,
+                image,
                 boundary_detector=detect_preparation_boundary,
             )
         except (ValueError, RuntimeError) as error:
@@ -1141,35 +1180,20 @@ def create_app(test_config=None):
                 409,
             )
 
-        source_path = resolve_upload_file(upload_folder, image_id)
-        original_image = read_stored_image(source_path) if source_path is not None else None
+        preview_path = resolve_preparation_preview_file(
+            preparation_preview_folder,
+            preparation_id,
+        )
+        prepared_image = read_stored_image(preview_path)
 
-        if original_image is None:
+        if prepared_image is None:
             return error_response(
-                "UNREADABLE_IMAGE",
-                "تعذر قراءة الصورة الأصلية عند اعتماد التجهيز.",
+                "UNREADABLE_PREPARATION",
+                "تعذر قراءة معاينة Preparation.",
                 500,
             )
 
         try:
-            final_preparation = prepare_document(
-                original_image,
-                boundary_detector=detect_preparation_boundary,
-            )
-            if not final_preparation.get("prepared"):
-                return error_response(
-                    "PREPARATION_REJECTED",
-                    "تعذر إعادة تجهيز الصورة الأصلية بدقتها الكاملة.",
-                    422,
-                )
-
-            prepared_image = final_preparation["image"]
-            final_metadata = preparation_public_metadata(final_preparation)
-            final_method = (
-                final_metadata.get("boundary", {}).get("method_used")
-                or ("deskew-only" if final_metadata.get("deskew", {}).get("applied") else None)
-            )
-
             result_id, _ = save_result_artifact(
                 prepared_image,
                 result_folder,
@@ -1177,10 +1201,10 @@ def create_app(test_config=None):
                 origin="preparation",
                 status="approved",
                 parent_result_id=None,
-                method_used=final_method,
+                method_used=manifest.get("method_used"),
                 extra={
                     "preparation_id": preparation_id,
-                    "preparation": final_metadata,
+                    "preparation": manifest.get("preparation", {}),
                 },
             )
         except (ValueError, RuntimeError, OSError):
@@ -1211,9 +1235,9 @@ def create_app(test_config=None):
                     origin="preparation",
                     status="approved",
                     parent_result_id=None,
-                    method_used=final_method,
+                    method_used=manifest.get("method_used"),
                 ),
-                "preparation": final_metadata,
+                "preparation": manifest.get("preparation", {}),
             },
             message="تم اعتماد نتيجة Preparation.",
             status=201,
